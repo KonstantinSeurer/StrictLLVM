@@ -1,8 +1,14 @@
 
 #include <iostream>
 
-int main()
+int main(int argc, const char **args)
 {
-	std::cout << "Hello World!" << std::endl;
+	if (argc < 2)
+	{
+		return 0;
+	}
+
+	std::cout << "Building module '" << args[1] << "'..." << std::endl;
+
 	return 0;
 }
