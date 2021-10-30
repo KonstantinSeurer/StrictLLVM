@@ -36,6 +36,9 @@ enum class TokenType
 	DO,
 	BREAK,
 	CONTINUE,
+	TRY,
+	CATCH,
+	THROW,
 
 	// Structure
 	PUBLIC,
@@ -47,6 +50,7 @@ enum class TokenType
 	CLASS,
 	SINGLETON,
 	TYPE,
+	ERROR,
 	USING,
 	GET,
 	SET,
@@ -57,6 +61,7 @@ enum class TokenType
 	FLOAT_LITERAL,
 	STRING_LITERAL,
 	BOOL_LITERAL,
+	NULL_LITERAL,
 
 	// Other symbols
 	IDENTIFIER,
