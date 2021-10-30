@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <unordered_map>
 #include <memory>
 
 using Int8 = char;
@@ -35,5 +36,53 @@ inline Ref<T> allocate(Args &&...args)
 
 template <typename T>
 using Array = std::vector<T>;
+
+template <typename K, typename V>
+using HashMap = std::unordered_map<K, V>;
+
+namespace strict
+{
+
+	void getEnumNames(const String &enumDefinition, HashMap<UInt64, String> &target);
+
+}
+
+// static blocks
+#define CONCATENATE(s1, s2) s1##s2
+#define EXPAND_THEN_CONCATENATE(s1, s2) CONCATENATE(s1, s2)
+#ifdef __COUNTER__
+#define UNIQUE_IDENTIFIER(prefix) EXPAND_THEN_CONCATENATE(prefix, __COUNTER__)
+#else
+#define UNIQUE_IDENTIFIER(prefix) EXPAND_THEN_CONCATENATE(prefix, __LINE__)
+#endif // __COUNTER__
+
+#define static_block STATIC_BLOCK_IMPL1(UNIQUE_IDENTIFIER(_static_block_))
+
+#define STATIC_BLOCK_IMPL1(prefix) \
+	STATIC_BLOCK_IMPL2(CONCATENATE(prefix, _fn), CONCATENATE(prefix, _var))
+
+#define STATIC_BLOCK_IMPL2(function_name, var_name)                   \
+	static void function_name();                                      \
+	static int var_name __attribute((unused)) = (function_name(), 0); \
+	static void function_name()
+
+// enum declaration
+#ifdef STRICT_ENUM_IMPLEMENTATION
+#define STRICT_ENUM(name, ...)                                        \
+	enum class name                                                   \
+	{                                                                 \
+		__VA_ARGS__                                                   \
+	};                                                                \
+	static HashMap<UInt64, String> name##Names;                       \
+	static_block { strict::getEnumNames(#__VA_ARGS__, name##Names); } \
+	const String &ToString(name value) { return name##Names.at((UInt64)value); }
+#else
+#define STRICT_ENUM(name, ...) \
+	enum class name            \
+	{                          \
+		__VA_ARGS__            \
+	};                         \
+	const String &ToString(name value);
+#endif
 
 #endif /* SOURCE_BASE */
