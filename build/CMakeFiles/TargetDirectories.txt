@@ -1,0 +1,6 @@
+/home/konstantin/Desktop/StrictLLVM/build/CMakeFiles/rebuild_cache.dir
+/home/konstantin/Desktop/StrictLLVM/build/CMakeFiles/strictllvm.dir
+/home/konstantin/Desktop/StrictLLVM/build/CMakeFiles/acc_gen.dir
+/home/konstantin/Desktop/StrictLLVM/build/CMakeFiles/edit_cache.dir
+/home/konstantin/Desktop/StrictLLVM/build/CMakeFiles/omp_gen.dir
+/home/konstantin/Desktop/StrictLLVM/build/CMakeFiles/intrinsics_gen.dir

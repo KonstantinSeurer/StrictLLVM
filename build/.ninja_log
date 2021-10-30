@@ -1,0 +1,8 @@
+# ninja log v5
+0	200	1635532143686745104	CMakeFiles/strictllvm.dir/source/Lexer.cpp.o	5d0dd01b80ccf87b
+200	233	1635532143718745691	strictllvm	ed14db30e41e5577
+0	148	1635365368681536651	CMakeFiles/strictllvm.dir/source/main.cpp.o	2005ec280637be2f
+1	245	1635588866210877121	CMakeFiles/strictllvm.dir/source/Lexer.cpp.o	5d0dd01b80ccf87b
+245	296	1635588866262877873	strictllvm	ed14db30e41e5577
+0	214	1635589290901135315	CMakeFiles/strictllvm.dir/source/Lexer.cpp.o	5d0dd01b80ccf87b
+214	245	1635589290933135591	strictllvm	ed14db30e41e5577

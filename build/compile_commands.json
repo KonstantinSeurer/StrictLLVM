@@ -1,0 +1,12 @@
+[
+{
+  "directory": "/home/konstantin/Desktop/StrictLLVM/build",
+  "command": "/bin/x86_64-linux-gnu-g++-10 -I/usr/lib/llvm-12/include -g -std=gnu++17 -o CMakeFiles/strictllvm.dir/source/Lexer.cpp.o -c /home/konstantin/Desktop/StrictLLVM/source/Lexer.cpp",
+  "file": "/home/konstantin/Desktop/StrictLLVM/source/Lexer.cpp"
+},
+{
+  "directory": "/home/konstantin/Desktop/StrictLLVM/build",
+  "command": "/bin/x86_64-linux-gnu-g++-10 -I/usr/lib/llvm-12/include -g -std=gnu++17 -o CMakeFiles/strictllvm.dir/source/main.cpp.o -c /home/konstantin/Desktop/StrictLLVM/source/main.cpp",
+  "file": "/home/konstantin/Desktop/StrictLLVM/source/main.cpp"
+}
+]
