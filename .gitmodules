@@ -1,0 +1,3 @@
+[submodule "Strict"]
+	path = Strict
+	url = https://github.com/KonstantinSeurer/Strict
