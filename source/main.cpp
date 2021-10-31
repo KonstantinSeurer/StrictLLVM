@@ -31,7 +31,30 @@ static void CompileSourceFile(const String &filename)
 
 	do
 	{
-		std::cout << "\t\t" << ToString(tokens->Next().type) << std::endl;
+		Token token = tokens->Next();
+
+		std::cout << "\t\t" << ToString(token.type);
+
+		switch (token.type)
+		{
+		case TokenType::STRING_LITERAL:
+			std::cout << " \"" << token.data.stringData << "\"";
+			break;
+		case TokenType::INT_LITERAL:
+			std::cout << " " << token.data.intData;
+			break;
+		case TokenType::UINT_LITERAL:
+			std::cout << " " << token.data.uintData;
+			break;
+		case TokenType::FLOAT_LITERAL:
+			std::cout << " " << token.data.floatData;
+			break;
+		case TokenType::IDENTIFIER:
+			std::cout << " " << token.data.stringData;
+			break;
+		}
+
+		std::cout << std::endl;
 	} while (tokens->HasNext());
 }
 

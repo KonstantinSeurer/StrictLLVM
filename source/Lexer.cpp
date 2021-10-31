@@ -48,6 +48,7 @@ static HashMap<String, TokenType> keyWordTable = {
 	{"try", TokenType::TRY},
 	{"catch", TokenType::CATCH},
 	{"throw", TokenType::THROW},
+	{"return", TokenType::RETURN},
 
 	// Structure
 	{"public", TokenType::PUBLIC},
@@ -55,6 +56,8 @@ static HashMap<String, TokenType> keyWordTable = {
 	{"protected", TokenType::PROTECTED},
 	{"internal", TokenType::INTERNAL},
 	{"external", TokenType::EXTERNAL},
+	{"mut", TokenType::MUT},
+	{"impure", TokenType::IMPURE},
 	{"virtual", TokenType::VIRTUAL},
 	{"class", TokenType::CLASS},
 	{"singleton", TokenType::SINGLETON},
@@ -63,10 +66,7 @@ static HashMap<String, TokenType> keyWordTable = {
 	{"using", TokenType::USING},
 	{"get", TokenType::GET},
 	{"set", TokenType::SET},
-	{"operator", TokenType::OPERATOR},
-
-	// Literals
-	{"null", TokenType::NULL_LITERAL}};
+	{"operator", TokenType::OPERATOR}};
 
 static HashMap<char, TokenType> singleCharacterTokenTable = {
 	{'(', TokenType::ROUND_OB},
@@ -92,6 +92,32 @@ static HashMap<char, TokenType> singleCharacterTokenTable = {
 	{'>', TokenType::GREATER},
 	{'~', TokenType::TILDE}};
 
+static HashMap<char, char> escapeSequenceTable = {
+	{'\\', '\\'},
+	{'a', '\a'},
+	{'b', '\b'},
+	{'f', '\f'},
+	{'n', '\n'},
+	{'r', '\r'},
+	{'t', '\t'},
+	{'v', '\v'}};
+
+static char convertEscapeSequence(char character, char quote)
+{
+	if (character == quote)
+	{
+		return quote;
+	}
+
+	if (escapeSequenceTable.find(character) == escapeSequenceTable.end())
+	{
+		std::cerr << "Unexpected escape sequence '\\" << character << "'!" << std::endl;
+		return 0;
+	}
+
+	return escapeSequenceTable.at(character);
+}
+
 Ref<TokenStream> TokenStream::Create(const String &source)
 {
 	Array<Token> *tokens = new Array<Token>; // irrelevant memory leak
@@ -106,10 +132,84 @@ Ref<TokenStream> TokenStream::Create(const String &source)
 			continue;
 		}
 
+		// skip single line comments
+		if (index + 1 < source.length() && currentChar == '/' && source[index + 1] == '/')
+		{
+			for (; index < source.length(); index++)
+			{
+				if (source[index] == '\n')
+				{
+					break;
+				}
+			}
+
+			continue;
+		}
+
 		if (isdigit(currentChar))
 		{
 			// Numeric literal
-			index++;
+
+			const UInt64 startIndex = index;
+			for (; index < source.length() && (isalnum(source[index]) || source[index] == '.'); index++)
+				;
+			String string = source.substr(startIndex, index - startIndex);
+
+			if (string.find('.') == String::npos)
+			{
+				if (string[0] == '0')
+				{
+					if (string.length() == 1)
+					{
+						Token token;
+						token.type = TokenType::UINT_LITERAL;
+						token.data.uintData = 0;
+						tokens->push_back(token);
+					}
+					else
+					{
+						Int32 base = 10;
+						switch (string[1])
+						{
+						case 'x':
+							base = 16;
+							break;
+						case 'b':
+							base = 2;
+							break;
+						default:
+							std::cerr << "Unexpected character '" << string[1] << "' for the base of an integer literal!" << std::endl;
+							break;
+						}
+
+						Token token;
+						token.type = TokenType::UINT_LITERAL;
+						token.data.uintData = strtoull(string.c_str(), nullptr, base);
+						tokens->push_back(token);
+					}
+				}
+				else if (string[0] == '-')
+				{
+					Token token;
+					token.type = TokenType::INT_LITERAL;
+					token.data.intData = strtoll(string.c_str(), nullptr, 10);
+					tokens->push_back(token);
+				}
+				else
+				{
+					Token token;
+					token.type = TokenType::UINT_LITERAL;
+					token.data.uintData = strtoull(string.c_str(), nullptr, 10);
+					tokens->push_back(token);
+				}
+			}
+			else
+			{
+				Token token;
+				token.type = TokenType::FLOAT_LITERAL;
+				token.data.floatData = strtod(string.c_str(), nullptr);
+				tokens->push_back(token);
+			}
 		}
 		else if (isalpha(currentChar))
 		{
@@ -128,26 +228,26 @@ Ref<TokenStream> TokenStream::Create(const String &source)
 			else if (string == "true")
 			{
 				Token token;
-				token.type = TokenType::BOOL_LITERAL;
-				token.data.boolData = true;
+				token.type = TokenType::UINT_LITERAL;
+				token.data.uintData = 1;
 				tokens->push_back(token);
 			}
-			else if (string == "false")
+			else if (string == "false" || string == "null")
 			{
 				Token token;
-				token.type = TokenType::BOOL_LITERAL;
-				token.data.boolData = false;
+				token.type = TokenType::UINT_LITERAL;
+				token.data.uintData = 0;
 				tokens->push_back(token);
 			}
 			else
 			{
 				char *data = new char[string.length() + 1];
-				strncpy(data, string.c_str(), string.length());
+				strcpy(data, string.c_str());
 
 				Token token;
 				token.type = TokenType::IDENTIFIER;
 				token.data.stringData = data;
-				tokens->push_back(std::move(token));
+				tokens->push_back(token);
 			}
 		}
 		else if (currentChar == '\'')
@@ -155,8 +255,14 @@ Ref<TokenStream> TokenStream::Create(const String &source)
 			// character literal (type = INT_LITERAL)
 			index++;
 
-			UInt64 value = source[index];
+			char value = source[index];
 			index++;
+
+			if (value == '\\')
+			{
+				value = convertEscapeSequence(value, '\'');
+				index++;
+			}
 
 			if (source[index] != '\'')
 			{
@@ -166,13 +272,46 @@ Ref<TokenStream> TokenStream::Create(const String &source)
 
 			Token token;
 			token.type = TokenType::INT_LITERAL;
-			token.data.uintData = value;
+			token.data.intData = value;
 			tokens->push_back(token);
 		}
 		else if (currentChar == '\"')
 		{
 			// STRING_LITERAL
 			index++;
+
+			String string;
+
+			for (; index < source.length(); index++)
+			{
+				const char character = source[index];
+
+				if (character == '"')
+				{
+					index++;
+					break;
+				}
+
+				if (character == '\\')
+				{
+					// escaped character
+					index++;
+
+					string += convertEscapeSequence(source[index], '"');
+				}
+				else
+				{
+					string += character;
+				}
+			}
+
+			char *data = new char[string.length() + 1];
+			strncpy(data, string.c_str(), string.length());
+
+			Token token;
+			token.type = TokenType::STRING_LITERAL;
+			token.data.stringData = data;
+			tokens->push_back(token);
 		}
 		else
 		{

@@ -38,6 +38,7 @@ STRICT_ENUM(TokenType,
 			TRY,
 			CATCH,
 			THROW,
+			RETURN,
 
 			// Structure
 			PUBLIC,
@@ -59,10 +60,9 @@ STRICT_ENUM(TokenType,
 
 			// Literals
 			INT_LITERAL,
+			UINT_LITERAL,
 			FLOAT_LITERAL,
 			STRING_LITERAL,
-			BOOL_LITERAL,
-			NULL_LITERAL,
 
 			// Other symbols
 			IDENTIFIER,
