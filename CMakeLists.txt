@@ -10,5 +10,5 @@ llvm_map_components_to_libnames(REQUIRED_LLVM_LIBRARIES core)
 file(GLOB_RECURSE STRICTLLVM_SOURCE_FILES source/*.cpp)
 
 add_executable(strictllvm ${STRICTLLVM_SOURCE_FILES})
-target_include_directories(strictllvm PUBLIC ${LLVM_INCLUDE_DIRS})
+target_include_directories(strictllvm PUBLIC ${LLVM_INCLUDE_DIRS} json/include)
 target_link_libraries(strictllvm ${REQUIRED_LLVM_LIBRARIES})
