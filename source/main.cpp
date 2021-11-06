@@ -5,6 +5,7 @@
 
 #include "Base.h"
 #include "Lexer.h"
+#include "BuildContext.h"
 
 static void CompileSourceFile(const String &filename)
 {
@@ -67,7 +68,13 @@ int main(int argc, const char **args)
 
 	std::cout << "Building module '" << args[1] << "'..." << std::endl;
 
-	CompileSourceFile(String(args[1]));
+	Array<String> modulePath = {std::filesystem::current_path()};
+
+	TargetFlags target = TargetFlags::BIT64 | TargetFlags::LINUX | TargetFlags::X86;
+
+	BuildContext context(modulePath, target);
+	context.AddModule(args[1]);
+	context.Build();
 
 	return 0;
 }

@@ -100,15 +100,13 @@ struct Token
 class TokenStream
 {
 private:
-	Token *tokens;
+	Ref<const Array<Token>> tokens;
 	Int64 offset;
 	Array<Int64> stack;
-	Int64 length;
-	Bool ownsMemory;
 
 public:
-	TokenStream(Token *tokens, Int64 length, Bool ownsMemory)
-		: tokens(tokens), offset(0), length(length), ownsMemory(ownsMemory)
+	TokenStream(Ref<const Array<Token>> tokens)
+		: tokens(tokens), offset(0)
 	{
 	}
 

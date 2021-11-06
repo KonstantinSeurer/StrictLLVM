@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
+#include <utility>
 #include <memory>
 
 using Int8 = char;
@@ -29,7 +31,7 @@ template <typename T>
 using Ref = std::shared_ptr<T>;
 
 template <typename T, typename... Args>
-inline Ref<T> allocate(Args &&...args)
+inline Ref<T> Allocate(Args &&...args)
 {
 	return std::make_shared<T>(args...);
 }
@@ -40,10 +42,16 @@ using Array = std::vector<T>;
 template <typename K, typename V>
 using HashMap = std::unordered_map<K, V>;
 
+template <typename T>
+using HashSet = std::unordered_set<T>;
+
+template <typename K, typename V>
+using Pair = std::pair<K, V>;
+
 namespace strict
 {
 
-	void getEnumNames(const String &enumDefinition, HashMap<UInt64, String> &target);
+	void GetEnumNames(const String &enumDefinition, HashMap<UInt64, String> &target0, HashMap<String, UInt64> &target1);
 
 }
 
@@ -68,21 +76,28 @@ namespace strict
 
 // enum declaration
 #ifdef STRICT_ENUM_IMPLEMENTATION
-#define STRICT_ENUM(name, ...)                                        \
-	enum class name                                                   \
-	{                                                                 \
-		__VA_ARGS__                                                   \
-	};                                                                \
-	static HashMap<UInt64, String> name##Names;                       \
-	static_block { strict::getEnumNames(#__VA_ARGS__, name##Names); } \
-	const String &ToString(name value) { return name##Names.at((UInt64)value); }
+#define STRICT_ENUM(name, ...)                                                          \
+	enum class name                                                                     \
+	{                                                                                   \
+		__VA_ARGS__                                                                     \
+	};                                                                                  \
+	static HashMap<UInt64, String> name##Names;                                         \
+	static HashMap<String, UInt64> name##Values;                                        \
+	static_block { strict::GetEnumNames(#__VA_ARGS__, name##Names, name##Values); }     \
+	const String &ToString(name value) { return name##Names.at((UInt64)value); }        \
+	name StringTo##name(const String &string) { return (name)name##Values.at(string); } \
+	name operator|(name a, name b) { return (name)((UInt64)a | (UInt64)b); }            \
+	name operator&(name a, name b) { return (name)((UInt64)a & (UInt64)b); }
 #else
-#define STRICT_ENUM(name, ...) \
-	enum class name            \
-	{                          \
-		__VA_ARGS__            \
-	};                         \
-	const String &ToString(name value);
+#define STRICT_ENUM(name, ...)                 \
+	enum class name                            \
+	{                                          \
+		__VA_ARGS__                            \
+	};                                         \
+	const String &ToString(name value);        \
+	name StringTo##name(const String &string); \
+	name operator|(name a, name b);            \
+	name operator&(name a, name b);
 #endif
 
 #endif /* SOURCE_BASE */

@@ -3,30 +3,35 @@
 #include "Base.h"
 
 #include "Lexer.h"
+#include "ast/Module.h"
+#include "ast/Unit.h"
 
 #include <iostream>
 
 namespace strict
 {
 
-	void getEnumNames(const String &enumDefinition, HashMap<UInt64, String> &target)
+	void GetEnumNames(const String &enumDefinition, HashMap<UInt64, String> &target0, HashMap<String, UInt64> &target1)
 	{
 		String source = enumDefinition + ",";
 		String name = "";
 		String valueString = "";
 		UInt64 value = 0;
 		bool assigned = false;
+
 		for (UInt32 i = 0; i < source.length(); i++)
 		{
 			if (isspace(source[i]))
 			{
 				continue;
 			}
+
 			if (source[i] == '=')
 			{
 				assigned = true;
 				continue;
 			}
+
 			if (source[i] == ',')
 			{
 				if (assigned)
@@ -51,7 +56,10 @@ namespace strict
 						value = strtoull(valueString.c_str(), nullptr, 10);
 					}
 				}
-				target[value] = name;
+
+				target0[value] = name;
+				target1[name] = value;
+
 				assigned = false;
 				value++;
 				valueString = "";

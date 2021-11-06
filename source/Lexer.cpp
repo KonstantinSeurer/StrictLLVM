@@ -6,19 +6,15 @@
 
 TokenStream::~TokenStream()
 {
-	if (ownsMemory)
+	if (tokens.use_count() == 1)
 	{
-		for (UInt64 tokenIndex = 0; tokenIndex < length; tokenIndex++)
+		for (const Token &token : *tokens)
 		{
-			const Token &token = tokens[tokenIndex];
-
 			if (token.type == TokenType::STRING_LITERAL || token.type == TokenType::IDENTIFIER)
 			{
 				delete token.data.stringData;
 			}
 		}
-
-		delete tokens;
 	}
 }
 
@@ -120,7 +116,7 @@ static char convertEscapeSequence(char character, char quote)
 
 Ref<TokenStream> TokenStream::Create(const String &source)
 {
-	Array<Token> *tokens = new Array<Token>; // irrelevant memory leak
+	Ref<Array<Token>> tokens = Allocate<Array<Token>>();
 
 	for (UInt64 index = 0; index < source.length();)
 	{
@@ -329,24 +325,24 @@ Ref<TokenStream> TokenStream::Create(const String &source)
 		}
 	}
 
-	return allocate<TokenStream>(tokens->data(), tokens->size(), true);
+	return Allocate<TokenStream>(tokens);
 }
 
 const Token &TokenStream::Get() const
 {
-	return tokens[offset];
+	return tokens->operator[](offset);
 }
 
 const Token &TokenStream::Next()
 {
-	const Token &result = tokens[offset];
+	const Token &result = Get();
 	offset++;
 	return result;
 }
 
 Bool TokenStream::HasNext() const
 {
-	return offset < length - 1;
+	return offset < tokens->size() - 1;
 }
 
 void TokenStream::Push()
