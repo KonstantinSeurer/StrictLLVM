@@ -93,6 +93,7 @@ const String &ToString(TokenType type);
 
 struct Token
 {
+public:
 	TokenType type;
 	TokenData data;
 };

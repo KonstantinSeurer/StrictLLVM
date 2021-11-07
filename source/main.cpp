@@ -68,11 +68,12 @@ int main(int argc, const char **args)
 
 	std::cout << "Building module '" << args[1] << "'..." << std::endl;
 
-	Array<String> modulePath = {std::filesystem::current_path()};
+	const Array<String> modulePath = {std::filesystem::current_path()};
+	const String cachePath = String(std::filesystem::current_path()) + "/cache";
 
-	TargetFlags target = TargetFlags::BIT64 | TargetFlags::LINUX | TargetFlags::X86;
+	const TargetFlags target = TargetFlags::BIT64 | TargetFlags::LINUX | TargetFlags::X86;
 
-	BuildContext context(modulePath, target);
+	BuildContext context(modulePath, cachePath, target);
 	context.AddModule(args[1]);
 	context.Build();
 
