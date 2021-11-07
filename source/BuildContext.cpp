@@ -1,5 +1,6 @@
 
 #include "BuildContext.h"
+#include "Time.h"
 
 #include <iostream>
 #include <filesystem>
@@ -113,17 +114,19 @@ void BuildContext::AddTargetUnit(const ModuleName &moduleName, const String &sou
 
 	taskSet[moduleName].insert(task);
 	taskList[taskList.size() - 1].second.push_back(task);
-
-	const String canonicalSourceFile = moduleName.canonicalPath + "/" + sourceFile;
-
-	std::cout << canonicalSourceFile << std::endl;
 }
 
 void BuildContext::Build()
 {
+	std::cout << "Generating rebuild graph...";
+	Time graphGenStart;
+
 	MarkChangedUnits();
 	PropagateBuildFlag();
 	ReduceTasks();
+
+	std::cout.precision(1);
+	std::cout << " (" << (Time() - graphGenStart).milliSeconds() << "ms)" << std::endl;
 
 	// TODO: compile every task and write dependency information and ir to cache files
 }

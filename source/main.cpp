@@ -6,6 +6,7 @@
 #include "Base.h"
 #include "Lexer.h"
 #include "BuildContext.h"
+#include "Time.h"
 
 static void CompileSourceFile(const String &filename)
 {
@@ -74,7 +75,15 @@ int main(int argc, const char **args)
 	const TargetFlags target = TargetFlags::BIT64 | TargetFlags::LINUX | TargetFlags::X86;
 
 	BuildContext context(modulePath, cachePath, target);
+
+	std::cout << "Scanning modules...";
+	Time scanStart;
+
 	context.AddModule(args[1]);
+
+	std::cout.precision(1);
+	std::cout << " (" << (Time() - scanStart).milliSeconds() << "ms)" << std::endl;
+
 	context.Build();
 
 	return 0;
