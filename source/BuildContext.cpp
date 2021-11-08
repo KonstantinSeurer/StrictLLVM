@@ -6,12 +6,12 @@
 #include <filesystem>
 #include <fstream>
 
-bool operator==(const BuildTask &a, const BuildTask &b)
+bool operator==(const UnitTask &a, const UnitTask &b)
 {
 	return a.name == b.name;
 }
 
-bool operator==(const ModuleName &a, const ModuleName &b)
+bool operator==(const ModuleTask &a, const ModuleTask &b)
 {
 	return a.name == b.name;
 }
@@ -47,44 +47,40 @@ String BuildContext::ResolveModulePath(const String &moduleName) const
 
 void BuildContext::AddModule(const String &name)
 {
-	if (taskSet.find(name) != taskSet.end())
+	if (moduleSet.find(name) != moduleSet.end())
 	{
 		return;
 	}
 
+	moduleSet.insert(name);
+
 	const String modulePath = ResolveModulePath(name);
 	const String moduleFile = modulePath + "/module.json";
-
-	const ModuleName moduleName(name, modulePath);
 
 	std::ifstream moduleFileStream(moduleFile);
 	const String moduleFileContent = String(std::istreambuf_iterator<char>(moduleFileStream), std::istreambuf_iterator<char>());
 
 	const JSON moduleJSON = JSON::parse(moduleFileContent);
 
+	ModuleTask moduleTask(name, modulePath);
 	if (moduleJSON.contains("requires"))
 	{
-		AddRequiredModules(moduleJSON["requires"]);
+		for (const auto &requireJSON : moduleJSON["requires"])
+		{
+			AddModule(String(requireJSON));
+			moduleTask.dependencyIndices.push_back(taskList.size() - 1);
+		}
 	}
 
-	taskSet[moduleName] = HashSet<BuildTask>();
-	taskList.push_back(Pair<ModuleName, Array<BuildTask>>(moduleName, Array<BuildTask>()));
+	taskList.push_back(Pair<ModuleTask, Array<UnitTask>>(moduleTask, Array<UnitTask>()));
 
 	if (moduleJSON.contains("targets"))
 	{
-		AddTargetUnits(moduleName, moduleJSON["targets"]);
+		AddTargetUnits(moduleTask, moduleJSON["targets"]);
 	}
 }
 
-void BuildContext::AddRequiredModules(const JSON &moduleRequiresJSON)
-{
-	for (const auto &requireJSON : moduleRequiresJSON)
-	{
-		AddModule(String(requireJSON));
-	}
-}
-
-void BuildContext::AddTargetUnits(const ModuleName &moduleName, const JSON &moduleTargetsJSON)
+void BuildContext::AddTargetUnits(const ModuleTask &moduleName, const JSON &moduleTargetsJSON)
 {
 	for (const auto &targetJSON : moduleTargetsJSON)
 	{
@@ -103,17 +99,9 @@ void BuildContext::AddTargetUnits(const ModuleName &moduleName, const JSON &modu
 		const JSON exportsJSON = targetJSON["exports"];
 		for (const auto &exportJSON : exportsJSON)
 		{
-			AddTargetUnit(moduleName, String(exportJSON));
+			taskList[taskList.size() - 1].second.push_back(UnitTask(String(exportJSON)));
 		}
 	}
-}
-
-void BuildContext::AddTargetUnit(const ModuleName &moduleName, const String &sourceFile)
-{
-	BuildTask task(sourceFile, false);
-
-	taskSet[moduleName].insert(task);
-	taskList[taskList.size() - 1].second.push_back(task);
 }
 
 void BuildContext::Build()
@@ -121,17 +109,50 @@ void BuildContext::Build()
 	std::cout << "Generating rebuild graph...";
 	Time graphGenStart;
 
-	MarkChangedUnits();
-	PropagateBuildFlag();
-	ReduceTasks();
+	bool build = false;
+	MarkChangedUnits(build);
+
+	if (build)
+	{
+		PropagateBuildFlag();
+		ReduceTasks();
+	}
 
 	std::cout.precision(1);
 	std::cout << " (" << (Time() - graphGenStart).milliSeconds() << "ms)" << std::endl;
 
+	if (!build)
+	{
+		std::cout << "No build required!" << std::endl;
+		return;
+	}
+
+	std::cout << "Build tasks:" << std::endl;
+
+	for (const auto &module : taskList)
+	{
+		if (!module.first.build)
+		{
+			continue;
+		}
+
+		std::cout << "\t" << module.first.name << ":" << std::endl;
+
+		for (const auto &unit : module.second)
+		{
+			if (!unit.build)
+			{
+				continue;
+			}
+
+			std::cout << "\t\t" << unit.name << std::endl;
+		}
+	}
+
 	// TODO: compile every task and write dependency information and ir to cache files
 }
 
-void BuildContext::MarkChangedUnits()
+void BuildContext::MarkChangedUnits(bool &build)
 {
 	const String lastWriteTimesFile = cachePath + "/lastWriteTimes.json";
 
@@ -144,37 +165,30 @@ void BuildContext::MarkChangedUnits()
 		lastWriteTimesJSON = JSON::parse(lastWriteTimesContent);
 	}
 
-	for (UInt64 moduleIndex = 0; moduleIndex < taskList.size(); moduleIndex++)
+	for (auto &module : taskList)
 	{
-		auto &module = taskList[moduleIndex];
-
 		if (lastWriteTimesJSON.find(module.first.name) == lastWriteTimesJSON.end())
 		{
-			AddModuleToLastWriteJSON(moduleIndex, lastWriteTimesJSON);
+			build = true;
+			AddModuleToLastWriteJSON(module, lastWriteTimesJSON);
 			continue;
 		}
 
 		JSON &moduleJSON = lastWriteTimesJSON[module.first.name];
 
-		for (UInt64 unitIndex = 0; unitIndex < module.second.size(); unitIndex++)
+		for (auto &unit : module.second)
 		{
-			auto &unit = module.second[unitIndex];
-
 			std::filesystem::file_time_type lastWrite = std::filesystem::last_write_time(module.first.canonicalPath + "/" + unit.name);
 
-			if (moduleJSON.find(unit.name) == moduleJSON.end())
+			if (moduleJSON.find(unit.name) == moduleJSON.end() || (lastWrite.time_since_epoch().count() != (int64_t)moduleJSON[unit.name]))
 			{
+				build = true;
 				unit.build = true;
+				module.first.build = true;
+
 				moduleJSON[unit.name] = lastWrite.time_since_epoch().count();
 
 				continue;
-			}
-
-			unit.build = (lastWrite.time_since_epoch().count() != (int64_t)moduleJSON[unit.name]);
-
-			if (unit.build)
-			{
-				moduleJSON[unit.name] = lastWrite.time_since_epoch().count();
 			}
 		}
 	}
@@ -183,9 +197,9 @@ void BuildContext::MarkChangedUnits()
 	lastWriteTimesStream << lastWriteTimesJSON;
 }
 
-void BuildContext::AddModuleToLastWriteJSON(UInt64 moduleIndex, JSON &target)
+void BuildContext::AddModuleToLastWriteJSON(Pair<ModuleTask, Array<UnitTask>> &module, JSON &target)
 {
-	auto &module = taskList[moduleIndex];
+	module.first.build = true; // build new/uncached modules
 
 	JSON moduleJSON;
 	for (UInt64 unitIndex = 0; unitIndex < module.second.size(); unitIndex++)
@@ -202,6 +216,32 @@ void BuildContext::AddModuleToLastWriteJSON(UInt64 moduleIndex, JSON &target)
 
 void BuildContext::PropagateBuildFlag()
 {
+	// propagate the ModuleTask build flag
+	for (auto &module : taskList)
+	{
+		if (module.first.build)
+		{
+			continue;
+		}
+
+		for (UInt64 dependencyIndex : module.first.dependencyIndices)
+		{
+			if (taskList[dependencyIndex].first.build)
+			{
+				module.first.build = true;
+				break;
+			}
+		}
+	}
+
+	for (auto &module : taskList)
+	{
+		if (!module.first.build)
+		{
+			continue;
+		}
+	}
+
 	// TODO: iterate over all build tasks in the build order and mark every tasks whose dependencies are marked.
 	//       (use cache files to cache the dependencies and avoid reparsing every file)
 }

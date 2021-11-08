@@ -5,47 +5,59 @@
 #include "ast/Module.h"
 #include "Lexer.h"
 
-struct BuildTask
+struct UnitTask
 {
 public:
 	String name;
 	bool build;
 
 public:
-	BuildTask(const String &name, bool build)
+	UnitTask(const String &name)
+		: name(name), build(false)
+	{
+	}
+
+	UnitTask(const String &name, bool build)
 		: name(name), build(build)
 	{
 	}
 };
 
-struct ModuleName
+struct ModuleTask
 {
 public:
 	String name;
 	String canonicalPath;
+	Array<UInt64> dependencyIndices;
+	bool build;
 
 public:
-	ModuleName(const String &name)
-		: name(name)
+	ModuleTask(const String &name)
+		: name(name), build(false)
 	{
 	}
 
-	ModuleName(const String &name, const String &canonicalPath)
-		: name(name), canonicalPath(canonicalPath)
+	ModuleTask(const String &name, const String &canonicalPath)
+		: name(name), canonicalPath(canonicalPath), build(false)
+	{
+	}
+
+	ModuleTask(const String &name, const String &canonicalPath, bool build)
+		: name(name), canonicalPath(canonicalPath), build(build)
 	{
 	}
 };
 
-bool operator==(const BuildTask &a, const BuildTask &b);
+bool operator==(const UnitTask &a, const UnitTask &b);
 
-bool operator==(const ModuleName &a, const ModuleName &b);
+bool operator==(const ModuleTask &a, const ModuleTask &b);
 
 namespace std
 {
 	template <>
-	struct hash<BuildTask>
+	struct hash<UnitTask>
 	{
-		size_t operator()(const BuildTask &task) const
+		size_t operator()(const UnitTask &task) const
 		{
 			hash<String> hashFunction;
 			return hashFunction(task.name);
@@ -53,9 +65,9 @@ namespace std
 	};
 
 	template <>
-	struct hash<ModuleName>
+	struct hash<ModuleTask>
 	{
-		size_t operator()(const ModuleName &name) const
+		size_t operator()(const ModuleTask &name) const
 		{
 			hash<String> hashFunction;
 			return hashFunction(name.name);
@@ -72,8 +84,8 @@ private:
 
 	HashMap<String, Ref<TokenStream>> lexerCache;
 
-	HashMap<ModuleName, HashSet<BuildTask>> taskSet;
-	Array<Pair<ModuleName, Array<BuildTask>>> taskList;
+	HashSet<String> moduleSet;
+	Array<Pair<ModuleTask, Array<UnitTask>>> taskList;
 
 	Array<Ref<Module>> modules;
 
@@ -85,13 +97,10 @@ public:
 	void Build();
 
 private:
-	void AddRequiredModules(const JSON &moduleRequiresJSON);
+	void AddTargetUnits(const ModuleTask &moduleName, const JSON &moduleTargetsJSON);
 
-	void AddTargetUnits(const ModuleName &moduleName, const JSON &moduleTargetsJSON);
-	void AddTargetUnit(const ModuleName &moduleName, const String &sourceFile);
-
-	void MarkChangedUnits();
-	void AddModuleToLastWriteJSON(UInt64 moduleIndex, JSON &target);
+	void MarkChangedUnits(bool &build);
+	void AddModuleToLastWriteJSON(Pair<ModuleTask, Array<UnitTask>> &module, JSON &target);
 
 	void PropagateBuildFlag();
 
