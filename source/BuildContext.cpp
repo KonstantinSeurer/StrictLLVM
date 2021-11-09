@@ -6,6 +6,15 @@
 #include <filesystem>
 #include <fstream>
 
+// TODO: What happend when source files get deleted
+
+void UnitTask::InitFileName()
+{
+	fileName = name;
+	std::replace(fileName.begin(), fileName.end(), '.', '/');
+	fileName += ".strict";
+}
+
 bool operator==(const UnitTask &a, const UnitTask &b)
 {
 	return a.name == b.name;
@@ -43,6 +52,20 @@ String BuildContext::ResolveModulePath(const String &moduleName) const
 
 	std::cerr << "Unable to resolve module '" << moduleName << "'!" << std::endl;
 	return "";
+}
+
+Pair<String, String> BuildContext::ResolveUnitIdentifier(const String &identifier) const
+{
+	for (const auto &module : taskList)
+	{
+		if (identifier.find(module.first.name) == 0)
+		{
+			return Pair<String, String>(module.first.name, identifier.substr(module.first.name.length() + 1));
+		}
+	}
+
+	std::cerr << "Could not resolve unit '" << identifier << "'!" << std::endl;
+	return Pair<String, String>();
 }
 
 void BuildContext::AddModule(const String &name)
@@ -131,25 +154,15 @@ void BuildContext::Build()
 
 	for (const auto &module : taskList)
 	{
-		if (!module.first.build)
-		{
-			continue;
-		}
-
 		std::cout << "\t" << module.first.name << ":" << std::endl;
 
 		for (const auto &unit : module.second)
 		{
-			if (!unit.build)
-			{
-				continue;
-			}
-
 			std::cout << "\t\t" << unit.name << std::endl;
 		}
 	}
 
-	// TODO: compile every task and write dependency information and ir to cache files
+	// TODO: compile every task and write ir to cache files
 }
 
 void BuildContext::MarkChangedUnits(bool &build)
@@ -178,7 +191,7 @@ void BuildContext::MarkChangedUnits(bool &build)
 
 		for (auto &unit : module.second)
 		{
-			std::filesystem::file_time_type lastWrite = std::filesystem::last_write_time(module.first.canonicalPath + "/" + unit.name);
+			std::filesystem::file_time_type lastWrite = std::filesystem::last_write_time(module.first.canonicalPath + "/" + unit.fileName);
 
 			if (moduleJSON.find(unit.name) == moduleJSON.end() || (lastWrite.time_since_epoch().count() != (int64_t)moduleJSON[unit.name]))
 			{
@@ -207,7 +220,7 @@ void BuildContext::AddModuleToLastWriteJSON(Pair<ModuleTask, Array<UnitTask>> &m
 		auto &unit = module.second[unitIndex];
 		unit.build = true;
 
-		std::filesystem::file_time_type lastWrite = std::filesystem::last_write_time(module.first.canonicalPath + "/" + unit.name);
+		std::filesystem::file_time_type lastWrite = std::filesystem::last_write_time(module.first.canonicalPath + "/" + unit.fileName);
 		moduleJSON[unit.name] = lastWrite.time_since_epoch().count();
 	}
 
@@ -240,13 +253,153 @@ void BuildContext::PropagateBuildFlag()
 		{
 			continue;
 		}
-	}
 
-	// TODO: iterate over all build tasks in the build order and mark every tasks whose dependencies are marked.
-	//       (use cache files to cache the dependencies and avoid reparsing every file)
+		const String moduleCachePath = cachePath + "/" + module.first.name;
+
+		if (!std::filesystem::exists(moduleCachePath))
+		{
+			std::filesystem::create_directory(moduleCachePath);
+		}
+
+		for (auto &unit : module.second)
+		{
+			const String unitCachePath = moduleCachePath + "/" + unit.name + ".deps.json"; // TODO: What happens if the name contains '/' or '\'?
+
+			if (unit.build)
+			{
+				const String unitSourcePath = module.first.canonicalPath + "/" + unit.fileName;
+
+				std::ifstream unitSourceStream(unitSourcePath);
+				const String unitSource = String(std::istreambuf_iterator<char>(unitSourceStream), std::istreambuf_iterator<char>());
+
+				Ref<TokenStream> lexer = TokenStream::Create(unitSource);
+				lexerCache[unitSourcePath] = lexer;
+
+				JSON unitJSON(JSON::value_t::object);
+
+				lexer->Push();
+				ParseDependencyInformation(*lexer, unitJSON);
+				lexer->Revert();
+
+				std::ofstream unitCacheStream(unitCachePath);
+				unitCacheStream << unitJSON;
+			}
+			else
+			{
+				std::ifstream unitCacheStream(unitCachePath);
+				const String unitCacheContent = String(std::istreambuf_iterator<char>(unitCacheStream), std::istreambuf_iterator<char>());
+
+				const JSON unitJSON = JSON::parse(unitCacheContent);
+
+				for (const auto &moduleJSON : unitJSON.items())
+				{
+					const UInt64 moduleIndex = FindModule(String(moduleJSON.key()));
+
+					for (const auto &unitJSON : moduleJSON.value())
+					{
+						const UInt64 unitIndex = FindUnit(moduleIndex, String(unitJSON));
+
+						unit.build |= taskList[moduleIndex].second[unitIndex].build;
+					}
+				}
+			}
+		}
+	}
+}
+
+void BuildContext::ParseDependencyInformation(TokenStream &lexer, JSON &target) const
+{
+	while (lexer.HasNext())
+	{
+		const Token &token = lexer.Next();
+
+		if (token.type != TokenType::USING)
+		{
+			continue;
+		}
+
+		String dependency;
+		while (lexer.HasNext())
+		{
+			const Token &dependencyToken = lexer.Next();
+
+			if (dependencyToken.type == TokenType::EQUALS || dependencyToken.type == TokenType::SEMICOLON)
+			{
+				break;
+			}
+
+			if (dependencyToken.type == TokenType::IDENTIFIER)
+			{
+				dependency += dependencyToken.data.stringData;
+			}
+			else if (dependencyToken.type == TokenType::PERIOD)
+			{
+				dependency += '.';
+			}
+			else
+			{
+				std::cerr << "Unexpected identifier " << ToString(dependencyToken.type) << "!" << std::endl;
+				return;
+			}
+		}
+
+		auto moduleAndUnit = ResolveUnitIdentifier(dependency);
+		target[moduleAndUnit.first].push_back(moduleAndUnit.second);
+	}
 }
 
 void BuildContext::ReduceTasks()
 {
-	// TODO: remove every task that isn't marked
+	for (Int64 moduleIndex = taskList.size() - 1; moduleIndex >= 0; moduleIndex--)
+	{
+		if (taskList[moduleIndex].first.build)
+		{
+			continue;
+		}
+
+		taskList.erase(taskList.begin() + moduleIndex);
+	}
+
+	for (auto &module : taskList)
+	{
+		for (Int64 unitIndex = module.second.size() - 1; unitIndex >= 0; unitIndex--)
+		{
+			if (module.second[unitIndex].build)
+			{
+				continue;
+			}
+
+			module.second.erase(module.second.begin() + unitIndex);
+		}
+	}
+}
+
+UInt64 BuildContext::FindModule(const String &name)
+{
+	for (UInt64 moduleIndex = 0; moduleIndex < taskList.size(); moduleIndex++)
+	{
+		if (taskList[moduleIndex].first.name == name)
+		{
+			return moduleIndex;
+		}
+	}
+
+	std::cerr << "Could not find module '" << name << "'!" << std::endl;
+	return 0;
+}
+
+UInt64 BuildContext::FindUnit(UInt64 moduleIndex, const String &name)
+{
+	const auto &units = taskList[moduleIndex].second;
+
+	for (UInt64 unitIndex = 0; unitIndex < units.size(); unitIndex++)
+	{
+		if (units[unitIndex].name == name)
+		{
+			return unitIndex;
+		}
+	}
+
+	std::cerr << "Could not find unit '" << name << "' in module '" << taskList[moduleIndex].first.name << "'!" << std::endl;
+	return 0;
 }

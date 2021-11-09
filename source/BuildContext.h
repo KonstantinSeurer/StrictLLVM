@@ -9,18 +9,24 @@ struct UnitTask
 {
 public:
 	String name;
+	String fileName;
 	bool build;
 
 public:
 	UnitTask(const String &name)
 		: name(name), build(false)
 	{
+		InitFileName();
 	}
 
 	UnitTask(const String &name, bool build)
 		: name(name), build(build)
 	{
+		InitFileName();
 	}
+
+private:
+	void InitFileName();
 };
 
 struct ModuleTask
@@ -93,6 +99,8 @@ public:
 	BuildContext(const Array<String> &modulePath, const String &cachePath, TargetFlags target);
 
 	String ResolveModulePath(const String &moduleName) const;
+	Pair<String, String> ResolveUnitIdentifier(const String &identifier) const;
+
 	void AddModule(const String &moduleName);
 	void Build();
 
@@ -103,8 +111,12 @@ private:
 	void AddModuleToLastWriteJSON(Pair<ModuleTask, Array<UnitTask>> &module, JSON &target);
 
 	void PropagateBuildFlag();
+	void ParseDependencyInformation(TokenStream &lexer, JSON &target) const;
 
 	void ReduceTasks();
+
+	UInt64 FindModule(const String &name);
+	UInt64 FindUnit(UInt64 moduleIndex, const String &name);
 };
 
 #endif /* SOURCE_BUILDCONTEXT */
