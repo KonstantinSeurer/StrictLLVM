@@ -105,8 +105,6 @@ public:
 	void Build();
 
 private:
-	void AddTargetUnits(const ModuleTask &moduleName, const JSON &moduleTargetsJSON);
-
 	void MarkChangedUnits(bool &build);
 	void AddModuleToLastWriteJSON(Pair<ModuleTask, Array<UnitTask>> &module, JSON &target);
 

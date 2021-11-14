@@ -97,32 +97,12 @@ void BuildContext::AddModule(const String &name)
 
 	taskList.push_back(Pair<ModuleTask, Array<UnitTask>>(moduleTask, Array<UnitTask>()));
 
-	if (moduleJSON.contains("targets"))
+	if (moduleJSON.contains("units"))
 	{
-		AddTargetUnits(moduleTask, moduleJSON["targets"]);
-	}
-}
-
-void BuildContext::AddTargetUnits(const ModuleTask &moduleName, const JSON &moduleTargetsJSON)
-{
-	for (const auto &targetJSON : moduleTargetsJSON)
-	{
-		if (!targetJSON.contains("exports"))
+		const JSON unitsJSON = moduleJSON["units"];
+		for (const auto &unitJSON : unitsJSON)
 		{
-			continue;
-		}
-
-		TargetFlags flags = targetJSON.contains("flags") ? JSONToTargetFlags(targetJSON["flags"]) : TargetFlags::NONE;
-
-		if (!IsTargetActive(flags, target))
-		{
-			continue;
-		}
-
-		const JSON exportsJSON = targetJSON["exports"];
-		for (const auto &exportJSON : exportsJSON)
-		{
-			taskList[taskList.size() - 1].second.push_back(UnitTask(String(exportJSON)));
+			taskList[taskList.size() - 1].second.push_back(UnitTask(String(unitJSON)));
 		}
 	}
 }
