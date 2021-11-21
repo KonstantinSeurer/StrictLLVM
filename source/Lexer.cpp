@@ -62,7 +62,11 @@ static HashMap<String, TokenType> keyWordTable = {
 	{"using", TokenType::USING},
 	{"get", TokenType::GET},
 	{"set", TokenType::SET},
-	{"operator", TokenType::OPERATOR}};
+	{"operator", TokenType::OPERATOR},
+
+	// Other symbols
+	{"new", TokenType::NEW},
+	{"delete", TokenType::DELETE}};
 
 static HashMap<char, TokenType> singleCharacterTokenTable = {
 	{'(', TokenType::ROUND_OB},

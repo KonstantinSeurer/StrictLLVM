@@ -66,6 +66,8 @@ STRICT_ENUM(TokenType,
 
 			// Other symbols
 			IDENTIFIER,
+			NEW,
+			DELETE,
 			ROUND_OB,
 			ROUND_CB,
 			CURLY_OB,
