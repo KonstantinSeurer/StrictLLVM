@@ -39,7 +39,7 @@ public:
 	{
 		for (auto unit : units)
 		{
-			if (unit->getData()->getName() == name)
+			if (unit->GetName() == name)
 			{
 				return unit;
 			}

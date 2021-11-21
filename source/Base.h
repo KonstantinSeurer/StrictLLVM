@@ -7,6 +7,7 @@
 #include <unordered_set>
 #include <utility>
 #include <memory>
+#include <any>
 
 using Int8 = char;
 using UInt8 = unsigned char;
@@ -47,6 +48,8 @@ using HashSet = std::unordered_set<T>;
 
 template <typename K, typename V>
 using Pair = std::pair<K, V>;
+
+using Any = std::any;
 
 namespace strict
 {

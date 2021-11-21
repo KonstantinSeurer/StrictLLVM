@@ -5,6 +5,7 @@
 #include "Lexer.h"
 #include "ast/Module.h"
 #include "ast/Unit.h"
+#include "ast/ASTItem.h"
 
 #include <iostream>
 

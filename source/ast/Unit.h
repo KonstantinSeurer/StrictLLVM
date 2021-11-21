@@ -1,61 +1,53 @@
 #ifndef SOURCE_AST_UNIT
 #define SOURCE_AST_UNIT
 
-#include "../Base.h"
-#include "../Lexer.h"
+#include "../JSON.h"
+#include "ASTItem.h"
 
 STRICT_ENUM(UnitType, ERROR, CLASS, SINGLETON)
 
-class UnitData
-{
-private:
-	String name;
-
-public:
-	UnitData(const String &name)
-		: name(name)
-	{
-	}
-
-	virtual ~UnitData()
-	{
-	}
-
-	const String &getName() const
-	{
-		return name;
-	}
-};
-
-class Unit
+class Unit : public ASTItem
 {
 private:
 	UnitType type;
-	Array<Ref<Unit>> dependencies;
-	Ref<UnitData> data;
+	Array<String> dependencyNames;
+	String name;
 
 public:
-	Unit(UnitType type, const Array<Ref<Unit>> &dependencies, Ref<UnitData> data)
-		: type(type), dependencies(dependencies), data(data)
+	Unit(const TokenStream &lexer)
+		: ASTItem(ASTItemType::UNIT, lexer)
 	{
 	}
 
-	static Ref<Unit> Create(TokenStream &lexer);
+	Unit(const JSON &structureJSON);
 
-	UnitType getType() const
+public:
+	virtual Bool ParseStructure();
+	virtual Bool ParseImplementation();
+	virtual Bool Link();
+
+public:
+	UnitType GetUnitType() const
 	{
 		return type;
 	}
 
-	const Array<Ref<Unit>> &getDependencies() const
+	const Array<String> &GetDependencyNames() const
 	{
-		return dependencies;
+		return dependencyNames;
 	}
 
-	Ref<UnitData> getData() const
+	const String &GetName() const
 	{
-		return data;
+		return name;
 	}
+
+	void SetLexer(const TokenStream &lexer)
+	{
+		this->lexer = lexer;
+	}
+
+	JSON GetStructureJSON() const;
 };
 
 #endif /* SOURCE_AST_UNIT */

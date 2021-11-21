@@ -243,7 +243,7 @@ void BuildContext::PropagateBuildFlag()
 
 		for (auto &unit : module.second)
 		{
-			const String unitCachePath = moduleCachePath + "/" + unit.name + ".deps.json"; // TODO: What happens if the name contains '/' or '\'?
+			const String unitCachePath = moduleCachePath + "/" + unit.name + ".json";
 
 			if (unit.build)
 			{
@@ -255,11 +255,10 @@ void BuildContext::PropagateBuildFlag()
 				Ref<TokenStream> lexer = TokenStream::Create(unitSource);
 				lexerCache[unitSourcePath] = lexer;
 
-				JSON unitJSON(JSON::value_t::object);
+				unit.unit = Allocate<Unit>(*lexer);
+				unit.unit->ParseStructure();
 
-				lexer->Push();
-				ParseDependencyInformation(*lexer, unitJSON);
-				lexer->Revert();
+				JSON unitJSON = unit.unit->GetStructureJSON();
 
 				std::ofstream unitCacheStream(unitCachePath);
 				unitCacheStream << unitJSON;
@@ -269,62 +268,31 @@ void BuildContext::PropagateBuildFlag()
 				std::ifstream unitCacheStream(unitCachePath);
 				const String unitCacheContent = String(std::istreambuf_iterator<char>(unitCacheStream), std::istreambuf_iterator<char>());
 
-				const JSON unitJSON = JSON::parse(unitCacheContent);
+				unit.unit = Allocate<Unit>(JSON::parse(unitCacheContent));
 
-				for (const auto &moduleJSON : unitJSON.items())
+				for (const auto &dependencyName : unit.unit->GetDependencyNames())
 				{
-					const UInt64 moduleIndex = FindModule(String(moduleJSON.key()));
+					const auto moduleAndUnit = ResolveUnitIdentifier(dependencyName);
+					const UInt64 moduleIndex = FindModule(moduleAndUnit.first);
+					const UInt64 unitIndex = FindUnit(moduleIndex, moduleAndUnit.second);
 
-					for (const auto &unitJSON : moduleJSON.value())
-					{
-						const UInt64 unitIndex = FindUnit(moduleIndex, String(unitJSON));
+					unit.build |= taskList[moduleIndex].second[unitIndex].build;
+				}
 
-						unit.build |= taskList[moduleIndex].second[unitIndex].build;
-					}
+				if (unit.build)
+				{
+					const String unitSourcePath = module.first.canonicalPath + "/" + unit.fileName;
+
+					std::ifstream unitSourceStream(unitSourcePath);
+					const String unitSource = String(std::istreambuf_iterator<char>(unitSourceStream), std::istreambuf_iterator<char>());
+
+					Ref<TokenStream> lexer = TokenStream::Create(unitSource);
+					lexerCache[unitSourcePath] = lexer;
+
+					unit.unit->SetLexer(*lexer);
 				}
 			}
 		}
-	}
-}
-
-void BuildContext::ParseDependencyInformation(TokenStream &lexer, JSON &target) const
-{
-	while (lexer.HasNext())
-	{
-		const Token &token = lexer.Next();
-
-		if (token.type != TokenType::USING)
-		{
-			continue;
-		}
-
-		String dependency;
-		while (lexer.HasNext())
-		{
-			const Token &dependencyToken = lexer.Next();
-
-			if (dependencyToken.type == TokenType::EQUALS || dependencyToken.type == TokenType::SEMICOLON)
-			{
-				break;
-			}
-
-			if (dependencyToken.type == TokenType::IDENTIFIER)
-			{
-				dependency += dependencyToken.data.stringData;
-			}
-			else if (dependencyToken.type == TokenType::PERIOD)
-			{
-				dependency += '.';
-			}
-			else
-			{
-				std::cerr << "Unexpected identifier " << ToString(dependencyToken.type) << "!" << std::endl;
-				return;
-			}
-		}
-
-		auto moduleAndUnit = ResolveUnitIdentifier(dependency);
-		target[moduleAndUnit.first].push_back(moduleAndUnit.second);
 	}
 }
 

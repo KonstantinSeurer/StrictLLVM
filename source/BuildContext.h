@@ -3,6 +3,7 @@
 
 #include "Base.h"
 #include "ast/Module.h"
+#include "ast/Unit.h"
 #include "Lexer.h"
 
 struct UnitTask
@@ -11,6 +12,7 @@ public:
 	String name;
 	String fileName;
 	bool build;
+	Ref<Unit> unit;
 
 public:
 	UnitTask(const String &name)
