@@ -6,7 +6,7 @@
 #include <filesystem>
 #include <fstream>
 
-// TODO: What happend when source files get deleted
+// TODO: What happend when source files get deleted -> add cache cleanup pass for deleted/renamed files
 
 void UnitTask::InitFileName()
 {
@@ -25,12 +25,12 @@ bool operator==(const ModuleTask &a, const ModuleTask &b)
 	return a.name == b.name;
 }
 
-BuildContext::BuildContext(const Array<String> &modulePath, const String &cachePath, TargetFlags target)
-	: modulePath(modulePath), cachePath(cachePath), target(target)
+BuildContext::BuildContext(const Array<String> &modulePath, const String &outputPath, TargetFlags target)
+	: modulePath(modulePath), outputPath(outputPath), target(target)
 {
-	if (!std::filesystem::exists(cachePath))
+	if (!std::filesystem::exists(outputPath))
 	{
-		std::filesystem::create_directory(cachePath);
+		std::filesystem::create_directory(outputPath);
 	}
 }
 
@@ -147,7 +147,7 @@ void BuildContext::Build()
 
 void BuildContext::MarkChangedUnits(bool &build)
 {
-	const String lastWriteTimesFile = cachePath + "/lastWriteTimes.json";
+	const String lastWriteTimesFile = outputPath + "/lastWriteTimes.json";
 
 	JSON lastWriteTimesJSON;
 	if (std::filesystem::exists(lastWriteTimesFile))
@@ -234,7 +234,7 @@ void BuildContext::PropagateBuildFlag()
 			continue;
 		}
 
-		const String moduleCachePath = cachePath + "/" + module.first.name;
+		const String moduleCachePath = outputPath + "/" + module.first.name;
 
 		if (!std::filesystem::exists(moduleCachePath))
 		{

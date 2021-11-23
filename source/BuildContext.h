@@ -87,7 +87,7 @@ class BuildContext
 {
 private:
 	Array<String> modulePath;
-	String cachePath;
+	String outputPath;
 	TargetFlags target;
 
 	HashMap<String, Ref<TokenStream>> lexerCache;
@@ -98,7 +98,7 @@ private:
 	Array<Ref<Module>> modules;
 
 public:
-	BuildContext(const Array<String> &modulePath, const String &cachePath, TargetFlags target);
+	BuildContext(const Array<String> &modulePath, const String &outputPath, TargetFlags target);
 
 	String ResolveModulePath(const String &moduleName) const;
 	Pair<String, String> ResolveUnitIdentifier(const String &identifier) const;
