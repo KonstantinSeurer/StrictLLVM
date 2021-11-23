@@ -1,6 +1,7 @@
 
 #include "BuildContext.h"
 #include "Time.h"
+#include "ast/ASTParser.h"
 
 #include <iostream>
 #include <filesystem>
@@ -255,8 +256,7 @@ void BuildContext::PropagateBuildFlag()
 				Ref<TokenStream> lexer = TokenStream::Create(unitSource);
 				lexerCache[unitSourcePath] = lexer;
 
-				unit.unit = Allocate<Unit>(*lexer);
-				unit.unit->ParseStructure();
+				unit.unit = ParseUnit(*lexer);
 
 				JSON unitJSON = unit.unit->GetStructureJSON();
 
@@ -270,7 +270,7 @@ void BuildContext::PropagateBuildFlag()
 
 				unit.unit = Allocate<Unit>(JSON::parse(unitCacheContent));
 
-				for (const auto &dependencyName : unit.unit->GetDependencyNames())
+				for (const auto &dependencyName : unit.unit->dependencyNames)
 				{
 					const auto moduleAndUnit = ResolveUnitIdentifier(dependencyName);
 					const UInt64 moduleIndex = FindModule(moduleAndUnit.first);
@@ -289,7 +289,7 @@ void BuildContext::PropagateBuildFlag()
 					Ref<TokenStream> lexer = TokenStream::Create(unitSource);
 					lexerCache[unitSourcePath] = lexer;
 
-					unit.unit->SetLexer(*lexer);
+					unit.unit = ParseUnit(*lexer);
 				}
 			}
 		}

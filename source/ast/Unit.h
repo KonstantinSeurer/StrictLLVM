@@ -8,45 +8,20 @@ STRICT_ENUM(UnitType, ERROR, CLASS, SINGLETON)
 
 class Unit : public ASTItem
 {
-private:
-	UnitType type;
+public:
+	UnitType unitType;
 	Array<String> dependencyNames;
 	String name;
 
 public:
-	Unit(const TokenStream &lexer)
-		: ASTItem(ASTItemType::UNIT, lexer)
+	Unit()
+		: ASTItem(ASTItemType::UNIT)
 	{
 	}
 
 	Unit(const JSON &structureJSON);
 
 public:
-	virtual Bool ParseStructure();
-	virtual Bool ParseImplementation();
-	virtual Bool Link();
-
-public:
-	UnitType GetUnitType() const
-	{
-		return type;
-	}
-
-	const Array<String> &GetDependencyNames() const
-	{
-		return dependencyNames;
-	}
-
-	const String &GetName() const
-	{
-		return name;
-	}
-
-	void SetLexer(const TokenStream &lexer)
-	{
-		this->lexer = lexer;
-	}
-
 	JSON GetStructureJSON() const;
 };
 

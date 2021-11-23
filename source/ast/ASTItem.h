@@ -10,17 +10,12 @@ class ASTItem
 {
 protected:
 	ASTItemType type;
-	TokenStream lexer;
 
 public:
-	ASTItem(ASTItemType type, const TokenStream &lexer)
-		: type(type), lexer(lexer)
+	ASTItem(ASTItemType type)
+		: type(type)
 	{
 	}
-
-	virtual Bool ParseStructure() = 0;
-	virtual Bool ParseImplementation() = 0;
-	virtual Bool Link() = 0;
 
 public:
 	ASTItemType GetType() const

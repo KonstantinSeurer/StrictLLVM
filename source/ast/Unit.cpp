@@ -4,7 +4,7 @@
 #include <iostream>
 
 Unit::Unit(const JSON &structureJSON)
-	: ASTItem(ASTItemType::UNIT, TokenStream(nullptr))
+	: ASTItem(ASTItemType::UNIT)
 {
 	name = structureJSON["name"];
 
@@ -13,7 +13,7 @@ Unit::Unit(const JSON &structureJSON)
 		dependencyNames.push_back(String(dependencyName));
 	}
 }
-
+/*
 Bool Unit::ParseStructure()
 {
 	while (lexer.HasNext())
@@ -65,6 +65,7 @@ Bool Unit::Link()
 {
 	return true;
 }
+*/
 
 JSON Unit::GetStructureJSON() const
 {
