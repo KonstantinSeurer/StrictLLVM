@@ -168,22 +168,32 @@ int main(int argc, const char **args)
 	}
 
 	Array<String> modulePath;
+	String outputPath = String(std::filesystem::current_path()) + "/output";
+
 	for (const auto &flag : valueFlags)
 	{
 		if (flag.first == Flag::MODULE_PATH)
 		{
 			Split(flag.second, ';', modulePath);
-			break;
+		}
+		else if (flag.first == Flag::OUTPUT_PATH)
+		{
+			outputPath = flag.second;
 		}
 	}
 
-	String outputPath = String(std::filesystem::current_path()) + "/output";
-	for (const auto &flag : valueFlags)
+	for (const Flag &flag : flags)
 	{
-		if (flag.first == Flag::OUTPUT_PATH)
+		if (flag == Flag::HELP)
 		{
-			outputPath = flag.second;
-			break;
+			PrintHelp();
+		}
+		else if (flag == Flag::CLEAN)
+		{
+			if (std::filesystem::exists(outputPath))
+			{
+				std::filesystem::remove_all(outputPath);
+			}
 		}
 	}
 
