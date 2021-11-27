@@ -13,59 +13,6 @@ Unit::Unit(const JSON &structureJSON)
 		dependencyNames.push_back(String(dependencyName));
 	}
 }
-/*
-Bool Unit::ParseStructure()
-{
-	while (lexer.HasNext())
-	{
-		const Token &token = lexer.Next();
-
-		if (token.type != TokenType::USING)
-		{
-			continue;
-		}
-
-		String dependency;
-		while (lexer.HasNext())
-		{
-			const Token &dependencyToken = lexer.Next();
-
-			if (dependencyToken.type == TokenType::EQUALS || dependencyToken.type == TokenType::SEMICOLON)
-			{
-				break;
-			}
-
-			if (dependencyToken.type == TokenType::IDENTIFIER)
-			{
-				dependency += dependencyToken.data.stringData;
-			}
-			else if (dependencyToken.type == TokenType::PERIOD)
-			{
-				dependency += '.';
-			}
-			else
-			{
-				std::cerr << "Unexpected identifier " << ToString(dependencyToken.type) << "!" << std::endl;
-				return false;
-			}
-		}
-
-		dependencyNames.push_back(dependency);
-	}
-
-	return true;
-}
-
-Bool Unit::ParseImplementation()
-{
-	return true;
-}
-
-Bool Unit::Link()
-{
-	return true;
-}
-*/
 
 JSON Unit::GetStructureJSON() const
 {

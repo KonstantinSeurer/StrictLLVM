@@ -2,6 +2,7 @@
 #include "BuildContext.h"
 #include "Time.h"
 #include "ast/ASTParser.h"
+#include "ErrorStream.h"
 
 #include <iostream>
 #include <filesystem>
@@ -253,10 +254,13 @@ void BuildContext::PropagateBuildFlag()
 				std::ifstream unitSourceStream(unitSourcePath);
 				const String unitSource = String(std::istreambuf_iterator<char>(unitSourceStream), std::istreambuf_iterator<char>());
 
-				Ref<TokenStream> lexer = TokenStream::Create(unitSource);
+				Ref<Lexer> lexer = Lexer::Create(unitSource);
 				lexerCache[unitSourcePath] = lexer;
 
-				unit.unit = ParseUnit(*lexer);
+				ErrorStream err(unit.fileName, [](const String &string)
+								{ std::cerr << string; });
+
+				unit.unit = ParseUnit(err, *lexer);
 
 				JSON unitJSON = unit.unit->GetStructureJSON();
 
@@ -286,10 +290,13 @@ void BuildContext::PropagateBuildFlag()
 					std::ifstream unitSourceStream(unitSourcePath);
 					const String unitSource = String(std::istreambuf_iterator<char>(unitSourceStream), std::istreambuf_iterator<char>());
 
-					Ref<TokenStream> lexer = TokenStream::Create(unitSource);
+					Ref<Lexer> lexer = Lexer::Create(unitSource);
 					lexerCache[unitSourcePath] = lexer;
 
-					unit.unit = ParseUnit(*lexer);
+					ErrorStream err(unit.fileName, [](const String &string)
+									{ std::cerr << string; });
+
+					unit.unit = ParseUnit(err, *lexer);
 				}
 			}
 		}

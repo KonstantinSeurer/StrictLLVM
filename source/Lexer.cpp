@@ -4,7 +4,7 @@
 #include <string.h>
 #include <iostream>
 
-TokenStream::~TokenStream()
+Lexer::~Lexer()
 {
 	if (tokens.use_count() == 1)
 	{
@@ -118,7 +118,7 @@ static char convertEscapeSequence(char character, char quote)
 	return escapeSequenceTable.at(character);
 }
 
-Ref<TokenStream> TokenStream::Create(const String &source)
+Ref<Lexer> Lexer::Create(const String &source)
 {
 	Ref<Array<Token>> tokens = Allocate<Array<Token>>();
 
@@ -149,6 +149,8 @@ Ref<TokenStream> TokenStream::Create(const String &source)
 		if (isdigit(currentChar))
 		{
 			// Numeric literal
+			Token token;
+			token.characterIndex = index;
 
 			const UInt64 startIndex = index;
 			for (; index < source.length() && (isalnum(source[index]) || source[index] == '.'); index++)
@@ -161,7 +163,6 @@ Ref<TokenStream> TokenStream::Create(const String &source)
 				{
 					if (string.length() == 1)
 					{
-						Token token;
 						token.type = TokenType::UINT_LITERAL;
 						token.data.uintData = 0;
 						tokens->push_back(token);
@@ -182,7 +183,6 @@ Ref<TokenStream> TokenStream::Create(const String &source)
 							break;
 						}
 
-						Token token;
 						token.type = TokenType::UINT_LITERAL;
 						token.data.uintData = strtoull(string.c_str(), nullptr, base);
 						tokens->push_back(token);
@@ -190,14 +190,12 @@ Ref<TokenStream> TokenStream::Create(const String &source)
 				}
 				else if (string[0] == '-')
 				{
-					Token token;
 					token.type = TokenType::INT_LITERAL;
 					token.data.intData = strtoll(string.c_str(), nullptr, 10);
 					tokens->push_back(token);
 				}
 				else
 				{
-					Token token;
 					token.type = TokenType::UINT_LITERAL;
 					token.data.uintData = strtoull(string.c_str(), nullptr, 10);
 					tokens->push_back(token);
@@ -205,7 +203,6 @@ Ref<TokenStream> TokenStream::Create(const String &source)
 			}
 			else
 			{
-				Token token;
 				token.type = TokenType::FLOAT_LITERAL;
 				token.data.floatData = strtod(string.c_str(), nullptr);
 				tokens->push_back(token);
@@ -213,6 +210,9 @@ Ref<TokenStream> TokenStream::Create(const String &source)
 		}
 		else if (isalpha(currentChar))
 		{
+			Token token;
+			token.characterIndex = index;
+
 			// Identifyer of keyword
 			const UInt64 startIndex = index;
 			for (; index < source.length() && isalnum(source[index]); index++)
@@ -221,20 +221,17 @@ Ref<TokenStream> TokenStream::Create(const String &source)
 
 			if (keyWordTable.find(string) != keyWordTable.end())
 			{
-				Token token;
 				token.type = keyWordTable.at(string);
 				tokens->push_back(token);
 			}
 			else if (string == "true")
 			{
-				Token token;
 				token.type = TokenType::UINT_LITERAL;
 				token.data.uintData = 1;
 				tokens->push_back(token);
 			}
 			else if (string == "false" || string == "null")
 			{
-				Token token;
 				token.type = TokenType::UINT_LITERAL;
 				token.data.uintData = 0;
 				tokens->push_back(token);
@@ -252,6 +249,9 @@ Ref<TokenStream> TokenStream::Create(const String &source)
 		}
 		else if (currentChar == '\'')
 		{
+			Token token;
+			token.characterIndex = index;
+
 			// character literal (type = INT_LITERAL)
 			index++;
 
@@ -270,13 +270,15 @@ Ref<TokenStream> TokenStream::Create(const String &source)
 			}
 			index++;
 
-			Token token;
 			token.type = TokenType::INT_LITERAL;
 			token.data.intData = value;
 			tokens->push_back(token);
 		}
 		else if (currentChar == '\"')
 		{
+			Token token;
+			token.characterIndex = index;
+
 			// STRING_LITERAL
 			index++;
 
@@ -308,7 +310,6 @@ Ref<TokenStream> TokenStream::Create(const String &source)
 			char *data = new char[string.length() + 1];
 			strncpy(data, string.c_str(), string.length());
 
-			Token token;
 			token.type = TokenType::STRING_LITERAL;
 			token.data.stringData = data;
 			tokens->push_back(token);
@@ -322,6 +323,7 @@ Ref<TokenStream> TokenStream::Create(const String &source)
 			}
 
 			Token token;
+			token.characterIndex = index;
 			token.type = singleCharacterTokenTable.at(currentChar);
 			tokens->push_back(token);
 
@@ -329,37 +331,37 @@ Ref<TokenStream> TokenStream::Create(const String &source)
 		}
 	}
 
-	return Allocate<TokenStream>(tokens);
+	return Allocate<Lexer>(Allocate<String>(source), tokens);
 }
 
-const Token &TokenStream::Get() const
+const Token &Lexer::Get() const
 {
 	return tokens->operator[](offset);
 }
 
-const Token &TokenStream::Next()
+const Token &Lexer::Next()
 {
 	const Token &result = Get();
 	offset++;
 	return result;
 }
 
-Bool TokenStream::HasNext() const
+Bool Lexer::HasNext() const
 {
-	return offset < tokens->size() - 1;
+	return offset < length - 1;
 }
 
-void TokenStream::Push()
+void Lexer::Push()
 {
 	stack.push_back(offset);
 }
 
-void TokenStream::Pop()
+void Lexer::Pop()
 {
 	stack.erase(stack.begin() + stack.size() - 1);
 }
 
-void TokenStream::Revert()
+void Lexer::Revert()
 {
 	offset = stack[stack.size() - 1];
 	Pop();

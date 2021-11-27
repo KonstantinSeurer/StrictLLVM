@@ -2,8 +2,9 @@
 #define SOURCE_AST_ASTPARSER
 
 #include "../Lexer.h"
+#include "../ErrorStream.h"
 #include "Unit.h"
 
-Ref<Unit> ParseUnit(TokenStream lexer);
+Ref<Unit> ParseUnit(ErrorStream &err, Lexer lexer);
 
 #endif /* SOURCE_AST_ASTPARSER */

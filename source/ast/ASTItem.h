@@ -4,7 +4,7 @@
 #include "../Base.h"
 #include "../Lexer.h"
 
-STRICT_ENUM(ASTItemType, MODULE, UNIT)
+STRICT_ENUM(ASTItemType, MODULE, UNIT, CLASS_DECLARATION, ERROR_DECLARATION, TYPE_DECLARATION)
 
 class ASTItem
 {

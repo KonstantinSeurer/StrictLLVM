@@ -96,26 +96,29 @@ const String &ToString(TokenType type);
 struct Token
 {
 public:
-	TokenType type;
 	TokenData data;
+	TokenType type;
+	UInt32 characterIndex;
 };
 
-class TokenStream
+class Lexer
 {
 private:
+	Ref<const String> source;
 	Ref<const Array<Token>> tokens;
 	Int64 offset;
+	Int64 length;
 	Array<Int64> stack;
 
 public:
-	TokenStream(Ref<const Array<Token>> tokens)
-		: tokens(tokens), offset(0)
+	Lexer(Ref<const String> source, Ref<const Array<Token>> tokens)
+		: source(source), tokens(tokens), offset(0), length(tokens->size())
 	{
 	}
 
-	~TokenStream();
+	~Lexer();
 
-	static Ref<TokenStream> Create(const String &source);
+	static Ref<Lexer> Create(const String &source);
 
 	const Token &Get() const;
 	const Token &Next();
@@ -124,6 +127,11 @@ public:
 	void Push();
 	void Pop();
 	void Revert();
+
+	const String &GetSource() const
+	{
+		return *source;
+	}
 };
 
 #endif /* SOURCE_LEXER */

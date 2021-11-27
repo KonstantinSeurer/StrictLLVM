@@ -90,7 +90,7 @@ private:
 	String outputPath;
 	TargetFlags target;
 
-	HashMap<String, Ref<TokenStream>> lexerCache;
+	HashMap<String, Ref<Lexer>> lexerCache;
 
 	HashSet<String> moduleSet;
 	Array<Pair<ModuleTask, Array<UnitTask>>> taskList;
@@ -111,7 +111,7 @@ private:
 	void AddModuleToLastWriteJSON(Pair<ModuleTask, Array<UnitTask>> &module, JSON &target);
 
 	void PropagateBuildFlag();
-	void ParseDependencyInformation(TokenStream &lexer, JSON &target) const;
+	void ParseDependencyInformation(Lexer &lexer, JSON &target) const;
 
 	void ReduceTasks();
 

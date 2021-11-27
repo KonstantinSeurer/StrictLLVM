@@ -3,15 +3,14 @@
 
 #include "../JSON.h"
 #include "ASTItem.h"
-
-STRICT_ENUM(UnitType, ERROR, CLASS, SINGLETON)
+#include "Declaration.h"
 
 class Unit : public ASTItem
 {
 public:
-	UnitType unitType;
 	Array<String> dependencyNames;
 	String name;
+	Ref<UnitDeclaration> declaredType;
 
 public:
 	Unit()

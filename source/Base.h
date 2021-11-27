@@ -5,6 +5,7 @@
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
+#include <functional>
 #include <utility>
 #include <memory>
 #include <any>
@@ -50,6 +51,9 @@ template <typename K, typename V>
 using Pair = std::pair<K, V>;
 
 using Any = std::any;
+
+template <typename Signature>
+using Function = std::function<Signature>;
 
 namespace strict
 {
