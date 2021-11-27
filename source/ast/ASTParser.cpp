@@ -47,19 +47,76 @@ static HashMap<TokenType, DeclarationFlags> declarationFlags = {
 
 static HashSet<TokenType> unitDeclarationTypeSet = {TokenType::ERROR, TokenType::CLASS, TokenType::SINGLETON, TokenType::TYPE};
 
+#define ASSERT_TOKEN(err, lexer, tokenType)                                                   \
+	if (lexer.Get().type != tokenType)                                                        \
+	{                                                                                         \
+		err.PrintError(lexer.Get(), String("Unexpected token ") + ToString(tokenType) + "!"); \
+		return nullptr;                                                                       \
+	}
+
+#define IFERR_RETURN(err)      \
+	if (err.HasErrorOccured()) \
+	{                          \
+		return nullptr;        \
+	}
+
 static Ref<UnitDeclaration> ParseErrorDeclaration(ErrorStream &err, Lexer &lexer)
 {
-	return nullptr;
+	Ref<ErrorDeclaration> result = Allocate<ErrorDeclaration>();
+
+	ASSERT_TOKEN(err, lexer, TokenType::IDENTIFIER)
+	lexer.Next(); // TODO: Assert that the identifier matches the unit name
+
+	if (lexer.Get().type == TokenType::EQUALS)
+	{
+		lexer.Next();
+
+		result->hasValue = true;
+
+		const Token &valueToken = lexer.Next();
+		if (valueToken.type == TokenType::INT_LITERAL)
+		{
+			result->value = valueToken.data.intData;
+		}
+		else if (valueToken.type == TokenType::UINT_LITERAL)
+		{
+			result->value = valueToken.data.uintData;
+		}
+		else
+		{
+			err.PrintError(lexer.Get(), String("Unexpected token ") + ToString(valueToken.type) + "!");
+			return nullptr;
+		}
+
+		ASSERT_TOKEN(err, lexer, TokenType::SEMICOLON)
+		lexer.Next();
+	}
+	else if (lexer.Get().type == TokenType::SEMICOLON)
+	{
+		result->hasValue = false;
+		lexer.Next();
+	}
+	else
+	{
+		err.PrintError(lexer.Get(), String("Unexpected token ") + ToString(lexer.Get().type) + "!");
+		return nullptr;
+	}
+
+	return result;
 }
 
 static Ref<UnitDeclaration> ParseClassDeclaration(ErrorStream &err, Lexer &lexer, DeclarationFlags flags, bool singleton)
 {
-	return nullptr;
+	Ref<ClassDeclaration> result = Allocate<ClassDeclaration>();
+
+	return result;
 }
 
 static Ref<UnitDeclaration> ParseTypeDeclaration(ErrorStream &err, Lexer &lexer)
 {
-	return nullptr;
+	Ref<TypeDeclaration> result = Allocate<TypeDeclaration>();
+
+	return result;
 }
 
 static Ref<UnitDeclaration> ParseUnitDeclaration(ErrorStream &err, Lexer &lexer)
@@ -103,6 +160,8 @@ static Ref<UnitDeclaration> ParseUnitDeclaration(ErrorStream &err, Lexer &lexer)
 			return nullptr;
 		}
 
+		IFERR_RETURN(err)
+
 		declaration->visibility = visibility;
 
 		return declaration;
@@ -117,11 +176,13 @@ Ref<Unit> ParseUnit(ErrorStream &err, Lexer lexer)
 
 	while (lexer.HasNext())
 	{
-		const Token &token = lexer.Next();
+		const Token &token = lexer.Get();
 
 		if (token.type == TokenType::USING)
 		{
+			lexer.Next();
 			unit->dependencyNames.push_back(ParseUsing(err, lexer));
+			IFERR_RETURN(err)
 			continue;
 		}
 
@@ -138,6 +199,7 @@ Ref<Unit> ParseUnit(ErrorStream &err, Lexer lexer)
 		}
 
 		unit->declaredType = ParseUnitDeclaration(err, lexer);
+		IFERR_RETURN(err)
 	}
 
 	return unit;

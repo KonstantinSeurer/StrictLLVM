@@ -111,7 +111,7 @@ void BuildContext::AddModule(const String &name)
 
 void BuildContext::Build()
 {
-	std::cout << "Generating rebuild graph...";
+	std::cout << "Generating rebuild graph..." << std::endl;
 	Time graphGenStart;
 
 	bool build = false;
@@ -124,7 +124,7 @@ void BuildContext::Build()
 	}
 
 	std::cout.precision(1);
-	std::cout << " (" << (Time() - graphGenStart).milliSeconds() << "ms)" << std::endl;
+	std::cout << "(" << (Time() - graphGenStart).milliSeconds() << "ms)" << std::endl;
 
 	if (!build)
 	{
@@ -257,10 +257,17 @@ void BuildContext::PropagateBuildFlag()
 				Ref<Lexer> lexer = Lexer::Create(unitSource);
 				lexerCache[unitSourcePath] = lexer;
 
-				ErrorStream err(unit.fileName, [](const String &string)
-								{ std::cerr << string; });
+				ErrorStream err(
+					unit.fileName, [](const String &string)
+					{ std::cerr << string; },
+					lexer);
 
 				unit.unit = ParseUnit(err, *lexer);
+
+				if (err.HasErrorOccured())
+				{
+					return;
+				}
 
 				JSON unitJSON = unit.unit->GetStructureJSON();
 
@@ -293,10 +300,17 @@ void BuildContext::PropagateBuildFlag()
 					Ref<Lexer> lexer = Lexer::Create(unitSource);
 					lexerCache[unitSourcePath] = lexer;
 
-					ErrorStream err(unit.fileName, [](const String &string)
-									{ std::cerr << string; });
+					ErrorStream err(
+						unit.fileName, [](const String &string)
+						{ std::cerr << string; },
+						lexer);
 
 					unit.unit = ParseUnit(err, *lexer);
+
+					if (err.HasErrorOccured())
+					{
+						return;
+					}
 				}
 			}
 		}
