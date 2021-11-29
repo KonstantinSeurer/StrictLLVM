@@ -241,7 +241,6 @@ Ref<Lexer> Lexer::Create(const String &source)
 				char *data = new char[string.length() + 1];
 				strcpy(data, string.c_str());
 
-				Token token;
 				token.type = TokenType::IDENTIFIER;
 				token.data.stringData = data;
 				tokens->push_back(token);
