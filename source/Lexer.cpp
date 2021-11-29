@@ -213,7 +213,7 @@ Ref<Lexer> Lexer::Create(const String &source)
 			Token token;
 			token.characterIndex = index;
 
-			// Identifyer of keyword
+			// Identifyer or keyword
 			const UInt64 startIndex = index;
 			for (; index < source.length() && isalnum(source[index]); index++)
 				;
