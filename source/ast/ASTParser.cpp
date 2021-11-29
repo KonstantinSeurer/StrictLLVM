@@ -1,6 +1,5 @@
 
 #include "ASTParser.h"
-#include "Declaration.h"
 
 #include <iostream>
 
@@ -35,13 +34,11 @@ static String ParseUsing(ErrorStream &err, Lexer &lexer)
 	return dependency;
 }
 
-static HashMap<TokenType, VisibilityFlags> visibilityFlags = {
-	{TokenType::PRIVATE, VisibilityFlags::PRIVATE},
-	{TokenType::PROTECTED, VisibilityFlags::PROTECTED},
-	{TokenType::INTERNAL, VisibilityFlags::INTERNAL},
-	{TokenType::PUBLIC, VisibilityFlags::PUBLIC}};
-
 static HashMap<TokenType, DeclarationFlags> declarationFlags = {
+	{TokenType::PRIVATE, DeclarationFlags::PRIVATE},
+	{TokenType::PROTECTED, DeclarationFlags::PROTECTED},
+	{TokenType::INTERNAL, DeclarationFlags::INTERNAL},
+	{TokenType::PUBLIC, DeclarationFlags::PUBLIC},
 	{TokenType::MUT, DeclarationFlags::MUT},
 	{TokenType::IMPURE, DeclarationFlags::IMPURE}};
 
@@ -60,12 +57,17 @@ static HashSet<TokenType> unitDeclarationTypeSet = {TokenType::ERROR, TokenType:
 		return nullptr;        \
 	}
 
-static Ref<UnitDeclaration> ParseErrorDeclaration(ErrorStream &err, Lexer &lexer)
+static Ref<UnitDeclaration> ParseErrorDeclaration(ErrorStream &err, Lexer &lexer, const String &unitName)
 {
 	Ref<ErrorDeclaration> result = Allocate<ErrorDeclaration>();
 
 	ASSERT_TOKEN(err, lexer, TokenType::IDENTIFIER)
-	lexer.Next(); // TODO: Assert that the identifier matches the unit name
+	if (lexer.Get().data.stringData != unitName)
+	{
+		err.PrintError(lexer.Get(), "The declared name must match the unit name!");
+		return nullptr;
+	}
+	lexer.Next();
 
 	if (lexer.Get().type == TokenType::EQUALS)
 	{
@@ -105,72 +107,164 @@ static Ref<UnitDeclaration> ParseErrorDeclaration(ErrorStream &err, Lexer &lexer
 	return result;
 }
 
-static Ref<UnitDeclaration> ParseClassDeclaration(ErrorStream &err, Lexer &lexer, DeclarationFlags flags, bool singleton)
+static Ref<DataType> ParseDataType(ErrorStream &err, Lexer &lexer)
 {
-	Ref<ClassDeclaration> result = Allocate<ClassDeclaration>();
+	Ref<DataType> result = Allocate<DataType>();
 
 	return result;
 }
 
-static Ref<UnitDeclaration> ParseTypeDeclaration(ErrorStream &err, Lexer &lexer)
+static Ref<Template> ParseTemplate(ErrorStream &err, Lexer &lexer)
+{
+	Ref<Template> result = Allocate<Template>();
+
+	// TODO: implement, this implementation only skips the template
+	while (lexer.HasNext())
+	{
+		const Token &token = lexer.Next();
+
+		if (token.type == TokenType::GREATER)
+		{
+			break;
+		}
+	}
+
+	return result;
+}
+
+static DeclarationFlags ParseDeclarationFlags(Lexer &lexer)
+{
+	DeclarationFlags flags = DeclarationFlags::PRIVATE;
+
+	while (lexer.HasNext())
+	{
+		const Token &token = lexer.Get();
+
+		if (declarationFlags.find(token.type) != declarationFlags.end())
+		{
+			flags = (DeclarationFlags)((UInt64)flags | (UInt64)declarationFlags.at(token.type));
+			lexer.Next();
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	return flags;
+}
+
+static Ref<MemberDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &lexer, const String &unitName)
+{
+	Ref<MemberDeclaration> result = Allocate<MemberDeclaration>(ASTItemType::MEMBER_VARIABLE_DECLARATION);
+	result->flags = ParseDeclarationFlags(lexer);
+
+	bool isConstructor = false;
+
+	if (lexer.Get().type == TokenType::IDENTIFIER && lexer.Get().data.stringData == unitName)
+	{
+		lexer.Next();
+
+		isConstructor = true;
+	}
+	else
+	{
+		result->dataType = ParseDataType(err, lexer);
+		IFERR_RETURN(err)
+	}
+
+	return result;
+}
+
+static Ref<UnitDeclaration> ParseClassDeclaration(ErrorStream &err, Lexer &lexer, bool singleton, const String &unitName)
+{
+	Ref<ClassDeclaration> result = Allocate<ClassDeclaration>();
+	result->isSingleton = singleton;
+
+	ASSERT_TOKEN(err, lexer, TokenType::IDENTIFIER)
+	if (lexer.Get().data.stringData != unitName)
+	{
+		err.PrintError(lexer.Get(), "The declared name must match the unit name!");
+		lexer.Next();
+	}
+
+	if (lexer.Get().type == TokenType::LESS)
+	{
+		result->typeTemplate = ParseTemplate(err, lexer);
+		IFERR_RETURN(err)
+	}
+
+	if (lexer.Get().type == TokenType::COLON)
+	{
+		lexer.Next();
+		// TODO: implement inheritance
+	}
+
+	ASSERT_TOKEN(err, lexer, TokenType::CURLY_OB)
+	lexer.Next();
+
+	while (lexer.HasNext())
+	{
+		const Token &token = lexer.Next();
+
+		if (token.type == TokenType::CURLY_CB)
+		{
+			break;
+		}
+
+		result->members.push_back(ParseMemberDeclaration(err, lexer, unitName));
+	}
+
+	return result;
+}
+
+static Ref<UnitDeclaration> ParseTypeDeclaration(ErrorStream &err, Lexer &lexer, const String &unitName)
 {
 	Ref<TypeDeclaration> result = Allocate<TypeDeclaration>();
 
 	return result;
 }
 
-static Ref<UnitDeclaration> ParseUnitDeclaration(ErrorStream &err, Lexer &lexer)
+static Ref<UnitDeclaration> ParseUnitDeclaration(ErrorStream &err, Lexer &lexer, const String &unitName)
 {
-	VisibilityFlags visibility = visibilityFlags.at(lexer.Next().type);
-	DeclarationFlags flags = DeclarationFlags::NONE;
+	DeclarationFlags flags = ParseDeclarationFlags(lexer);
 
-	while (lexer.HasNext())
+	const Token &token = lexer.Next();
+
+	if (unitDeclarationTypeSet.find(token.type) == unitDeclarationTypeSet.end())
 	{
-		const Token &token = lexer.Next();
-
-		if (declarationFlags.find(token.type) != declarationFlags.end())
-		{
-			flags = (DeclarationFlags)((UInt64)flags | (UInt64)declarationFlags.at(token.type));
-			continue;
-		}
-
-		if (unitDeclarationTypeSet.find(token.type) == unitDeclarationTypeSet.end())
-		{
-			err.PrintError(token, "Expected declaration type!");
-			return nullptr;
-		}
-
-		Ref<UnitDeclaration> declaration;
-
-		switch (token.type)
-		{
-		case TokenType::ERROR:
-			declaration = ParseErrorDeclaration(err, lexer);
-			break;
-		case TokenType::CLASS:
-			declaration = ParseClassDeclaration(err, lexer, flags, false);
-			break;
-		case TokenType::SINGLETON:
-			declaration = ParseClassDeclaration(err, lexer, flags, true);
-			break;
-		case TokenType::TYPE:
-			declaration = ParseTypeDeclaration(err, lexer);
-			break;
-		default:
-			return nullptr;
-		}
-
-		IFERR_RETURN(err)
-
-		declaration->visibility = visibility;
-
-		return declaration;
+		err.PrintError(token, "Expected declaration type!");
+		return nullptr;
 	}
 
-	return nullptr;
+	Ref<UnitDeclaration> declaration;
+
+	switch (token.type)
+	{
+	case TokenType::ERROR:
+		declaration = ParseErrorDeclaration(err, lexer, unitName);
+		break;
+	case TokenType::CLASS:
+		declaration = ParseClassDeclaration(err, lexer, false, unitName);
+		break;
+	case TokenType::SINGLETON:
+		declaration = ParseClassDeclaration(err, lexer, true, unitName);
+		break;
+	case TokenType::TYPE:
+		declaration = ParseTypeDeclaration(err, lexer, unitName);
+		break;
+	default:
+		return nullptr;
+	}
+
+	declaration->flags = flags;
+
+	IFERR_RETURN(err)
+
+	return declaration;
 }
 
-Ref<Unit> ParseUnit(ErrorStream &err, Lexer lexer)
+Ref<Unit> ParseUnit(ErrorStream &err, Lexer lexer, const String &name)
 {
 	Ref<Unit> unit = Allocate<Unit>();
 
@@ -186,7 +280,7 @@ Ref<Unit> ParseUnit(ErrorStream &err, Lexer lexer)
 			continue;
 		}
 
-		if (visibilityFlags.find(token.type) == visibilityFlags.end())
+		if (declarationFlags.find(token.type) == declarationFlags.end())
 		{
 			err.PrintError(token, "Expected visibility flag!");
 			return nullptr;
@@ -198,7 +292,7 @@ Ref<Unit> ParseUnit(ErrorStream &err, Lexer lexer)
 			return nullptr;
 		}
 
-		unit->declaredType = ParseUnitDeclaration(err, lexer);
+		unit->declaredType = ParseUnitDeclaration(err, lexer, name);
 		IFERR_RETURN(err)
 	}
 

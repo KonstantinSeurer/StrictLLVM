@@ -3,9 +3,7 @@
 #include "Base.h"
 
 #include "Lexer.h"
-#include "ast/Module.h"
-#include "ast/ASTItem.h"
-#include "ast/Declaration.h"
+#include "ast/AST.h"
 
 #include <iostream>
 

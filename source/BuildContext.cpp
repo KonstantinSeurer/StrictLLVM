@@ -262,7 +262,7 @@ void BuildContext::PropagateBuildFlag()
 					{ std::cerr << string; },
 					lexer);
 
-				unit.unit = ParseUnit(err, *lexer);
+				unit.unit = ParseUnit(err, *lexer, unit.name);
 
 				if (err.HasErrorOccured())
 				{
@@ -305,7 +305,7 @@ void BuildContext::PropagateBuildFlag()
 						{ std::cerr << string; },
 						lexer);
 
-					unit.unit = ParseUnit(err, *lexer);
+					unit.unit = ParseUnit(err, *lexer, unit.name);
 
 					if (err.HasErrorOccured())
 					{

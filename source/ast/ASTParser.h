@@ -3,8 +3,8 @@
 
 #include "../Lexer.h"
 #include "../ErrorStream.h"
-#include "Unit.h"
+#include "AST.h"
 
-Ref<Unit> ParseUnit(ErrorStream &err, Lexer lexer);
+Ref<Unit> ParseUnit(ErrorStream &err, Lexer lexer, const String &name);
 
 #endif /* SOURCE_AST_ASTPARSER */

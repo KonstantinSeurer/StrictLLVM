@@ -2,8 +2,7 @@
 #define SOURCE_BUILDCONTEXT
 
 #include "Base.h"
-#include "ast/Module.h"
-#include "ast/Unit.h"
+#include "ast/AST.h"
 #include "Lexer.h"
 
 struct UnitTask
