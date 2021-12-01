@@ -44,11 +44,11 @@ static HashMap<TokenType, DeclarationFlags> declarationFlags = {
 
 static HashSet<TokenType> unitDeclarationTypeSet = {TokenType::ERROR, TokenType::CLASS, TokenType::SINGLETON, TokenType::TYPE};
 
-#define ASSERT_TOKEN(err, lexer, tokenType)                                                   \
-	if (lexer.Get().type != tokenType)                                                        \
-	{                                                                                         \
-		err.PrintError(lexer.Get(), String("Unexpected token ") + ToString(tokenType) + "!"); \
-		return nullptr;                                                                       \
+#define ASSERT_TOKEN(err, lexer, tokenType)                                                                                               \
+	if (lexer.Get().type != tokenType)                                                                                                    \
+	{                                                                                                                                     \
+		err.PrintError(lexer.Get(), String("Unexpected token ") + ToString(lexer.Get().type) + " expected " + ToString(tokenType) + "!"); \
+		return nullptr;                                                                                                                   \
 	}
 
 #define IFERR_RETURN(err)      \
@@ -56,6 +56,28 @@ static HashSet<TokenType> unitDeclarationTypeSet = {TokenType::ERROR, TokenType:
 	{                          \
 		return nullptr;        \
 	}
+
+static DeclarationFlags ParseDeclarationFlags(Lexer &lexer)
+{
+	DeclarationFlags flags = DeclarationFlags::PRIVATE;
+
+	while (lexer.HasNext())
+	{
+		const Token &token = lexer.Get();
+
+		if (declarationFlags.find(token.type) != declarationFlags.end())
+		{
+			flags = (DeclarationFlags)((UInt64)flags | (UInt64)declarationFlags.at(token.type));
+			lexer.Next();
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	return flags;
+}
 
 static Ref<UnitDeclaration> ParseErrorDeclaration(ErrorStream &err, Lexer &lexer, const String &unitName)
 {
@@ -107,9 +129,93 @@ static Ref<UnitDeclaration> ParseErrorDeclaration(ErrorStream &err, Lexer &lexer
 	return result;
 }
 
+static Ref<Template> ParseTemplate(ErrorStream &err, Lexer &lexer);
+
 static Ref<DataType> ParseDataType(ErrorStream &err, Lexer &lexer)
 {
-	Ref<DataType> result = Allocate<DataType>();
+	Ref<DataType> result;
+
+	DeclarationFlags flags = ParseDeclarationFlags(lexer);
+
+	if (lexer.Get().type == TokenType::ROUND_OB)
+	{
+		lexer.Next();
+
+		result = ParseDataType(err, lexer);
+		IFERR_RETURN(err)
+
+		result->flags = (DeclarationFlags)((UInt64)result->flags | (UInt64)flags);
+	}
+	else
+	{
+		if (lexer.Get().type == TokenType::TYPE)
+		{
+			lexer.Next();
+
+			result = Allocate<DataType>();
+			result->dataTypeType = DataTypeType::TYPE;
+		}
+		else
+		{
+			Ref<ValueType> valueResult = Allocate<ValueType>();
+			valueResult->flags = flags;
+
+			ASSERT_TOKEN(err, lexer, TokenType::IDENTIFIER)
+			valueResult->name = lexer.Next().data.stringData;
+
+			if (lexer.Get().type == TokenType::LESS)
+			{
+				lexer.Next();
+
+				valueResult->typeTemplate = ParseTemplate(err, lexer);
+				IFERR_RETURN(err)
+			}
+
+			result = valueResult;
+		}
+	}
+
+	while (lexer.HasNext())
+	{
+		if (lexer.Get().type == TokenType::ROUND_OB)
+		{
+			lexer.Next();
+			break;
+		}
+
+		Ref<PointerType> pointerResult = Allocate<PointerType>();
+		pointerResult->value = result;
+
+		switch (lexer.Get().type)
+		{
+		case TokenType::STAR:
+		{
+			pointerResult->dataTypeType = DataTypeType::POINTER;
+			break;
+		}
+		case TokenType::AND:
+		{
+			pointerResult->dataTypeType = DataTypeType::REFERENCE;
+			break;
+		}
+		case TokenType::SQUARE_OB:
+		{
+			pointerResult->dataTypeType = DataTypeType::ARRAY;
+			lexer.Next();
+
+			// TODO: parse size expression
+
+			ASSERT_TOKEN(err, lexer, TokenType::SQUARE_CB)
+			break;
+		}
+		default:
+			return result;
+		}
+
+		lexer.Next();
+
+		result = pointerResult;
+	}
 
 	return result;
 }
@@ -118,45 +224,37 @@ static Ref<Template> ParseTemplate(ErrorStream &err, Lexer &lexer)
 {
 	Ref<Template> result = Allocate<Template>();
 
-	// TODO: implement, this implementation only skips the template
 	while (lexer.HasNext())
 	{
-		const Token &token = lexer.Next();
+		Ref<VariableDeclaration> argument = Allocate<VariableDeclaration>(ASTItemType::VARIABLE_DECLARATION);
 
-		if (token.type == TokenType::GREATER)
+		argument->dataType = ParseDataType(err, lexer);
+		IFERR_RETURN(err)
+
+		ASSERT_TOKEN(err, lexer, TokenType::IDENTIFIER)
+		argument->name = lexer.Next().data.stringData;
+
+		result->arguments.push_back(argument);
+
+		if (lexer.Get().type == TokenType::GREATER)
 		{
+			lexer.Next();
 			break;
+		}
+
+		if (lexer.Get().type != TokenType::COMMA)
+		{
+			err.PrintError(lexer.Get(), "Template argument have to be seperated by a COMMA!");
+			return nullptr;
 		}
 	}
 
 	return result;
 }
 
-static DeclarationFlags ParseDeclarationFlags(Lexer &lexer)
+static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &lexer, const String &unitName)
 {
-	DeclarationFlags flags = DeclarationFlags::PRIVATE;
-
-	while (lexer.HasNext())
-	{
-		const Token &token = lexer.Get();
-
-		if (declarationFlags.find(token.type) != declarationFlags.end())
-		{
-			flags = (DeclarationFlags)((UInt64)flags | (UInt64)declarationFlags.at(token.type));
-			lexer.Next();
-		}
-		else
-		{
-			break;
-		}
-	}
-
-	return flags;
-}
-
-static Ref<MemberDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &lexer, const String &unitName)
-{
-	Ref<MemberDeclaration> result = Allocate<MemberDeclaration>(ASTItemType::MEMBER_VARIABLE_DECLARATION);
+	Ref<VariableDeclaration> result = Allocate<VariableDeclaration>(ASTItemType::NONE);
 	result->flags = ParseDeclarationFlags(lexer);
 
 	bool isConstructor = false;
@@ -185,11 +283,13 @@ static Ref<UnitDeclaration> ParseClassDeclaration(ErrorStream &err, Lexer &lexer
 	if (lexer.Get().data.stringData != unitName)
 	{
 		err.PrintError(lexer.Get(), "The declared name must match the unit name!");
-		lexer.Next();
 	}
+	lexer.Next();
 
 	if (lexer.Get().type == TokenType::LESS)
 	{
+		lexer.Next();
+
 		result->typeTemplate = ParseTemplate(err, lexer);
 		IFERR_RETURN(err)
 	}
@@ -256,6 +356,7 @@ static Ref<UnitDeclaration> ParseUnitDeclaration(ErrorStream &err, Lexer &lexer,
 	default:
 		return nullptr;
 	}
+	IFERR_RETURN(err)
 
 	declaration->flags = flags;
 

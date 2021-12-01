@@ -1,24 +1,26 @@
-#ifndef SOURCE_AST_ASTITEM
-#define SOURCE_AST_ASTITEM
+#ifndef SOURCE_AST_AST
+#define SOURCE_AST_AST
 
 #include "../Base.h"
 #include "../Lexer.h"
 #include "../JSON.h"
 
 STRICT_ENUM(ASTItemType,
+			NONE,
 			MODULE,
 			UNIT,
 			CLASS_DECLARATION,
 			ERROR_DECLARATION,
 			TYPE_DECLARATION,
 			TEMPLATE,
-			MEMBER_VARIABLE_DECLARATION,
+			VARIABLE_DECLARATION,
 			METHOD_DECLARATION,
-			DATA_TYPE)
+			DATA_TYPE,
+			MEMBER_VARIABLE_DECLARATION)
 
 class ASTItem
 {
-protected:
+public:
 	ASTItemType type;
 
 public:
@@ -26,17 +28,20 @@ public:
 		: type(type)
 	{
 	}
-
-public:
-	ASTItemType GetType() const
-	{
-		return type;
-	}
 };
+
+STRICT_ENUM(DeclarationFlags, PRIVATE = 0, INTERNAL = 1, PROTECTED = 2, PUBLIC = 7, MUT = 8, IMPURE = 16)
+
+STRICT_ENUM(DataTypeType, TYPE, VALUE, REFERENCE, POINTER, ARRAY)
+
+class Template;
 
 class DataType : public ASTItem
 {
 public:
+	DataTypeType dataTypeType;
+	DeclarationFlags flags;
+
 public:
 	DataType()
 		: ASTItem(ASTItemType::DATA_TYPE)
@@ -44,7 +49,31 @@ public:
 	}
 };
 
-STRICT_ENUM(DeclarationFlags, PRIVATE = 0, INTERNAL = 1, PROTECTED = 2, PUBLIC = 7, MUT = 8, IMPURE = 16)
+class ValueType : public DataType
+{
+public:
+	String name;
+	Ref<Template> typeTemplate;
+
+public:
+	ValueType()
+		: DataType()
+	{
+		dataTypeType = DataTypeType::VALUE;
+	}
+};
+
+class PointerType : public DataType
+{
+public:
+	Ref<DataType> value;
+
+public:
+	PointerType()
+		: DataType()
+	{
+	}
+};
 
 class UnitDeclaration : public ASTItem
 {
@@ -79,7 +108,7 @@ public:
 public:
 };
 
-class MemberDeclaration : public ASTItem
+class VariableDeclaration : public ASTItem
 {
 public:
 	DeclarationFlags flags;
@@ -87,7 +116,7 @@ public:
 	Ref<DataType> dataType;
 
 public:
-	MemberDeclaration(ASTItemType type)
+	VariableDeclaration(ASTItemType type)
 		: ASTItem(type)
 	{
 	}
@@ -96,6 +125,8 @@ public:
 class Template : public ASTItem
 {
 public:
+	Array<Ref<VariableDeclaration>> arguments;
+
 public:
 	Template()
 		: ASTItem(ASTItemType::TEMPLATE)
@@ -107,7 +138,7 @@ class TypeDeclaration : public UnitDeclaration
 {
 public:
 	DeclarationFlags flags;
-	Array<Ref<MemberDeclaration>> members;
+	Array<Ref<VariableDeclaration>> members;
 	Ref<Template> typeTemplate;
 
 public:
@@ -202,4 +233,4 @@ public:
 	}
 };
 
-#endif /* SOURCE_AST_ASTITEM */
+#endif /* SOURCE_AST_AST */
