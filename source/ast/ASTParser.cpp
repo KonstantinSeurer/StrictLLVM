@@ -44,11 +44,11 @@ static HashMap<TokenType, DeclarationFlags> declarationFlags = {
 
 static HashSet<TokenType> unitDeclarationTypeSet = {TokenType::ERROR, TokenType::CLASS, TokenType::SINGLETON, TokenType::TYPE};
 
-#define ASSERT_TOKEN(err, lexer, tokenType)                                                                                               \
+#define ASSERT_TOKEN(err, lexer, tokenType, returnValue)                                                                                  \
 	if (lexer.Get().type != tokenType)                                                                                                    \
 	{                                                                                                                                     \
 		err.PrintError(lexer.Get(), String("Unexpected token ") + ToString(lexer.Get().type) + " expected " + ToString(tokenType) + "!"); \
-		return nullptr;                                                                                                                   \
+		return returnValue;                                                                                                               \
 	}
 
 #define IFERR_RETURN(err)      \
@@ -83,7 +83,7 @@ static Ref<UnitDeclaration> ParseErrorDeclaration(ErrorStream &err, Lexer &lexer
 {
 	Ref<ErrorDeclaration> result = Allocate<ErrorDeclaration>();
 
-	ASSERT_TOKEN(err, lexer, TokenType::IDENTIFIER)
+	ASSERT_TOKEN(err, lexer, TokenType::IDENTIFIER, nullptr)
 	if (lexer.Get().data.stringData != unitName)
 	{
 		err.PrintError(lexer.Get(), "The declared name must match the unit name!");
@@ -112,7 +112,7 @@ static Ref<UnitDeclaration> ParseErrorDeclaration(ErrorStream &err, Lexer &lexer
 			return nullptr;
 		}
 
-		ASSERT_TOKEN(err, lexer, TokenType::SEMICOLON)
+		ASSERT_TOKEN(err, lexer, TokenType::SEMICOLON, nullptr)
 		lexer.Next();
 	}
 	else if (lexer.Get().type == TokenType::SEMICOLON)
@@ -160,7 +160,7 @@ static Ref<DataType> ParseDataType(ErrorStream &err, Lexer &lexer)
 			Ref<ValueType> valueResult = Allocate<ValueType>();
 			valueResult->flags = flags;
 
-			ASSERT_TOKEN(err, lexer, TokenType::IDENTIFIER)
+			ASSERT_TOKEN(err, lexer, TokenType::IDENTIFIER, nullptr)
 			valueResult->name = lexer.Next().data.stringData;
 
 			if (lexer.Get().type == TokenType::LESS)
@@ -205,7 +205,7 @@ static Ref<DataType> ParseDataType(ErrorStream &err, Lexer &lexer)
 
 			// TODO: parse size expression
 
-			ASSERT_TOKEN(err, lexer, TokenType::SQUARE_CB)
+			ASSERT_TOKEN(err, lexer, TokenType::SQUARE_CB, nullptr)
 			break;
 		}
 		default:
@@ -231,7 +231,7 @@ static Ref<Template> ParseTemplate(ErrorStream &err, Lexer &lexer)
 		argument->dataType = ParseDataType(err, lexer);
 		IFERR_RETURN(err)
 
-		ASSERT_TOKEN(err, lexer, TokenType::IDENTIFIER)
+		ASSERT_TOKEN(err, lexer, TokenType::IDENTIFIER, nullptr)
 		argument->name = lexer.Next().data.stringData;
 
 		result->arguments.push_back(argument);
@@ -274,12 +274,38 @@ static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &
 	return result;
 }
 
+static void ParseSuperTypeList(ErrorStream &err, Lexer &lexer, Array<Ref<ValueType>> &target, TokenType endCharacter)
+{
+	while (lexer.HasNext())
+	{
+		const Token &startToken = lexer.Get();
+
+		Ref<DataType> superType = ParseDataType(err, lexer);
+
+		if (superType->dataTypeType != DataTypeType::VALUE)
+		{
+			err.PrintError(startToken, "A super type must be a value type!");
+			return;
+		}
+
+		target.push_back(std::dynamic_pointer_cast<ValueType>(superType));
+
+		if (lexer.Get().type == endCharacter)
+		{
+			return;
+		}
+
+		ASSERT_TOKEN(err, lexer, TokenType::COMMA, )
+		lexer.Next();
+	}
+}
+
 static Ref<UnitDeclaration> ParseClassDeclaration(ErrorStream &err, Lexer &lexer, bool singleton, const String &unitName)
 {
 	Ref<ClassDeclaration> result = Allocate<ClassDeclaration>();
 	result->isSingleton = singleton;
 
-	ASSERT_TOKEN(err, lexer, TokenType::IDENTIFIER)
+	ASSERT_TOKEN(err, lexer, TokenType::IDENTIFIER, nullptr)
 	if (lexer.Get().data.stringData != unitName)
 	{
 		err.PrintError(lexer.Get(), "The declared name must match the unit name!");
@@ -297,10 +323,12 @@ static Ref<UnitDeclaration> ParseClassDeclaration(ErrorStream &err, Lexer &lexer
 	if (lexer.Get().type == TokenType::COLON)
 	{
 		lexer.Next();
-		// TODO: implement inheritance
+
+		ParseSuperTypeList(err, lexer, result->superTypes, TokenType::CURLY_OB);
+		IFERR_RETURN(err)
 	}
 
-	ASSERT_TOKEN(err, lexer, TokenType::CURLY_OB)
+	ASSERT_TOKEN(err, lexer, TokenType::CURLY_OB, nullptr)
 	lexer.Next();
 
 	while (lexer.HasNext())

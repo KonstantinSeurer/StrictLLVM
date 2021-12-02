@@ -140,6 +140,7 @@ public:
 	DeclarationFlags flags;
 	Array<Ref<VariableDeclaration>> members;
 	Ref<Template> typeTemplate;
+	Array<Ref<ValueType>> superTypes;
 
 public:
 	TypeDeclaration()
