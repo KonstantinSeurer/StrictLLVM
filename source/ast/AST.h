@@ -47,6 +47,10 @@ public:
 		: ASTItem(ASTItemType::DATA_TYPE)
 	{
 	}
+
+	virtual ~DataType()
+	{
+	}
 };
 
 class ValueType : public DataType
