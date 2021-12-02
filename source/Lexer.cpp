@@ -52,6 +52,7 @@ static HashMap<String, TokenType> keyWordTable = {
 	{"protected", TokenType::PROTECTED},
 	{"internal", TokenType::INTERNAL},
 	{"external", TokenType::EXTERNAL},
+	{"inline", TokenType::INLINE},
 	{"mut", TokenType::MUT},
 	{"impure", TokenType::IMPURE},
 	{"virtual", TokenType::VIRTUAL},
