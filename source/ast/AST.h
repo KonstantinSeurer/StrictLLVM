@@ -15,8 +15,7 @@ STRICT_ENUM(ASTItemType,
 			TEMPLATE,
 			VARIABLE_DECLARATION,
 			METHOD_DECLARATION,
-			DATA_TYPE,
-			MEMBER_VARIABLE_DECLARATION)
+			DATA_TYPE)
 
 class ASTItem
 {
@@ -112,17 +111,63 @@ public:
 public:
 };
 
+STRICT_ENUM(VariableDeclarationType, VARIABLE, MEMBER_VARIABLE, METHOD)
+
 class VariableDeclaration : public ASTItem
 {
 public:
 	DeclarationFlags flags;
+	VariableDeclarationType variableType;
 	String name;
 	Ref<DataType> dataType;
 
 public:
-	VariableDeclaration(ASTItemType type)
-		: ASTItem(type)
+	VariableDeclaration()
+		: ASTItem(ASTItemType::VARIABLE_DECLARATION)
 	{
+	}
+
+	virtual ~VariableDeclaration()
+	{
+	}
+};
+
+STRICT_ENUM(MethodType, METHOD, CONSTRUCTOR, DESTRUCTOR)
+
+class MethodDeclaration : public VariableDeclaration
+{
+public:
+	MethodType methodType;
+	Array<Ref<VariableDeclaration>> arguments;
+
+public:
+	MethodDeclaration()
+		: VariableDeclaration()
+	{
+		variableType = VariableDeclarationType::METHOD;
+	}
+};
+
+class ConstructorDeclaration : public MethodDeclaration
+{
+public:
+public:
+	ConstructorDeclaration()
+		: MethodDeclaration()
+	{
+		variableType = VariableDeclarationType::METHOD;
+		methodType = MethodType::CONSTRUCTOR;
+	}
+};
+
+class MemberVariableDeclaration : public VariableDeclaration
+{
+public:
+public:
+	MemberVariableDeclaration()
+		: VariableDeclaration()
+	{
+		variableType = VariableDeclarationType::MEMBER_VARIABLE;
 	}
 };
 

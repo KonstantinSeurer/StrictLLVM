@@ -51,10 +51,10 @@ static HashSet<TokenType> unitDeclarationTypeSet = {TokenType::ERROR, TokenType:
 		return returnValue;                                                                                                               \
 	}
 
-#define IFERR_RETURN(err)      \
-	if (err.HasErrorOccured()) \
-	{                          \
-		return nullptr;        \
+#define IFERR_RETURN(err, returnValue) \
+	if (err.HasErrorOccured())         \
+	{                                  \
+		return returnValue;            \
 	}
 
 static DeclarationFlags ParseDeclarationFlags(Lexer &lexer)
@@ -142,7 +142,7 @@ static Ref<DataType> ParseDataType(ErrorStream &err, Lexer &lexer)
 		lexer.Next();
 
 		result = ParseDataType(err, lexer);
-		IFERR_RETURN(err)
+		IFERR_RETURN(err, nullptr)
 
 		result->flags = (DeclarationFlags)((UInt64)result->flags | (UInt64)flags);
 	}
@@ -168,7 +168,7 @@ static Ref<DataType> ParseDataType(ErrorStream &err, Lexer &lexer)
 				lexer.Next();
 
 				valueResult->typeTemplate = ParseTemplate(err, lexer);
-				IFERR_RETURN(err)
+				IFERR_RETURN(err, nullptr)
 			}
 
 			result = valueResult;
@@ -220,61 +220,141 @@ static Ref<DataType> ParseDataType(ErrorStream &err, Lexer &lexer)
 	return result;
 }
 
+static void ParseArgumentList(ErrorStream &err, Lexer &lexer, Array<Ref<VariableDeclaration>> &target, TokenType endToken)
+{
+	while (lexer.HasNext())
+	{
+		if (lexer.Get().type == endToken)
+		{
+			lexer.Next();
+			return;
+		}
+
+		Ref<VariableDeclaration> argument = Allocate<VariableDeclaration>();
+
+		argument->dataType = ParseDataType(err, lexer);
+		IFERR_RETURN(err, )
+
+		ASSERT_TOKEN(err, lexer, TokenType::IDENTIFIER, )
+		argument->name = lexer.Next().data.stringData;
+
+		target.push_back(argument);
+
+		if (lexer.Get().type == endToken)
+		{
+			lexer.Next();
+			return;
+		}
+
+		ASSERT_TOKEN(err, lexer, TokenType::COMMA, )
+		lexer.Next();
+	}
+}
+
 static Ref<Template> ParseTemplate(ErrorStream &err, Lexer &lexer)
 {
 	Ref<Template> result = Allocate<Template>();
 
-	while (lexer.HasNext())
-	{
-		Ref<VariableDeclaration> argument = Allocate<VariableDeclaration>(ASTItemType::VARIABLE_DECLARATION);
-
-		argument->dataType = ParseDataType(err, lexer);
-		IFERR_RETURN(err)
-
-		ASSERT_TOKEN(err, lexer, TokenType::IDENTIFIER, nullptr)
-		argument->name = lexer.Next().data.stringData;
-
-		result->arguments.push_back(argument);
-
-		if (lexer.Get().type == TokenType::GREATER)
-		{
-			lexer.Next();
-			break;
-		}
-
-		if (lexer.Get().type != TokenType::COMMA)
-		{
-			err.PrintError(lexer.Get(), "Template argument have to be seperated by a COMMA!");
-			return nullptr;
-		}
-	}
+	ParseArgumentList(err, lexer, result->arguments, TokenType::GREATER);
+	IFERR_RETURN(err, nullptr)
 
 	return result;
 }
 
 static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &lexer, const String &unitName)
 {
-	Ref<VariableDeclaration> result = Allocate<VariableDeclaration>(ASTItemType::NONE);
-	result->flags = ParseDeclarationFlags(lexer);
+	// Ref<VariableDeclaration> result = Allocate<VariableDeclaration>();
+	DeclarationFlags flags = ParseDeclarationFlags(lexer);
 
 	bool isConstructor = false;
+	bool isDestructor = false;
+	bool isInternal = false;
+	bool isInline = false;
+
+	Ref<DataType> dataType;
+	String name;
 
 	if (lexer.Get().type == TokenType::IDENTIFIER && lexer.Get().data.stringData == unitName)
 	{
 		lexer.Next();
 
 		isConstructor = true;
+
+		ASSERT_TOKEN(err, lexer, TokenType::ROUND_OB, nullptr)
 	}
 	else
 	{
-		result->dataType = ParseDataType(err, lexer);
-		IFERR_RETURN(err)
+		dataType = ParseDataType(err, lexer);
+		IFERR_RETURN(err, nullptr)
+
+		isInternal = lexer.Get().type == TokenType::INTERNAL;
+		if (isInternal)
+		{
+			lexer.Next();
+		}
+
+		isInline = lexer.Get().type == TokenType::INLINE;
+		if (isInline)
+		{
+			lexer.Next();
+		}
+
+		ASSERT_TOKEN(err, lexer, TokenType::IDENTIFIER, nullptr)
+		name = lexer.Next().data.stringData;
 	}
+
+	if (isConstructor || lexer.Get().type == TokenType::ROUND_OB)
+	{
+		lexer.Next();
+
+		Ref<MethodDeclaration> result = Allocate<MethodDeclaration>();
+		result->flags = flags;
+		result->name = name;
+		result->dataType = dataType;
+
+		result->methodType = MethodType::METHOD;
+		if (isConstructor)
+		{
+			result->methodType = MethodType::CONSTRUCTOR;
+		}
+		else if (isDestructor)
+		{
+			result->methodType = MethodType::DESTRUCTOR;
+		}
+
+		ParseArgumentList(err, lexer, result->arguments, TokenType::ROUND_CB);
+
+		// TODO: parse method
+
+		return result;
+	}
+
+	Ref<MemberVariableDeclaration> result = Allocate<MemberVariableDeclaration>();
+	result->flags = flags;
+	result->name = name;
+	result->dataType = dataType;
+
+	if (lexer.Get().type == TokenType::CURLY_OB)
+	{
+		lexer.Next();
+
+		// TODO: parse getters/setters
+	}
+
+	if (lexer.Get().type == TokenType::EQUALS)
+	{
+		lexer.Next();
+
+		// TODO: parse default assignment
+	}
+
+	ASSERT_TOKEN(err, lexer, TokenType::SEMICOLON, nullptr)
+	lexer.Next();
 
 	return result;
 }
 
-static void ParseSuperTypeList(ErrorStream &err, Lexer &lexer, Array<Ref<ValueType>> &target, TokenType endCharacter)
+static void ParseSuperTypeList(ErrorStream &err, Lexer &lexer, Array<Ref<ValueType>> &target, TokenType endToken)
 {
 	while (lexer.HasNext())
 	{
@@ -290,7 +370,7 @@ static void ParseSuperTypeList(ErrorStream &err, Lexer &lexer, Array<Ref<ValueTy
 
 		target.push_back(std::dynamic_pointer_cast<ValueType>(superType));
 
-		if (lexer.Get().type == endCharacter)
+		if (lexer.Get().type == endToken)
 		{
 			return;
 		}
@@ -317,7 +397,7 @@ static Ref<UnitDeclaration> ParseClassDeclaration(ErrorStream &err, Lexer &lexer
 		lexer.Next();
 
 		result->typeTemplate = ParseTemplate(err, lexer);
-		IFERR_RETURN(err)
+		IFERR_RETURN(err, nullptr)
 	}
 
 	if (lexer.Get().type == TokenType::COLON)
@@ -325,7 +405,7 @@ static Ref<UnitDeclaration> ParseClassDeclaration(ErrorStream &err, Lexer &lexer
 		lexer.Next();
 
 		ParseSuperTypeList(err, lexer, result->superTypes, TokenType::CURLY_OB);
-		IFERR_RETURN(err)
+		IFERR_RETURN(err, nullptr)
 	}
 
 	ASSERT_TOKEN(err, lexer, TokenType::CURLY_OB, nullptr)
@@ -384,11 +464,11 @@ static Ref<UnitDeclaration> ParseUnitDeclaration(ErrorStream &err, Lexer &lexer,
 	default:
 		return nullptr;
 	}
-	IFERR_RETURN(err)
+	IFERR_RETURN(err, nullptr)
 
 	declaration->flags = flags;
 
-	IFERR_RETURN(err)
+	IFERR_RETURN(err, nullptr)
 
 	return declaration;
 }
@@ -405,7 +485,7 @@ Ref<Unit> ParseUnit(ErrorStream &err, Lexer lexer, const String &name)
 		{
 			lexer.Next();
 			unit->dependencyNames.push_back(ParseUsing(err, lexer));
-			IFERR_RETURN(err)
+			IFERR_RETURN(err, nullptr)
 			continue;
 		}
 
@@ -422,7 +502,7 @@ Ref<Unit> ParseUnit(ErrorStream &err, Lexer lexer, const String &name)
 		}
 
 		unit->declaredType = ParseUnitDeclaration(err, lexer, name);
-		IFERR_RETURN(err)
+		IFERR_RETURN(err, nullptr)
 	}
 
 	return unit;
