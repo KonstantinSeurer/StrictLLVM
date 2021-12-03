@@ -129,6 +129,23 @@ static Ref<UnitDeclaration> ParseErrorDeclaration(ErrorStream &err, Lexer &lexer
 	return result;
 }
 
+static HashMap<TokenType, Ref<PrimitiveType>> primitiveTypes;
+static_block
+{
+	primitiveTypes[TokenType::VOID] = Allocate<PrimitiveType>(TokenType::VOID);
+	primitiveTypes[TokenType::BOOL] = Allocate<PrimitiveType>(TokenType::BOOL);
+	primitiveTypes[TokenType::INT8] = Allocate<PrimitiveType>(TokenType::INT8);
+	primitiveTypes[TokenType::UINT8] = Allocate<PrimitiveType>(TokenType::UINT8);
+	primitiveTypes[TokenType::INT16] = Allocate<PrimitiveType>(TokenType::INT16);
+	primitiveTypes[TokenType::UINT16] = Allocate<PrimitiveType>(TokenType::UINT16);
+	primitiveTypes[TokenType::INT32] = Allocate<PrimitiveType>(TokenType::INT32);
+	primitiveTypes[TokenType::UINT32] = Allocate<PrimitiveType>(TokenType::UINT32);
+	primitiveTypes[TokenType::INT64] = Allocate<PrimitiveType>(TokenType::INT64);
+	primitiveTypes[TokenType::UINT64] = Allocate<PrimitiveType>(TokenType::UINT64);
+	primitiveTypes[TokenType::FLOAT32] = Allocate<PrimitiveType>(TokenType::FLOAT32);
+	primitiveTypes[TokenType::FLOAT64] = Allocate<PrimitiveType>(TokenType::FLOAT64);
+};
+
 static Ref<Template> ParseTemplate(ErrorStream &err, Lexer &lexer);
 
 static Ref<DataType> ParseDataType(ErrorStream &err, Lexer &lexer)
@@ -155,23 +172,34 @@ static Ref<DataType> ParseDataType(ErrorStream &err, Lexer &lexer)
 			result = Allocate<DataType>();
 			result->dataTypeType = DataTypeType::TYPE;
 		}
-		else
+		else if (lexer.Get().type == TokenType::IDENTIFIER)
 		{
-			Ref<ValueType> valueResult = Allocate<ValueType>();
-			valueResult->flags = flags;
-
-			ASSERT_TOKEN(err, lexer, TokenType::IDENTIFIER, nullptr)
-			valueResult->name = lexer.Next().data.stringData;
+			Ref<ObjectType> objectResult = Allocate<ObjectType>();
+			objectResult->flags = flags;
+			objectResult->name = lexer.Next().data.stringData;
 
 			if (lexer.Get().type == TokenType::LESS)
 			{
 				lexer.Next();
 
-				valueResult->typeTemplate = ParseTemplate(err, lexer);
+				objectResult->typeTemplate = ParseTemplate(err, lexer);
 				IFERR_RETURN(err, nullptr)
 			}
 
-			result = valueResult;
+			result = objectResult;
+		}
+		else
+		{
+			const TokenType primitiveType = lexer.Get().type;
+
+			if (primitiveTypes.find(primitiveType) == primitiveTypes.end())
+			{
+				err.PrintError(lexer.Get(), String("Unexpected token ") + ToString(primitiveType) + " expected primitive type!");
+				return nullptr;
+			}
+
+			result = primitiveTypes.at(primitiveType);
+			lexer.Next();
 		}
 	}
 
@@ -354,7 +382,7 @@ static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &
 	return result;
 }
 
-static void ParseSuperTypeList(ErrorStream &err, Lexer &lexer, Array<Ref<ValueType>> &target, TokenType endToken)
+static void ParseSuperTypeList(ErrorStream &err, Lexer &lexer, Array<Ref<ObjectType>> &target, TokenType endToken)
 {
 	while (lexer.HasNext())
 	{
@@ -362,13 +390,13 @@ static void ParseSuperTypeList(ErrorStream &err, Lexer &lexer, Array<Ref<ValueTy
 
 		Ref<DataType> superType = ParseDataType(err, lexer);
 
-		if (superType->dataTypeType != DataTypeType::VALUE)
+		if (superType->dataTypeType != DataTypeType::OBJECT)
 		{
-			err.PrintError(startToken, "A super type must be a value type!");
+			err.PrintError(startToken, "A super type must be a object type!");
 			return;
 		}
 
-		target.push_back(std::dynamic_pointer_cast<ValueType>(superType));
+		target.push_back(std::dynamic_pointer_cast<ObjectType>(superType));
 
 		if (lexer.Get().type == endToken)
 		{

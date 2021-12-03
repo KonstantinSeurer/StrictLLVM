@@ -31,7 +31,7 @@ public:
 
 STRICT_ENUM(DeclarationFlags, PRIVATE = 0, INTERNAL = 1, PROTECTED = 2, PUBLIC = 7, MUT = 8, IMPURE = 16)
 
-STRICT_ENUM(DataTypeType, TYPE, VALUE, REFERENCE, POINTER, ARRAY)
+STRICT_ENUM(DataTypeType, TYPE, PRIMITIVE, OBJECT, REFERENCE, POINTER, ARRAY)
 
 class Template;
 
@@ -52,17 +52,36 @@ public:
 	}
 };
 
-class ValueType : public DataType
+class PrimitiveType : public DataType
+{
+public:
+	TokenType primitiveType;
+
+public:
+	PrimitiveType()
+		: DataType()
+	{
+		dataTypeType = DataTypeType::PRIMITIVE;
+	}
+
+	PrimitiveType(TokenType primitiveType)
+		: DataType(), primitiveType(primitiveType)
+	{
+		dataTypeType = DataTypeType::PRIMITIVE;
+	}
+};
+
+class ObjectType : public DataType
 {
 public:
 	String name;
 	Ref<Template> typeTemplate;
 
 public:
-	ValueType()
+	ObjectType()
 		: DataType()
 	{
-		dataTypeType = DataTypeType::VALUE;
+		dataTypeType = DataTypeType::OBJECT;
 	}
 };
 
@@ -189,7 +208,7 @@ public:
 	DeclarationFlags flags;
 	Array<Ref<VariableDeclaration>> members;
 	Ref<Template> typeTemplate;
-	Array<Ref<ValueType>> superTypes;
+	Array<Ref<ObjectType>> superTypes;
 
 public:
 	TypeDeclaration()
