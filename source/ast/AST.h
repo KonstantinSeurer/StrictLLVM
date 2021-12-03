@@ -218,6 +218,9 @@ public:
 	MethodType methodType;
 	Array<Ref<VariableDeclaration>> arguments;
 
+	Ref<Statement> body;
+	Lexer tempBody;
+
 public:
 	MethodDeclaration()
 		: VariableDeclaration()
@@ -226,9 +229,20 @@ public:
 	}
 };
 
+class ConstructorInitializer
+{
+public:
+	String name;
+
+	Ref<Expression> value;
+	Lexer tempValue;
+};
+
 class ConstructorDeclaration : public MethodDeclaration
 {
 public:
+	Array<ConstructorInitializer> initializers;
+
 public:
 	ConstructorDeclaration()
 		: MethodDeclaration()
