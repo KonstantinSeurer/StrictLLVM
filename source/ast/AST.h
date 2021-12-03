@@ -15,7 +15,9 @@ STRICT_ENUM(ASTItemType,
 			TEMPLATE,
 			VARIABLE_DECLARATION,
 			METHOD_DECLARATION,
-			DATA_TYPE)
+			DATA_TYPE,
+			EXPRESSION,
+			STATEMENT)
 
 class ASTItem
 {
@@ -29,9 +31,21 @@ public:
 	}
 };
 
-STRICT_ENUM(DeclarationFlags, PRIVATE = 0, INTERNAL = 1, PROTECTED = 2, PUBLIC = 7, MUT = 8, IMPURE = 16)
+STRICT_ENUM(DeclarationFlags,
+			PRIVATE = 0,
+			INTERNAL = 1,
+			PROTECTED = 2,
+			PUBLIC = 7,
+			MUT = 8,
+			IMPURE = 16)
 
-STRICT_ENUM(DataTypeType, TYPE, PRIMITIVE, OBJECT, REFERENCE, POINTER, ARRAY)
+STRICT_ENUM(DataTypeType,
+			TYPE,
+			PRIMITIVE,
+			OBJECT,
+			REFERENCE,
+			POINTER,
+			ARRAY)
 
 class Template;
 
@@ -97,6 +111,45 @@ public:
 	}
 };
 
+STRICT_ENUM(ExpressionType,
+			LITERAL)
+
+class Expression : public ASTItem
+{
+public:
+	ExpressionType expressionType;
+
+public:
+	Expression()
+		: ASTItem(ASTItemType::EXPRESSION)
+	{
+	}
+
+	virtual ~Expression()
+	{
+	}
+};
+
+STRICT_ENUM(StatementType,
+			NOP,
+			BLOCK)
+
+class Statement : public ASTItem
+{
+public:
+	StatementType statementType;
+
+public:
+	Statement()
+		: ASTItem(ASTItemType::STATEMENT)
+	{
+	}
+
+	virtual ~Statement()
+	{
+	}
+};
+
 class UnitDeclaration : public ASTItem
 {
 public:
@@ -130,7 +183,10 @@ public:
 public:
 };
 
-STRICT_ENUM(VariableDeclarationType, VARIABLE, MEMBER_VARIABLE, METHOD)
+STRICT_ENUM(VariableDeclarationType,
+			VARIABLE,
+			MEMBER_VARIABLE,
+			METHOD)
 
 class VariableDeclaration : public ASTItem
 {
@@ -151,7 +207,10 @@ public:
 	}
 };
 
-STRICT_ENUM(MethodType, METHOD, CONSTRUCTOR, DESTRUCTOR)
+STRICT_ENUM(MethodType,
+			METHOD,
+			CONSTRUCTOR,
+			DESTRUCTOR)
 
 class MethodDeclaration : public VariableDeclaration
 {
@@ -257,8 +316,17 @@ public:
 	JSON GetStructureJSON() const;
 };
 
-STRICT_ENUM(ModuleType, STATIC, DYNAMIC, INLINE)
-STRICT_ENUM(TargetFlags, NONE = 0, BIT32 = 1, BIT64 = 2, X86 = 4, LINUX = 8)
+STRICT_ENUM(ModuleType,
+			STATIC,
+			DYNAMIC,
+			INLINE)
+
+STRICT_ENUM(TargetFlags,
+			NONE = 0,
+			BIT32 = 1,
+			BIT64 = 2,
+			X86 = 4,
+			LINUX = 8)
 
 bool IsTargetActive(TargetFlags target, TargetFlags buildTarget);
 TargetFlags JSONToTargetFlags(const JSON &json);
