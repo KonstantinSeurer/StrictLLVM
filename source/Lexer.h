@@ -112,6 +112,10 @@ private:
 	Array<Int64> stack;
 
 public:
+	Lexer()
+	{
+	}
+
 	Lexer(Ref<const String> source, Ref<const Array<Token>> tokens)
 		: source(source), tokens(tokens), offset(0), length(tokens->size())
 	{
