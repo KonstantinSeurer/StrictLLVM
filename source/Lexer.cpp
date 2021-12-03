@@ -26,7 +26,7 @@ static HashMap<String, TokenType> keyWordTable = {
 	{"Int16", TokenType::INT16},
 	{"UInt16", TokenType::UINT16},
 	{"Int32", TokenType::INT32},
-	{"Uint32", TokenType::UINT32},
+	{"UInt32", TokenType::UINT32},
 	{"Int64", TokenType::INT64},
 	{"UInt64", TokenType::UINT64},
 	{"Float32", TokenType::FLOAT32},
