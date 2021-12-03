@@ -121,6 +121,11 @@ public:
 	{
 	}
 
+	Lexer(const Lexer &source, Int64 position, Int64 length)
+		: source(source.source), tokens(source.tokens), offset(position), length(std::min(position + length, (Int64)tokens->size()))
+	{
+	}
+
 	~Lexer();
 
 	static Ref<Lexer> Create(const String &source);
@@ -136,6 +141,11 @@ public:
 	const String &GetSource() const
 	{
 		return *source;
+	}
+
+	Int64 GetPosition() const
+	{
+		return offset;
 	}
 };
 
