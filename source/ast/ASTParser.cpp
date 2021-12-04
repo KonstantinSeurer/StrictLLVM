@@ -283,7 +283,7 @@ static Ref<Template> ParseTemplate(ErrorStream &err, Lexer &lexer)
 {
 	Ref<Template> result = Allocate<Template>();
 
-	ParseArgumentList(err, lexer, result->arguments, TokenType::GREATER);
+	ParseArgumentList(err, lexer, result->parameters, TokenType::GREATER);
 	IFERR_RETURN(err, nullptr)
 
 	return result;
@@ -350,7 +350,7 @@ static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &
 			result->methodType = MethodType::DESTRUCTOR;
 		}
 
-		ParseArgumentList(err, lexer, result->arguments, TokenType::ROUND_CB);
+		ParseArgumentList(err, lexer, result->parameters, TokenType::ROUND_CB);
 
 		// TODO: parse method
 

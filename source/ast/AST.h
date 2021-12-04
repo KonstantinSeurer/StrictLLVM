@@ -216,7 +216,7 @@ class MethodDeclaration : public VariableDeclaration
 {
 public:
 	MethodType methodType;
-	Array<Ref<VariableDeclaration>> arguments;
+	Array<Ref<VariableDeclaration>> parameters;
 
 	Ref<Statement> body;
 	Lexer tempBody;
@@ -266,7 +266,7 @@ public:
 class Template : public ASTItem
 {
 public:
-	Array<Ref<VariableDeclaration>> arguments;
+	Array<Ref<VariableDeclaration>> parameters;
 
 public:
 	Template()
