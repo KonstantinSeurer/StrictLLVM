@@ -12,6 +12,7 @@ STRICT_ENUM(ASTItemType,
 			CLASS_DECLARATION,
 			ERROR_DECLARATION,
 			TYPE_DECLARATION,
+			TEMPLATE_DECLARATION,
 			TEMPLATE,
 			VARIABLE_DECLARATION,
 			METHOD_DECLARATION,
@@ -150,6 +151,18 @@ public:
 	}
 };
 
+class Template : public ASTItem
+{
+public:
+	Array<Ref<ASTItem>> arguments;
+
+public:
+	Template()
+		: ASTItem(ASTItemType::TEMPLATE)
+	{
+	}
+};
+
 class UnitDeclaration : public ASTItem
 {
 public:
@@ -275,14 +288,14 @@ public:
 	}
 };
 
-class Template : public ASTItem
+class TemplateDeclaration : public ASTItem
 {
 public:
 	Array<Ref<VariableDeclaration>> parameters;
 
 public:
-	Template()
-		: ASTItem(ASTItemType::TEMPLATE)
+	TemplateDeclaration()
+		: ASTItem(ASTItemType::TEMPLATE_DECLARATION)
 	{
 	}
 };
@@ -292,7 +305,7 @@ class TypeDeclaration : public UnitDeclaration
 public:
 	DeclarationFlags flags;
 	Array<Ref<VariableDeclaration>> members;
-	Ref<Template> typeTemplate;
+	Ref<TemplateDeclaration> typeTemplate;
 	Array<Ref<ObjectType>> superTypes;
 
 public:
