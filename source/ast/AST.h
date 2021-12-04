@@ -223,7 +223,8 @@ public:
 STRICT_ENUM(MethodType,
 			METHOD,
 			CONSTRUCTOR,
-			DESTRUCTOR)
+			DESTRUCTOR,
+			OPERATOR)
 
 class MethodDeclaration : public VariableDeclaration
 {
@@ -274,6 +275,51 @@ public:
 	{
 		variableType = VariableDeclarationType::METHOD;
 		methodType = MethodType::DESTRUCTOR;
+	}
+};
+
+STRICT_ENUM(OperatorType,
+			// Non mutating binary operators
+			PLUS,
+			MINUS,
+			MULTIPLY,
+			DIVIDE,
+			AND,
+			OR,
+			XOR,
+			GREATER,
+			LESS,
+			EQUAL,
+			NOT_EQUAL,
+			GREATER_EQUAL,
+			LESS_EQUAL,
+			// Mutating binary operators
+			PLUS_EQUAL,
+			MINUS_EQUAL,
+			MULTIPLY_EQUAL,
+			DIVIDE_EQUAL,
+			AND_EQUAL,
+			OR_EQUAL,
+			XOR_EQUAL,
+			// Non mutating unary operators
+			NEGATIVE,
+			NOT,
+			INVERSE,
+			// Mutating unary operators
+			INCREMENT,
+			DECREMENT)
+
+class OperatorDeclaration : public MethodDeclaration
+{
+public:
+	OperatorType operatorType;
+
+public:
+	OperatorDeclaration()
+		: MethodDeclaration()
+	{
+		variableType = VariableDeclarationType::METHOD;
+		methodType = MethodType::OPERATOR;
 	}
 };
 
