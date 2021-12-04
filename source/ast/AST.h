@@ -252,6 +252,18 @@ public:
 	}
 };
 
+class DestructorDeclaration : public MethodDeclaration
+{
+public:
+public:
+	DestructorDeclaration()
+		: MethodDeclaration()
+	{
+		variableType = VariableDeclarationType::METHOD;
+		methodType = MethodType::DESTRUCTOR;
+	}
+};
+
 class MemberVariableDeclaration : public VariableDeclaration
 {
 public:
