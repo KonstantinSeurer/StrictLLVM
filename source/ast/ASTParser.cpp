@@ -379,7 +379,6 @@ static Ref<TemplateDeclaration> ParseTemplateDeclaration(ErrorStream &err, Lexer
 
 static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &lexer, const String &unitName)
 {
-	// Ref<VariableDeclaration> result = Allocate<VariableDeclaration>();
 	DeclarationFlags flags = ParseDeclarationFlags(lexer);
 
 	bool isConstructor = false;
@@ -397,6 +396,22 @@ static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &
 		isConstructor = true;
 
 		ASSERT_TOKEN(err, lexer, TokenType::ROUND_OB, nullptr)
+	}
+	else if (lexer.Get().type == TokenType::TILDE)
+	{
+		lexer.Next();
+
+		ASSERT_TOKEN(err, lexer, TokenType::IDENTIFIER, nullptr)
+
+		if (lexer.Get().data.stringData != unitName)
+		{
+			err.PrintError(lexer.Get(), "Destructor name must match the unit name!");
+			return nullptr;
+		}
+
+		lexer.Next();
+
+		isDestructor = true;
 	}
 	else
 	{
@@ -564,14 +579,14 @@ static Ref<UnitDeclaration> ParseClassDeclaration(ErrorStream &err, Lexer &lexer
 
 	while (lexer.HasNext())
 	{
-		const Token &token = lexer.Next();
-
-		if (token.type == TokenType::CURLY_CB)
+		if (lexer.Get().type == TokenType::CURLY_CB)
 		{
+			lexer.Next();
 			break;
 		}
 
 		result->members.push_back(ParseMemberDeclaration(err, lexer, unitName));
+		IFERR_RETURN(err, nullptr)
 	}
 
 	return result;
