@@ -79,6 +79,41 @@ static DeclarationFlags ParseDeclarationFlags(Lexer &lexer)
 	return flags;
 }
 
+static Lexer ScanAndSkipNested(ErrorStream &err, Lexer &lexer, TokenType openToken, TokenType closeToken)
+{
+	const Int64 startPosition = lexer.GetPosition();
+
+	UInt32 level = 0;
+	while (lexer.HasNext())
+	{
+		const TokenType token = lexer.Next().type;
+
+		if (token == openToken)
+		{
+			level++;
+		}
+
+		if (token == closeToken)
+		{
+			if (level == 0)
+			{
+				err.PrintError(String("Unexpected token ") + ToString(closeToken) + "!");
+				return Lexer();
+			}
+
+			level--;
+
+			if (level == 0)
+			{
+				return Lexer(lexer, startPosition, lexer.GetPosition() - startPosition);
+			}
+		}
+	}
+
+	err.PrintError(String("Expected token ") + ToString(closeToken) + " before end of file!");
+	return Lexer();
+}
+
 static Ref<UnitDeclaration> ParseErrorDeclaration(ErrorStream &err, Lexer &lexer, const String &unitName)
 {
 	Ref<ErrorDeclaration> result = Allocate<ErrorDeclaration>();
@@ -146,7 +181,60 @@ static_block
 	primitiveTypes[TokenType::FLOAT64] = Allocate<PrimitiveType>(TokenType::FLOAT64);
 };
 
-static Ref<Template> ParseTemplate(ErrorStream &err, Lexer &lexer);
+static Ref<DataType> ParseDataType(ErrorStream &err, Lexer &lexer);
+
+static Ref<Template> ParseTemplate(ErrorStream &err, Lexer &lexer)
+{
+	Ref<Template> result = Allocate<Template>();
+
+	while (lexer.HasNext())
+	{
+		if (lexer.Get().type == TokenType::GREATER)
+		{
+			lexer.Next();
+			return result;
+		}
+
+		lexer.Push();
+		err.Try();
+
+		Ref<ASTItem> argument = ParseDataType(err, lexer);
+
+		if (err.Catch())
+		{
+			lexer.Revert();
+			lexer.Push();
+			err.Try();
+
+			// TODO: parse expression
+
+			if (err.Catch())
+			{
+				lexer.Revert();
+				err.PrintError("Expected data type or expression!");
+				return nullptr;
+			}
+		}
+		else
+		{
+			lexer.Pop();
+		}
+
+		result->arguments.push_back(argument);
+
+		if (lexer.Get().type == TokenType::GREATER)
+		{
+			lexer.Next();
+			return result;
+		}
+
+		ASSERT_TOKEN(err, lexer, TokenType::COMMA, nullptr)
+		lexer.Next();
+	}
+
+	err.PrintError("Expected token GREATER before end of file!");
+	return nullptr;
+}
 
 static Ref<DataType> ParseDataType(ErrorStream &err, Lexer &lexer)
 {
@@ -205,7 +293,7 @@ static Ref<DataType> ParseDataType(ErrorStream &err, Lexer &lexer)
 
 	while (lexer.HasNext())
 	{
-		if (lexer.Get().type == TokenType::ROUND_OB)
+		if (lexer.Get().type == TokenType::ROUND_CB)
 		{
 			lexer.Next();
 			break;
@@ -279,9 +367,9 @@ static void ParseParameterList(ErrorStream &err, Lexer &lexer, Array<Ref<Variabl
 	}
 }
 
-static Ref<Template> ParseTemplate(ErrorStream &err, Lexer &lexer)
+static Ref<TemplateDeclaration> ParseTemplateDeclaration(ErrorStream &err, Lexer &lexer)
 {
-	Ref<Template> result = Allocate<Template>();
+	Ref<TemplateDeclaration> result = Allocate<TemplateDeclaration>();
 
 	ParseParameterList(err, lexer, result->parameters, TokenType::GREATER);
 	IFERR_RETURN(err, nullptr)
@@ -331,11 +419,11 @@ static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &
 		name = lexer.Next().data.stringData;
 	}
 
-	if (isConstructor || lexer.Get().type == TokenType::ROUND_OB)
+	if (isConstructor || isDestructor || lexer.Get().type == TokenType::ROUND_OB)
 	{
 		lexer.Next();
 
-		Ref<MethodDeclaration> result = Allocate<MethodDeclaration>();
+		Ref<MethodDeclaration> result = isConstructor ? Allocate<ConstructorDeclaration>() : (isDestructor ? Allocate<DestructorDeclaration>() : Allocate<MethodDeclaration>());
 		result->flags = flags;
 		result->name = name;
 		result->dataType = dataType;
@@ -351,8 +439,43 @@ static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &
 		}
 
 		ParseParameterList(err, lexer, result->parameters, TokenType::ROUND_CB);
+		IFERR_RETURN(err, nullptr)
 
-		// TODO: parse method
+		if (isConstructor)
+		{
+			Ref<ConstructorDeclaration> constructor = std::dynamic_pointer_cast<ConstructorDeclaration>(result);
+
+			if (lexer.Get().type == TokenType::COLON)
+			{
+				lexer.Next();
+
+				while (lexer.HasNext())
+				{
+					ConstructorInitializer initializer;
+
+					ASSERT_TOKEN(err, lexer, TokenType::IDENTIFIER, nullptr)
+					initializer.name = lexer.Next().data.stringData;
+
+					ASSERT_TOKEN(err, lexer, TokenType::ROUND_OB, nullptr)
+
+					initializer.tempValue = ScanAndSkipNested(err, lexer, TokenType::ROUND_OB, TokenType::ROUND_CB);
+					IFERR_RETURN(err, nullptr)
+
+					constructor->initializers.push_back(initializer);
+
+					if (lexer.Get().type != TokenType::COMMA)
+					{
+						break;
+					}
+					lexer.Next();
+				}
+			}
+		}
+
+		ASSERT_TOKEN(err, lexer, TokenType::CURLY_OB, nullptr);
+
+		result->tempBody = ScanAndSkipNested(err, lexer, TokenType::CURLY_OB, TokenType::CURLY_CB);
+		IFERR_RETURN(err, nullptr)
 
 		return result;
 	}
@@ -424,7 +547,7 @@ static Ref<UnitDeclaration> ParseClassDeclaration(ErrorStream &err, Lexer &lexer
 	{
 		lexer.Next();
 
-		result->typeTemplate = ParseTemplate(err, lexer);
+		result->typeTemplate = ParseTemplateDeclaration(err, lexer);
 		IFERR_RETURN(err, nullptr)
 	}
 
