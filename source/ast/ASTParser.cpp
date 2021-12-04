@@ -248,7 +248,7 @@ static Ref<DataType> ParseDataType(ErrorStream &err, Lexer &lexer)
 	return result;
 }
 
-static void ParseArgumentList(ErrorStream &err, Lexer &lexer, Array<Ref<VariableDeclaration>> &target, TokenType endToken)
+static void ParseParameterList(ErrorStream &err, Lexer &lexer, Array<Ref<VariableDeclaration>> &target, TokenType endToken)
 {
 	while (lexer.HasNext())
 	{
@@ -283,7 +283,7 @@ static Ref<Template> ParseTemplate(ErrorStream &err, Lexer &lexer)
 {
 	Ref<Template> result = Allocate<Template>();
 
-	ParseArgumentList(err, lexer, result->parameters, TokenType::GREATER);
+	ParseParameterList(err, lexer, result->parameters, TokenType::GREATER);
 	IFERR_RETURN(err, nullptr)
 
 	return result;
@@ -350,7 +350,7 @@ static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &
 			result->methodType = MethodType::DESTRUCTOR;
 		}
 
-		ParseArgumentList(err, lexer, result->parameters, TokenType::ROUND_CB);
+		ParseParameterList(err, lexer, result->parameters, TokenType::ROUND_CB);
 
 		// TODO: parse method
 
