@@ -11,16 +11,20 @@ private:
 	Function<void(const String &)> print;
 	Ref<const Lexer> lexer;
 	bool errorOccured;
+	UInt32 tryCatchLexel;
 
 public:
 	ErrorStream(const String &fileName, Function<void(const String &)> print, Ref<const Lexer> lexer)
-		: fileName(fileName), print(print), lexer(lexer), errorOccured(false)
+		: fileName(fileName), print(print), lexer(lexer), errorOccured(false), tryCatchLexel(0)
 	{
 	}
 
 public:
 	void PrintError(const String &message);
 	void PrintError(const Token &location, const String &message);
+
+	void Try();
+	Bool Catch();
 
 	bool HasErrorOccured() const
 	{

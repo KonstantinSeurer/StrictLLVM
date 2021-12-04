@@ -15,6 +15,13 @@ void ErrorStream::PrintError(const String &message)
 
 void ErrorStream::PrintError(const Token &location, const String &message)
 {
+	errorOccured = true;
+
+	if (tryCatchLexel > 0)
+	{
+		return;
+	}
+
 	const String &source = lexer->GetSource();
 
 	Int64 lineStart = location.characterIndex;
@@ -58,6 +65,31 @@ void ErrorStream::PrintError(const Token &location, const String &message)
 
 	print(message);
 	print("\n");
+}
 
-	errorOccured = true;
+void ErrorStream::Try()
+{
+	if (errorOccured)
+	{
+		print("Compiler bug: Uncaught error (the error flag was set when calling ErrorStream::Try)!");
+	}
+
+	errorOccured = false;
+	tryCatchLexel++;
+}
+
+Bool ErrorStream::Catch()
+{
+	if (tryCatchLexel == 0)
+	{
+		print("Compiler bug: Can't call ErrorStream::Catch without calling ErrorStream::Try!");
+		return errorOccured;
+	}
+
+	Bool result = errorOccured;
+
+	errorOccured = false;
+	tryCatchLexel--;
+
+	return result;
 }
