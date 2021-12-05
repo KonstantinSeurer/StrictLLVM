@@ -377,6 +377,75 @@ static Ref<TemplateDeclaration> ParseTemplateDeclaration(ErrorStream &err, Lexer
 	return result;
 }
 
+struct pair_hash
+{
+	template <class T1, class T2>
+	std::size_t operator()(const std::pair<T1, T2> &pair) const
+	{
+		return std::hash<T1>()(pair.first) ^ std::hash<T2>()(pair.second);
+	}
+};
+
+static HashMap<Pair<TokenType, TokenType>, OperatorType, pair_hash> operatorTypes = {
+	// Non mutating binary operators
+	{{TokenType::PLUS, TokenType::ROUND_OB}, OperatorType::PLUS},
+	{{TokenType::MINUS, TokenType::ROUND_OB}, OperatorType::MINUS},
+	{{TokenType::STAR, TokenType::ROUND_OB}, OperatorType::MULTIPLY},
+	{{TokenType::SLASH, TokenType::ROUND_OB}, OperatorType::DIVIDE},
+	{{TokenType::AND, TokenType::ROUND_OB}, OperatorType::AND},
+	{{TokenType::OR, TokenType::ROUND_OB}, OperatorType::OR},
+	{{TokenType::POWER, TokenType::ROUND_OB}, OperatorType::XOR},
+	{{TokenType::GREATER, TokenType::ROUND_OB}, OperatorType::GREATER},
+	{{TokenType::LESS, TokenType::ROUND_OB}, OperatorType::LESS},
+	{{TokenType::EQUALS, TokenType::ROUND_OB}, OperatorType::EQUAL},
+	{{TokenType::NOT, TokenType::EQUALS}, OperatorType::NOT_EQUAL},
+	{{TokenType::GREATER, TokenType::EQUALS}, OperatorType::GREATER_EQUAL},
+	{{TokenType::LESS, TokenType::EQUALS}, OperatorType::LESS_EQUAL},
+	// Mutating binary operators
+	{{TokenType::PLUS, TokenType::EQUALS}, OperatorType::PLUS_EQUAL},
+	{{TokenType::MINUS, TokenType::EQUALS}, OperatorType::MINUS_EQUAL},
+	{{TokenType::STAR, TokenType::EQUALS}, OperatorType::MULTIPLY_EQUAL},
+	{{TokenType::SLASH, TokenType::EQUALS}, OperatorType::DIVIDE_EQUAL},
+	{{TokenType::AND, TokenType::EQUALS}, OperatorType::AND_EQUAL},
+	{{TokenType::OR, TokenType::EQUALS}, OperatorType::OR_EQUAL},
+	{{TokenType::POWER, TokenType::EQUALS}, OperatorType::XOR_EQUAL},
+	// Non mutating unary operators
+	// Don't implement NEGATIVE since the difference betweeen NEGATIVE and MINUS depends on the parameter count.
+	{{TokenType::NOT, TokenType::ROUND_OB}, OperatorType::NOT},
+	{{TokenType::TILDE, TokenType::ROUND_OB}, OperatorType::INVERSE},
+	// Mutating unary operators
+	{{TokenType::PLUS, TokenType::PLUS}, OperatorType::INCREMENT},
+	{{TokenType::MINUS, TokenType::MINUS}, OperatorType::DECREMENT}};
+
+static HashSet<OperatorType> binaryOperatorSet = {
+	// Non mutating binary operators
+	OperatorType::PLUS,
+	OperatorType::MINUS,
+	OperatorType::MULTIPLY,
+	OperatorType::DIVIDE,
+	OperatorType::AND,
+	OperatorType::OR,
+	OperatorType::XOR,
+	OperatorType::GREATER,
+	OperatorType::LESS,
+	OperatorType::EQUAL,
+	OperatorType::NOT_EQUAL,
+	OperatorType::GREATER_EQUAL,
+	OperatorType::LESS_EQUAL,
+	// Mutating binary operators
+	OperatorType::PLUS_EQUAL,
+	OperatorType::MINUS_EQUAL,
+	OperatorType::MULTIPLY_EQUAL,
+	OperatorType::DIVIDE_EQUAL,
+	OperatorType::AND_EQUAL,
+	OperatorType::OR_EQUAL,
+	OperatorType::XOR_EQUAL};
+
+static bool IsBinaryOperator(OperatorType type)
+{
+	return binaryOperatorSet.find(type) != binaryOperatorSet.end();
+}
+
 static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &lexer, const String &unitName)
 {
 	DeclarationFlags flags = ParseDeclarationFlags(lexer);
@@ -385,6 +454,8 @@ static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &
 	bool isDestructor = false;
 	bool isInternal = false;
 	bool isInline = false;
+	bool isOperator = false;
+	OperatorType operatorType;
 
 	Ref<DataType> dataType;
 	String name;
@@ -396,6 +467,18 @@ static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &
 		isConstructor = true;
 
 		ASSERT_TOKEN(err, lexer, TokenType::ROUND_OB, nullptr)
+	}
+	else if (lexer.Get().type == TokenType::OPERATOR)
+	{
+		lexer.Next();
+
+		isOperator = true;
+		operatorType = OperatorType::CAST;
+
+		dataType = ParseDataType(err, lexer);
+		IFERR_RETURN(err, nullptr)
+
+		// TODO: handle explicit cast operators
 	}
 	else if (lexer.Get().type == TokenType::TILDE)
 	{
@@ -430,15 +513,57 @@ static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &
 			lexer.Next();
 		}
 
-		ASSERT_TOKEN(err, lexer, TokenType::IDENTIFIER, nullptr)
-		name = lexer.Next().data.stringData;
+		isOperator = lexer.Get().type == TokenType::OPERATOR;
+		if (isOperator)
+		{
+			lexer.Next();
+
+			Pair<TokenType, TokenType> operatorTokens;
+
+			operatorTokens.first = lexer.Next().type;
+
+			operatorTokens.second = lexer.Get().type;
+			if (operatorTokens.second != TokenType::ROUND_OB)
+			{
+				lexer.Next();
+			}
+
+			if (operatorTokens.first != TokenType::ROUND_OB && operatorTokens.second != TokenType::ROUND_OB)
+			{
+				ASSERT_TOKEN(err, lexer, TokenType::ROUND_OB, nullptr)
+			}
+
+			operatorType = operatorTypes[operatorTokens];
+		}
+		else
+		{
+			ASSERT_TOKEN(err, lexer, TokenType::IDENTIFIER, nullptr)
+			name = lexer.Next().data.stringData;
+		}
 	}
 
-	if (isConstructor || isDestructor || lexer.Get().type == TokenType::ROUND_OB)
+	if (isConstructor || isDestructor || isOperator || lexer.Get().type == TokenType::ROUND_OB)
 	{
 		lexer.Next();
 
-		Ref<MethodDeclaration> result = isConstructor ? Allocate<ConstructorDeclaration>() : (isDestructor ? Allocate<DestructorDeclaration>() : Allocate<MethodDeclaration>());
+		Ref<MethodDeclaration> result;
+		if (isConstructor)
+		{
+			result = Allocate<ConstructorDeclaration>();
+		}
+		else if (isDestructor)
+		{
+			result = Allocate<DestructorDeclaration>();
+		}
+		else if (isOperator)
+		{
+			result = Allocate<OperatorDeclaration>();
+		}
+		else
+		{
+			result = Allocate<MethodDeclaration>();
+		}
+
 		result->flags = flags;
 		result->name = name;
 		result->dataType = dataType;
@@ -483,6 +608,37 @@ static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &
 						break;
 					}
 					lexer.Next();
+				}
+			}
+		}
+		else if (isOperator)
+		{
+			if (result->parameters.size() > 1)
+			{
+				err.PrintError(lexer.Get(), "Invalid parameter count " + std::to_string(result->parameters.size()) + " for operator! Operators either have 0, 1 parameter.");
+				return nullptr;
+			}
+
+			Ref<OperatorDeclaration> operatorDeclaration = std::dynamic_pointer_cast<OperatorDeclaration>(result);
+			if (operatorType == OperatorType::MINUS)
+			{
+				if (result->parameters.empty())
+				{
+					operatorDeclaration->operatorType = OperatorType::NEGATIVE;
+				}
+				else
+				{
+					operatorDeclaration->operatorType = OperatorType::MINUS;
+				}
+			}
+			else
+			{
+				operatorDeclaration->operatorType = operatorType;
+
+				if ((result->parameters.size() == 1) != IsBinaryOperator(operatorType))
+				{
+					err.PrintError(lexer.Get(), "Invalid parameter count " + std::to_string(result->parameters.size()) + " for binary operator " + ToString(operatorType) + "!");
+					return nullptr;
 				}
 			}
 		}
