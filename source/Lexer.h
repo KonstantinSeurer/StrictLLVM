@@ -90,7 +90,8 @@ STRICT_ENUM(TokenType,
 			EQUALS,
 			LESS,
 			GREATER,
-			TILDE);
+			TILDE,
+			POWER);
 
 const String &ToString(TokenType type);
 

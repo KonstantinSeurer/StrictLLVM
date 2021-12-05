@@ -91,7 +91,8 @@ static HashMap<char, TokenType> singleCharacterTokenTable = {
 	{'=', TokenType::EQUALS},
 	{'<', TokenType::LESS},
 	{'>', TokenType::GREATER},
-	{'~', TokenType::TILDE}};
+	{'~', TokenType::TILDE},
+	{'^', TokenType::POWER}};
 
 static HashMap<char, char> escapeSequenceTable = {
 	{'\\', '\\'},
