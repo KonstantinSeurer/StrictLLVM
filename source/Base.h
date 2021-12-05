@@ -41,8 +41,8 @@ inline Ref<T> Allocate(Args &&...args)
 template <typename T>
 using Array = std::vector<T>;
 
-template <typename K, typename V>
-using HashMap = std::unordered_map<K, V>;
+template <typename K, typename V, typename... MiscArgs>
+using HashMap = std::unordered_map<K, V, MiscArgs...>;
 
 template <typename T>
 using HashSet = std::unordered_set<T>;
