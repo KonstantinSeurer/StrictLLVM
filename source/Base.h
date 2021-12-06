@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <functional>
+#include <optional>
 #include <utility>
 #include <memory>
 #include <any>
@@ -54,6 +55,9 @@ using Any = std::any;
 
 template <typename Signature>
 using Function = std::function<Signature>;
+
+template <typename T>
+using Optional = std::optional<T>;
 
 namespace strict
 {
