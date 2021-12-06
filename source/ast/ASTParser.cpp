@@ -34,17 +34,6 @@ static String ParseUsing(ErrorStream &err, Lexer &lexer)
 	return dependency;
 }
 
-static HashMap<TokenType, DeclarationFlags> declarationFlags = {
-	{TokenType::PRIVATE, DeclarationFlags::PRIVATE},
-	{TokenType::PROTECTED, DeclarationFlags::PROTECTED},
-	{TokenType::INTERNAL, DeclarationFlags::INTERNAL},
-	{TokenType::PUBLIC, DeclarationFlags::PUBLIC},
-	{TokenType::MUT, DeclarationFlags::MUT},
-	{TokenType::IMPURE, DeclarationFlags::IMPURE},
-	{TokenType::VIRTUAL, DeclarationFlags::VIRTUAL}};
-
-static HashSet<TokenType> unitDeclarationTypeSet = {TokenType::ERROR, TokenType::CLASS, TokenType::SINGLETON, TokenType::TYPE};
-
 #define ASSERT_TOKEN(err, lexer, tokenType, returnValue)                                                                                  \
 	if (lexer.Get().type != tokenType)                                                                                                    \
 	{                                                                                                                                     \
@@ -58,6 +47,15 @@ static HashSet<TokenType> unitDeclarationTypeSet = {TokenType::ERROR, TokenType:
 		return returnValue;            \
 	}
 
+static HashMap<TokenType, DeclarationFlags> declarationFlags = {
+	{TokenType::PRIVATE, DeclarationFlags::PRIVATE},
+	{TokenType::PROTECTED, DeclarationFlags::PROTECTED},
+	{TokenType::INTERNAL, DeclarationFlags::INTERNAL},
+	{TokenType::PUBLIC, DeclarationFlags::PUBLIC},
+	{TokenType::MUT, DeclarationFlags::MUT},
+	{TokenType::IMPURE, DeclarationFlags::IMPURE},
+	{TokenType::VIRTUAL, DeclarationFlags::VIRTUAL}};
+
 static DeclarationFlags ParseDeclarationFlags(Lexer &lexer)
 {
 	DeclarationFlags flags = DeclarationFlags::PRIVATE;
@@ -69,6 +67,34 @@ static DeclarationFlags ParseDeclarationFlags(Lexer &lexer)
 		if (declarationFlags.find(token.type) != declarationFlags.end())
 		{
 			flags = flags | declarationFlags.at(token.type);
+			lexer.Next();
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	return flags;
+}
+
+static HashMap<TokenType, DeclarationFlags> visibilityFlags = {
+	{TokenType::PRIVATE, DeclarationFlags::PRIVATE},
+	{TokenType::PROTECTED, DeclarationFlags::PROTECTED},
+	{TokenType::INTERNAL, DeclarationFlags::INTERNAL},
+	{TokenType::PUBLIC, DeclarationFlags::PUBLIC}};
+
+static DeclarationFlags ParseVisibilityFlags(Lexer &lexer)
+{
+	DeclarationFlags flags = DeclarationFlags::PRIVATE;
+
+	while (lexer.HasNext())
+	{
+		const Token &token = lexer.Get();
+
+		if (visibilityFlags.find(token.type) != visibilityFlags.end())
+		{
+			flags = flags | visibilityFlags.at(token.type);
 			lexer.Next();
 		}
 		else
@@ -449,7 +475,7 @@ static bool IsBinaryOperator(OperatorType type)
 
 static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &lexer, const String &unitName)
 {
-	DeclarationFlags flags = ParseDeclarationFlags(lexer);
+	DeclarationFlags flags = ParseVisibilityFlags(lexer);
 
 	bool isConstructor = false;
 	bool isDestructor = false;
@@ -602,6 +628,8 @@ static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &
 
 		ParseParameterList(err, lexer, result->parameters, TokenType::ROUND_CB);
 		IFERR_RETURN(err, nullptr)
+
+		result->flags = result->flags | ParseDeclarationFlags(lexer);
 
 		if (isConstructor)
 		{
@@ -774,6 +802,8 @@ static Ref<UnitDeclaration> ParseTypeDeclaration(ErrorStream &err, Lexer &lexer,
 
 	return result;
 }
+
+static HashSet<TokenType> unitDeclarationTypeSet = {TokenType::ERROR, TokenType::CLASS, TokenType::SINGLETON, TokenType::TYPE};
 
 static Ref<UnitDeclaration> ParseUnitDeclaration(ErrorStream &err, Lexer &lexer, const String &unitName)
 {
