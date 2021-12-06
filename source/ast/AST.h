@@ -350,7 +350,6 @@ public:
 class TypeDeclaration : public UnitDeclaration
 {
 public:
-	DeclarationFlags flags;
 	Array<Ref<VariableDeclaration>> members;
 	Ref<TemplateDeclaration> typeTemplate;
 	Array<Ref<ObjectType>> superTypes;
