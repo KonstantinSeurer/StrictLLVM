@@ -47,7 +47,8 @@ STRICT_FLAGS(DeclarationFlags,
 			 PROTECTED = 2,
 			 PUBLIC = 7,
 			 MUT = 8,
-			 IMPURE = 16)
+			 IMPURE = 16,
+			 VIRTUAL = 32)
 
 STRICT_ENUM(DataTypeType,
 			TYPE,

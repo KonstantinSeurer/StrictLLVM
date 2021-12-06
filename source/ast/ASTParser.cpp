@@ -40,7 +40,8 @@ static HashMap<TokenType, DeclarationFlags> declarationFlags = {
 	{TokenType::INTERNAL, DeclarationFlags::INTERNAL},
 	{TokenType::PUBLIC, DeclarationFlags::PUBLIC},
 	{TokenType::MUT, DeclarationFlags::MUT},
-	{TokenType::IMPURE, DeclarationFlags::IMPURE}};
+	{TokenType::IMPURE, DeclarationFlags::IMPURE},
+	{TokenType::VIRTUAL, DeclarationFlags::VIRTUAL}};
 
 static HashSet<TokenType> unitDeclarationTypeSet = {TokenType::ERROR, TokenType::CLASS, TokenType::SINGLETON, TokenType::TYPE};
 
