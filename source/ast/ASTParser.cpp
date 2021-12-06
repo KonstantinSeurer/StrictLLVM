@@ -67,7 +67,7 @@ static DeclarationFlags ParseDeclarationFlags(Lexer &lexer)
 
 		if (declarationFlags.find(token.type) != declarationFlags.end())
 		{
-			flags = (DeclarationFlags)((UInt64)flags | (UInt64)declarationFlags.at(token.type));
+			flags = flags | declarationFlags.at(token.type);
 			lexer.Next();
 		}
 		else
