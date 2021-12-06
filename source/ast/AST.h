@@ -32,13 +32,13 @@ public:
 	}
 };
 
-STRICT_ENUM(DeclarationFlags,
-			PRIVATE = 0,
-			INTERNAL = 1,
-			PROTECTED = 2,
-			PUBLIC = 7,
-			MUT = 8,
-			IMPURE = 16)
+STRICT_FLAGS(DeclarationFlags,
+			 PRIVATE = 0,
+			 INTERNAL = 1,
+			 PROTECTED = 2,
+			 PUBLIC = 7,
+			 MUT = 8,
+			 IMPURE = 16)
 
 STRICT_ENUM(DataTypeType,
 			TYPE,
@@ -406,12 +406,12 @@ STRICT_ENUM(ModuleType,
 			DYNAMIC,
 			INLINE)
 
-STRICT_ENUM(TargetFlags,
-			NONE = 0,
-			BIT32 = 1,
-			BIT64 = 2,
-			X86 = 4,
-			LINUX = 8)
+STRICT_FLAGS(TargetFlags,
+			 NONE = 0,
+			 BIT32 = 1,
+			 BIT64 = 2,
+			 X86 = 4,
+			 LINUX = 8)
 
 bool IsTargetActive(TargetFlags target, TargetFlags buildTarget);
 TargetFlags JSONToTargetFlags(const JSON &json);
