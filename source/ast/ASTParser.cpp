@@ -465,6 +465,7 @@ static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &
 		lexer.Next();
 
 		isConstructor = true;
+		dataType = primitiveTypes.at(TokenType::VOID);
 
 		ASSERT_TOKEN(err, lexer, TokenType::ROUND_OB, nullptr)
 	}
@@ -495,6 +496,7 @@ static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &
 		lexer.Next();
 
 		isDestructor = true;
+		dataType = primitiveTypes.at(TokenType::VOID);
 	}
 	else
 	{
