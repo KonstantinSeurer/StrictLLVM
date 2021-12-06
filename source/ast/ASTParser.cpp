@@ -398,7 +398,7 @@ static HashMap<Pair<TokenType, TokenType>, OperatorType, pair_hash> operatorType
 	{{TokenType::POWER, TokenType::ROUND_OB}, OperatorType::XOR},
 	{{TokenType::GREATER, TokenType::ROUND_OB}, OperatorType::GREATER},
 	{{TokenType::LESS, TokenType::ROUND_OB}, OperatorType::LESS},
-	{{TokenType::EQUALS, TokenType::ROUND_OB}, OperatorType::EQUAL},
+	{{TokenType::EQUALS, TokenType::EQUALS}, OperatorType::EQUAL},
 	{{TokenType::NOT, TokenType::EQUALS}, OperatorType::NOT_EQUAL},
 	{{TokenType::GREATER, TokenType::EQUALS}, OperatorType::GREATER_EQUAL},
 	{{TokenType::LESS, TokenType::EQUALS}, OperatorType::LESS_EQUAL},
@@ -549,7 +549,13 @@ static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &
 				ASSERT_TOKEN(err, lexer, TokenType::ROUND_OB, nullptr)
 			}
 
-			operatorType = operatorTypes[operatorTokens];
+			if (operatorTypes.find(operatorTokens) == operatorTypes.end())
+			{
+				err.PrintError(lexer.Get(), "Invalid operator!");
+				return nullptr;
+			}
+
+			operatorType = operatorTypes.at(operatorTokens);
 		}
 		else
 		{
