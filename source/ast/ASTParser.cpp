@@ -798,6 +798,7 @@ static Ref<UnitDeclaration> ParseUnitDeclaration(ErrorStream &err, Lexer &lexer,
 Ref<Unit> ParseUnit(ErrorStream &err, Lexer lexer, const String &name)
 {
 	Ref<Unit> unit = Allocate<Unit>();
+	unit->name = name;
 
 	while (lexer.HasNext())
 	{
