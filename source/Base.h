@@ -83,7 +83,18 @@ namespace strict
 
 // enum declaration
 #ifdef STRICT_ENUM_IMPLEMENTATION
-#define STRICT_ENUM(name, ...)                                                          \
+#define STRICT_ENUM(name, ...)                                                      \
+	enum class name                                                                 \
+	{                                                                               \
+		__VA_ARGS__                                                                 \
+	};                                                                              \
+	static HashMap<UInt64, String> name##Names;                                     \
+	static HashMap<String, UInt64> name##Values;                                    \
+	static_block { strict::GetEnumNames(#__VA_ARGS__, name##Names, name##Values); } \
+	const String &ToString(name value) { return name##Names.at((UInt64)value); }    \
+	name StringTo##name(const String &string) { return (name)name##Values.at(string); }
+
+#define STRICT_FLAGS(name, ...)                                                         \
 	enum class name                                                                     \
 	{                                                                                   \
 		__VA_ARGS__                                                                     \
@@ -91,17 +102,42 @@ namespace strict
 	static HashMap<UInt64, String> name##Names;                                         \
 	static HashMap<String, UInt64> name##Values;                                        \
 	static_block { strict::GetEnumNames(#__VA_ARGS__, name##Names, name##Values); }     \
-	const String &ToString(name value) { return name##Names.at((UInt64)value); }        \
+	String ToString(name value)                                                         \
+	{                                                                                   \
+		String result;                                                                  \
+		bool first = true;                                                              \
+		for (const auto &e : name##Values)                                              \
+		{                                                                               \
+			if ((e.second & (UInt64)value) == e.second)                                 \
+			{                                                                           \
+				if (!first)                                                             \
+				{                                                                       \
+					result += " ";                                                      \
+				}                                                                       \
+				first = false;                                                          \
+				result += e.first;                                                      \
+			}                                                                           \
+		}                                                                               \
+		return result;                                                                  \
+	}                                                                                   \
 	name StringTo##name(const String &string) { return (name)name##Values.at(string); } \
 	name operator|(name a, name b) { return (name)((UInt64)a | (UInt64)b); }            \
 	name operator&(name a, name b) { return (name)((UInt64)a & (UInt64)b); }
 #else
-#define STRICT_ENUM(name, ...)                 \
+#define STRICT_ENUM(name, ...)          \
+	enum class name                     \
+	{                                   \
+		__VA_ARGS__                     \
+	};                                  \
+	const String &ToString(name value); \
+	name StringTo##name(const String &string);
+
+#define STRICT_FLAGS(name, ...)                \
 	enum class name                            \
 	{                                          \
 		__VA_ARGS__                            \
 	};                                         \
-	const String &ToString(name value);        \
+	String ToString(name value);               \
 	name StringTo##name(const String &string); \
 	name operator|(name a, name b);            \
 	name operator&(name a, name b);
