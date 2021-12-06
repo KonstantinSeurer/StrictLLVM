@@ -463,9 +463,22 @@ static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &
 
 	if (lexer.Get().type == TokenType::IDENTIFIER && lexer.Get().data.stringData == unitName)
 	{
+		lexer.Push();
 		lexer.Next();
 
-		isConstructor = true;
+		if (lexer.Get().type == TokenType::ROUND_OB)
+		{
+			isConstructor = true;
+			lexer.Pop();
+		}
+		else
+		{
+			lexer.Revert();
+		}
+	}
+
+	if (isConstructor)
+	{
 		dataType = primitiveTypes.at(TokenType::VOID);
 
 		ASSERT_TOKEN(err, lexer, TokenType::ROUND_OB, nullptr)
@@ -646,10 +659,16 @@ static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &
 			}
 		}
 
-		ASSERT_TOKEN(err, lexer, TokenType::CURLY_OB, nullptr);
-
-		result->tempBody = ScanAndSkipNested(err, lexer, TokenType::CURLY_OB, TokenType::CURLY_CB);
-		IFERR_RETURN(err, nullptr)
+		if (lexer.Get().type == TokenType::CURLY_OB)
+		{
+			result->tempBody = ScanAndSkipNested(err, lexer, TokenType::CURLY_OB, TokenType::CURLY_CB);
+			IFERR_RETURN(err, nullptr)
+		}
+		else
+		{
+			ASSERT_TOKEN(err, lexer, TokenType::SEMICOLON, nullptr);
+			lexer.Next();
+		}
 
 		return result;
 	}
@@ -705,10 +724,9 @@ static void ParseSuperTypeList(ErrorStream &err, Lexer &lexer, Array<Ref<ObjectT
 	}
 }
 
-static Ref<UnitDeclaration> ParseClassDeclaration(ErrorStream &err, Lexer &lexer, bool singleton, const String &unitName)
+static Ref<UnitDeclaration> ParseTypeDeclaration(ErrorStream &err, Lexer &lexer, const String &unitName, bool isClass, bool singleton)
 {
-	Ref<ClassDeclaration> result = Allocate<ClassDeclaration>();
-	result->isSingleton = singleton;
+	Ref<TypeDeclaration> result = isClass ? Allocate<ClassDeclaration>(singleton) : Allocate<TypeDeclaration>();
 
 	ASSERT_TOKEN(err, lexer, TokenType::IDENTIFIER, nullptr)
 	if (lexer.Get().data.stringData != unitName)
@@ -751,13 +769,6 @@ static Ref<UnitDeclaration> ParseClassDeclaration(ErrorStream &err, Lexer &lexer
 	return result;
 }
 
-static Ref<UnitDeclaration> ParseTypeDeclaration(ErrorStream &err, Lexer &lexer, const String &unitName)
-{
-	Ref<TypeDeclaration> result = Allocate<TypeDeclaration>();
-
-	return result;
-}
-
 static Ref<UnitDeclaration> ParseUnitDeclaration(ErrorStream &err, Lexer &lexer, const String &unitName)
 {
 	DeclarationFlags flags = ParseDeclarationFlags(lexer);
@@ -778,13 +789,13 @@ static Ref<UnitDeclaration> ParseUnitDeclaration(ErrorStream &err, Lexer &lexer,
 		declaration = ParseErrorDeclaration(err, lexer, unitName);
 		break;
 	case TokenType::CLASS:
-		declaration = ParseClassDeclaration(err, lexer, false, unitName);
+		declaration = ParseTypeDeclaration(err, lexer, unitName, true, false);
 		break;
 	case TokenType::SINGLETON:
-		declaration = ParseClassDeclaration(err, lexer, true, unitName);
+		declaration = ParseTypeDeclaration(err, lexer, unitName, true, true);
 		break;
 	case TokenType::TYPE:
-		declaration = ParseTypeDeclaration(err, lexer, unitName);
+		declaration = ParseTypeDeclaration(err, lexer, unitName, false, false);
 		break;
 	default:
 		return nullptr;

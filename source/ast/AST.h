@@ -271,7 +271,7 @@ public:
 	Array<Ref<VariableDeclaration>> parameters;
 
 	Ref<Statement> body;
-	Lexer tempBody;
+	Optional<Lexer> tempBody;
 
 public:
 	MethodDeclaration()
@@ -430,6 +430,11 @@ public:
 public:
 	ClassDeclaration()
 		: TypeDeclaration(ASTItemType::CLASS_DECLARATION)
+	{
+	}
+
+	ClassDeclaration(bool isSingleton)
+		: TypeDeclaration(ASTItemType::CLASS_DECLARATION), isSingleton(isSingleton)
 	{
 	}
 
