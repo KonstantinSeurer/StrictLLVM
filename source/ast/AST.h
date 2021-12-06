@@ -30,6 +30,15 @@ public:
 		: type(type)
 	{
 	}
+
+	virtual ~ASTItem()
+	{
+	}
+
+	String ToString(UInt32 indentation) const;
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
 };
 
 STRICT_FLAGS(DeclarationFlags,
@@ -65,6 +74,9 @@ public:
 	virtual ~DataType()
 	{
 	}
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
 };
 
 class PrimitiveType : public DataType
@@ -84,6 +96,9 @@ public:
 	{
 		dataTypeType = DataTypeType::PRIMITIVE;
 	}
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
 };
 
 class ObjectType : public DataType
@@ -98,6 +113,9 @@ public:
 	{
 		dataTypeType = DataTypeType::OBJECT;
 	}
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
 };
 
 class PointerType : public DataType
@@ -110,6 +128,9 @@ public:
 		: DataType()
 	{
 	}
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
 };
 
 STRICT_ENUM(ExpressionType,
@@ -129,6 +150,9 @@ public:
 	virtual ~Expression()
 	{
 	}
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
 };
 
 STRICT_ENUM(StatementType,
@@ -149,6 +173,9 @@ public:
 	virtual ~Statement()
 	{
 	}
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
 };
 
 class Template : public ASTItem
@@ -161,6 +188,9 @@ public:
 		: ASTItem(ASTItemType::TEMPLATE)
 	{
 	}
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
 };
 
 class UnitDeclaration : public ASTItem
@@ -179,6 +209,9 @@ public:
 	{
 		return JSON(JSON::value_t::array);
 	}
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
 };
 
 class ErrorDeclaration : public UnitDeclaration
@@ -193,7 +226,8 @@ public:
 	{
 	}
 
-public:
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
 };
 
 STRICT_ENUM(VariableDeclarationType,
@@ -211,13 +245,16 @@ public:
 
 public:
 	VariableDeclaration()
-		: ASTItem(ASTItemType::VARIABLE_DECLARATION)
+		: ASTItem(ASTItemType::VARIABLE_DECLARATION), variableType(VariableDeclarationType::VARIABLE)
 	{
 	}
 
 	virtual ~VariableDeclaration()
 	{
 	}
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
 };
 
 STRICT_ENUM(MethodType,
@@ -241,6 +278,9 @@ public:
 	{
 		variableType = VariableDeclarationType::METHOD;
 	}
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
 };
 
 class ConstructorInitializer
@@ -264,6 +304,9 @@ public:
 		variableType = VariableDeclarationType::METHOD;
 		methodType = MethodType::CONSTRUCTOR;
 	}
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
 };
 
 class DestructorDeclaration : public MethodDeclaration
@@ -322,6 +365,9 @@ public:
 		variableType = VariableDeclarationType::METHOD;
 		methodType = MethodType::OPERATOR;
 	}
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
 };
 
 class MemberVariableDeclaration : public VariableDeclaration
@@ -333,6 +379,9 @@ public:
 	{
 		variableType = VariableDeclarationType::MEMBER_VARIABLE;
 	}
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
 };
 
 class TemplateDeclaration : public ASTItem
@@ -345,6 +394,9 @@ public:
 		: ASTItem(ASTItemType::TEMPLATE_DECLARATION)
 	{
 	}
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
 };
 
 class TypeDeclaration : public UnitDeclaration
@@ -365,7 +417,8 @@ public:
 	{
 	}
 
-public:
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
 };
 
 class ClassDeclaration : public TypeDeclaration
@@ -379,7 +432,8 @@ public:
 	{
 	}
 
-public:
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
 };
 
 class Unit : public ASTItem
@@ -399,6 +453,9 @@ public:
 
 public:
 	JSON GetStructureJSON() const;
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
 };
 
 STRICT_ENUM(ModuleType,
@@ -453,6 +510,9 @@ public:
 
 		return nullptr;
 	}
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
 };
 
 #endif /* SOURCE_AST_AST */
