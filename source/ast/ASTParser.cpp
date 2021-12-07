@@ -404,6 +404,52 @@ static Ref<TemplateDeclaration> ParseTemplateDeclaration(ErrorStream &err, Lexer
 	return result;
 }
 
+static Ref<MethodDeclaration> ParseAccessor(ErrorStream &err, Lexer &lexer)
+{
+	Ref<MethodDeclaration> result = Allocate<MethodDeclaration>();
+	result->flags = ParseDeclarationFlags(lexer);
+
+	result->dataType = ParseDataType(err, lexer);
+	IFERR_RETURN(err, nullptr)
+
+	if (lexer.Get().type == TokenType::GET)
+	{
+		lexer.Next();
+
+		result->methodType = MethodType::GETTER;
+	}
+	else if (lexer.Get().type == TokenType::SET)
+	{
+		lexer.Next();
+
+		result->methodType = MethodType::SETTER;
+	}
+	else
+	{
+		err.PrintError(lexer.Get(), "Unexpected token " + ToString(lexer.Get().type) + "! Expected either get or set.");
+		return nullptr;
+	}
+
+	ASSERT_TOKEN(err, lexer, TokenType::ROUND_OB, nullptr)
+	lexer.Next();
+
+	ParseParameterList(err, lexer, result->parameters, TokenType::ROUND_CB);
+	IFERR_RETURN(err, nullptr)
+
+	if (lexer.Get().type == TokenType::CURLY_OB)
+	{
+		result->tempBody = ScanAndSkipNested(err, lexer, TokenType::CURLY_OB, TokenType::CURLY_CB);
+		IFERR_RETURN(err, nullptr)
+	}
+	else
+	{
+		ASSERT_TOKEN(err, lexer, TokenType::SEMICOLON, nullptr)
+		lexer.Next();
+	}
+
+	return result;
+}
+
 struct pair_hash
 {
 	template <class T1, class T2>
@@ -601,7 +647,8 @@ static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &
 		}
 		else if (isDestructor)
 		{
-			result = Allocate<DestructorDeclaration>();
+			result = Allocate<MethodDeclaration>();
+			result->methodType = MethodType::DESTRUCTOR;
 		}
 		else if (isOperator)
 		{
@@ -716,7 +763,19 @@ static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &
 	{
 		lexer.Next();
 
-		// TODO: parse getters/setters
+		while (lexer.HasNext())
+		{
+			if (lexer.Get().type == TokenType::CURLY_CB)
+			{
+				lexer.Next();
+				break;
+			}
+
+			Ref<MethodDeclaration> accessor = ParseAccessor(err, lexer);
+			IFERR_RETURN(err, nullptr)
+
+			result->accessors.push_back(accessor);
+		}
 	}
 
 	if (lexer.Get().type == TokenType::EQUALS)

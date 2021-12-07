@@ -262,7 +262,9 @@ STRICT_ENUM(MethodType,
 			METHOD,
 			CONSTRUCTOR,
 			DESTRUCTOR,
-			OPERATOR)
+			OPERATOR,
+			GETTER,
+			SETTER)
 
 class MethodDeclaration : public VariableDeclaration
 {
@@ -308,18 +310,6 @@ public:
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
-};
-
-class DestructorDeclaration : public MethodDeclaration
-{
-public:
-public:
-	DestructorDeclaration()
-		: MethodDeclaration()
-	{
-		variableType = VariableDeclarationType::METHOD;
-		methodType = MethodType::DESTRUCTOR;
-	}
 };
 
 STRICT_ENUM(OperatorType,
@@ -374,6 +364,8 @@ protected:
 class MemberVariableDeclaration : public VariableDeclaration
 {
 public:
+	Array<Ref<MethodDeclaration>> accessors;
+
 public:
 	MemberVariableDeclaration()
 		: VariableDeclaration()
