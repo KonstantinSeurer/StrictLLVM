@@ -22,6 +22,8 @@ void ErrorStream::PrintError(const Token &location, const String &message)
 		return;
 	}
 
+	errorCount++;
+
 	const String &source = lexer->GetSource();
 
 	Int64 lineStart = location.characterIndex;

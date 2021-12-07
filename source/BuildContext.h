@@ -96,6 +96,8 @@ private:
 
 	Array<Ref<Module>> modules;
 
+	UInt32 errorCount;
+
 public:
 	BuildContext(const Array<String> &modulePath, const String &outputPath, TargetFlags target);
 

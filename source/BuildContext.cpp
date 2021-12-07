@@ -28,7 +28,7 @@ bool operator==(const ModuleTask &a, const ModuleTask &b)
 }
 
 BuildContext::BuildContext(const Array<String> &modulePath, const String &outputPath, TargetFlags target)
-	: modulePath(modulePath), outputPath(outputPath), target(target)
+	: modulePath(modulePath), outputPath(outputPath), target(target), errorCount(0)
 {
 	if (!std::filesystem::exists(outputPath))
 	{
@@ -143,6 +143,8 @@ void BuildContext::Build()
 			std::cout << "\t\t" << unit.name << std::endl;
 		}
 	}
+
+	std::cout << "Errors: " << errorCount << std::endl;
 
 	// TODO: compile every task and write ir to cache files
 }
@@ -266,8 +268,11 @@ void BuildContext::PropagateBuildFlag()
 
 				if (err.HasErrorOccured())
 				{
+					errorCount += err.GetErrorCount();
 					return;
 				}
+
+				std::cout << unit.unit->ToString(0) << std::endl;
 
 				JSON unitJSON = unit.unit->GetStructureJSON();
 
@@ -309,6 +314,7 @@ void BuildContext::PropagateBuildFlag()
 
 					if (err.HasErrorOccured())
 					{
+						errorCount += err.GetErrorCount();
 						return;
 					}
 				}
