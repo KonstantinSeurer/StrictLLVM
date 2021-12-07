@@ -13,7 +13,7 @@ LLVM compiler for [Strict](https://github.com/KonstantinSeurer/Strict).
   - [x] Source file scanning
   - [ ] Caching
 - [ ] Parser
-  - [ ] Structure parsing
+  - [x] Structure parsing
   - [ ] Method body parsing
 - [ ] Passes
   - [ ] Pre link validation
