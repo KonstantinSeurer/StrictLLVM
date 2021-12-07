@@ -4,6 +4,7 @@
 #include "Base.h"
 #include "ast/AST.h"
 #include "Lexer.h"
+#include "ErrorStream.h"
 
 struct UnitTask
 {
@@ -82,6 +83,10 @@ namespace std
 	};
 }
 
+class BuildContext;
+
+using BuildPass = Function<void(PrintFunction, BuildContext &)>;
+
 class BuildContext
 {
 private:
@@ -96,6 +101,8 @@ private:
 
 	Array<Ref<Module>> modules;
 
+	Array<BuildPass> passes;
+
 	UInt32 errorCount;
 
 public:
@@ -106,6 +113,11 @@ public:
 
 	void AddModule(const String &moduleName);
 	void Build();
+
+	void AddPass(const BuildPass &pass)
+	{
+		passes.push_back(pass);
+	}
 
 private:
 	void MarkChangedUnits(bool &build);

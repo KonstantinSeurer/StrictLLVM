@@ -2,7 +2,6 @@
 #include "BuildContext.h"
 #include "Time.h"
 #include "ast/ASTParser.h"
-#include "ErrorStream.h"
 
 #include <iostream>
 #include <filesystem>
@@ -109,6 +108,11 @@ void BuildContext::AddModule(const String &name)
 	}
 }
 
+static void Print(const String &string)
+{
+	std::cout << string;
+}
+
 void BuildContext::Build()
 {
 	std::cout << "Generating rebuild graph..." << std::endl;
@@ -142,6 +146,11 @@ void BuildContext::Build()
 		{
 			std::cout << "\t\t" << unit.name << std::endl;
 		}
+	}
+
+	for (const auto &pass : passes)
+	{
+		pass(Print, *this);
 	}
 
 	std::cout << "Errors: " << errorCount << std::endl;
@@ -259,10 +268,7 @@ void BuildContext::PropagateBuildFlag()
 				Ref<Lexer> lexer = Lexer::Create(unitSource);
 				lexerCache[unitSourcePath] = lexer;
 
-				ErrorStream err(
-					unit.fileName, [](const String &string)
-					{ std::cerr << string; },
-					lexer);
+				ErrorStream err(unit.fileName, Print, lexer);
 
 				unit.unit = ParseUnit(err, *lexer, unit.name);
 
@@ -305,10 +311,7 @@ void BuildContext::PropagateBuildFlag()
 					Ref<Lexer> lexer = Lexer::Create(unitSource);
 					lexerCache[unitSourcePath] = lexer;
 
-					ErrorStream err(
-						unit.fileName, [](const String &string)
-						{ std::cerr << string; },
-						lexer);
+					ErrorStream err(unit.fileName, Print, lexer);
 
 					unit.unit = ParseUnit(err, *lexer, unit.name);
 

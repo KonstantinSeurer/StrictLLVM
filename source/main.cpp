@@ -6,6 +6,8 @@
 #include "BuildContext.h"
 #include "Time.h"
 
+#include "passes/ValidateStructure.h"
+
 enum class Flag
 {
 	HELP,
@@ -211,6 +213,8 @@ int main(int argc, const char **args)
 
 	std::cout.precision(1);
 	std::cout << " (" << (Time() - scanStart).milliSeconds() << "ms)" << std::endl;
+
+	context.AddPass(ValidateStructure);
 
 	context.Build();
 

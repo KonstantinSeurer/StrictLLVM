@@ -4,18 +4,20 @@
 #include "Base.h"
 #include "Lexer.h"
 
+using PrintFunction = Function<void(const String &)>;
+
 class ErrorStream
 {
 private:
 	String fileName;
-	Function<void(const String &)> print;
+	PrintFunction print;
 	Ref<const Lexer> lexer;
 	bool errorOccured;
 	UInt32 tryCatchLexel;
 	UInt32 errorCount;
 
 public:
-	ErrorStream(const String &fileName, Function<void(const String &)> print, Ref<const Lexer> lexer)
+	ErrorStream(const String &fileName, PrintFunction print, Ref<const Lexer> lexer)
 		: fileName(fileName), print(print), lexer(lexer), errorOccured(false), tryCatchLexel(0), errorCount(0)
 	{
 	}
