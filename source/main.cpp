@@ -14,6 +14,7 @@ enum class Flag
 	MODULE_PATH,
 	CLEAN,
 	OUTPUT_PATH,
+	CACHE_PATH,
 	OPTIMIZATION_LEVEL,
 	COUNT,
 };
@@ -38,7 +39,8 @@ static FlagData flagData[(UInt64)Flag::COUNT] = {
 	{'h', "help", "Print this help output.", Flag::HELP, false},
 	{'p', "module-path", "Semicolon seperated list of every caconical path that contains modules. (-p /path/to/module)", Flag::MODULE_PATH, true},
 	{'c', "clean", "Clear the output directory before building.", Flag::CLEAN, false},
-	{'o', "output-path", "Directory where the binaries and cache files will be written to. (-o /path/to/output)", Flag::OUTPUT_PATH, true},
+	{'C', "cache-path", "Directory where the cache files will be written to. (-C /path/to/cache)", Flag::CACHE_PATH, true},
+	{'o', "output-path", "Directory where the output files will be written to. (-o /path/to/output)", Flag::OUTPUT_PATH, true},
 	{'O', "optimization-level", "Indicates what optimizations should be done. Can be debug, performance or size. (-O size)", Flag::OPTIMIZATION_LEVEL, true}};
 
 static void PrintHelp()
@@ -171,6 +173,7 @@ int main(int argc, const char **args)
 
 	Array<String> modulePath;
 	String outputPath = String(std::filesystem::current_path()) + "/output";
+	String cachePath = String(std::filesystem::current_path()) + "/cache";
 
 	for (const auto &flag : valueFlags)
 	{
@@ -181,6 +184,10 @@ int main(int argc, const char **args)
 		else if (flag.first == Flag::OUTPUT_PATH)
 		{
 			outputPath = flag.second;
+		}
+		else if (flag.first == Flag::CACHE_PATH)
+		{
+			cachePath = flag.second;
 		}
 	}
 
@@ -196,12 +203,17 @@ int main(int argc, const char **args)
 			{
 				std::filesystem::remove_all(outputPath);
 			}
+
+			if (std::filesystem::exists(cachePath))
+			{
+				std::filesystem::remove_all(cachePath);
+			}
 		}
 	}
 
 	const TargetFlags target = TargetFlags::BIT64 | TargetFlags::LINUX | TargetFlags::X86;
 
-	BuildContext context(modulePath, outputPath, target);
+	BuildContext context(modulePath, outputPath, cachePath, target);
 
 	std::cout << "Scanning modules...";
 	Time scanStart;

@@ -26,12 +26,17 @@ bool operator==(const ModuleTask &a, const ModuleTask &b)
 	return a.name == b.name;
 }
 
-BuildContext::BuildContext(const Array<String> &modulePath, const String &outputPath, TargetFlags target)
-	: modulePath(modulePath), outputPath(outputPath), target(target), errorCount(0)
+BuildContext::BuildContext(const Array<String> &modulePath, const String &outputPath, const String &cachePath, TargetFlags target)
+	: modulePath(modulePath), outputPath(outputPath), cachePath(cachePath), target(target), errorCount(0)
 {
 	if (!std::filesystem::exists(outputPath))
 	{
 		std::filesystem::create_directory(outputPath);
+	}
+
+	if (!std::filesystem::exists(cachePath))
+	{
+		std::filesystem::create_directory(cachePath);
 	}
 }
 
@@ -160,7 +165,7 @@ void BuildContext::Build()
 
 void BuildContext::MarkChangedUnits(bool &build)
 {
-	const String lastWriteTimesFile = outputPath + "/lastWriteTimes.json";
+	const String lastWriteTimesFile = cachePath + "/lastWriteTimes.json";
 
 	JSON lastWriteTimesJSON;
 	if (std::filesystem::exists(lastWriteTimesFile))
@@ -247,7 +252,7 @@ void BuildContext::PropagateBuildFlag()
 			continue;
 		}
 
-		const String moduleCachePath = outputPath + "/" + module.first.name;
+		const String moduleCachePath = cachePath + "/" + module.first.name;
 
 		if (!std::filesystem::exists(moduleCachePath))
 		{

@@ -92,6 +92,7 @@ class BuildContext
 private:
 	Array<String> modulePath;
 	String outputPath;
+	String cachePath;
 	TargetFlags target;
 
 	HashMap<String, Ref<Lexer>> lexerCache;
@@ -106,7 +107,7 @@ private:
 	UInt32 errorCount;
 
 public:
-	BuildContext(const Array<String> &modulePath, const String &outputPath, TargetFlags target);
+	BuildContext(const Array<String> &modulePath, const String &outputPath, const String &cachePath, TargetFlags target);
 
 	String ResolveModulePath(const String &moduleName) const;
 	Pair<String, String> ResolveUnitIdentifier(const String &identifier) const;
