@@ -5,6 +5,7 @@
 #include "ast/AST.h"
 #include "Lexer.h"
 #include "ErrorStream.h"
+#include "passes/Pass.h"
 
 struct UnitTask
 {
@@ -82,10 +83,6 @@ namespace std
 		}
 	};
 }
-
-class BuildContext;
-
-using BuildPass = Function<void(PrintFunction, BuildContext &)>;
 
 class BuildContext
 {

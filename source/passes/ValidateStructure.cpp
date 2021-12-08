@@ -1,6 +1,9 @@
 
 #include "ValidateStructure.h"
 
-void ValidateStructure(PrintFunction print, BuildContext &context)
+PassResultFlags ValidateStructure(PrintFunction print, BuildContext &context)
 {
+	PassResultFlags result = PassResultFlags::SUCCESS;
+
+	return result;
 }

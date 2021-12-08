@@ -155,7 +155,10 @@ void BuildContext::Build()
 
 	for (const auto &pass : passes)
 	{
-		pass(Print, *this);
+		if ((pass(Print, *this) & PassResultFlags::CRITICAL_ERROR) == PassResultFlags::CRITICAL_ERROR)
+		{
+			break;
+		}
 	}
 
 	std::cout << "Errors: " << errorCount << std::endl;
