@@ -295,6 +295,8 @@ STRICT_ENUM(OperatorType,
 			AND_EQUAL,
 			OR_EQUAL,
 			XOR_EQUAL,
+			// Misc binary operators
+			ARRAY_ACCESS,
 			// Non mutating unary operators
 			NEGATIVE,
 			NOT,
@@ -303,7 +305,9 @@ STRICT_ENUM(OperatorType,
 			EXPLICIT_CAST,
 			// Mutating unary operators
 			INCREMENT,
-			DECREMENT)
+			DECREMENT,
+			// Internal operators
+			ACCESS)
 
 class OperatorDeclaration : public MethodDeclaration
 {

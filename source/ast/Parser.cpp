@@ -476,6 +476,8 @@ static HashMap<Pair<TokenType, TokenType>, OperatorType, pair_hash> operatorType
 	{{TokenType::NOT, TokenType::EQUALS}, OperatorType::NOT_EQUAL},
 	{{TokenType::GREATER, TokenType::EQUALS}, OperatorType::GREATER_EQUAL},
 	{{TokenType::LESS, TokenType::EQUALS}, OperatorType::LESS_EQUAL},
+	// Misc binary operators
+	{{TokenType::SQUARE_OB, TokenType::SQUARE_CB}, OperatorType::ARRAY_ACCESS},
 	// Mutating binary operators
 	{{TokenType::PLUS, TokenType::EQUALS}, OperatorType::PLUS_EQUAL},
 	{{TokenType::MINUS, TokenType::EQUALS}, OperatorType::MINUS_EQUAL},
@@ -509,6 +511,8 @@ static HashSet<OperatorType> binaryOperatorSet = {
 	OperatorType::NOT_EQUAL,
 	OperatorType::GREATER_EQUAL,
 	OperatorType::LESS_EQUAL,
+	// Misc binary operators
+	OperatorType::ARRAY_ACCESS,
 	// Mutating binary operators
 	OperatorType::PLUS_EQUAL,
 	OperatorType::MINUS_EQUAL,
