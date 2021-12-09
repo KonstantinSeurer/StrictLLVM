@@ -1,7 +1,7 @@
 
 #include "BuildContext.h"
 #include "Time.h"
-#include "ast/ASTParser.h"
+#include "ast/Parser.h"
 
 #include <iostream>
 #include <filesystem>
