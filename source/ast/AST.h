@@ -299,7 +299,8 @@ STRICT_ENUM(OperatorType,
 			NEGATIVE,
 			NOT,
 			INVERSE,
-			CAST,
+			IMPLICIT_CAST,
+			EXPLICIT_CAST,
 			// Mutating unary operators
 			INCREMENT,
 			DECREMENT)

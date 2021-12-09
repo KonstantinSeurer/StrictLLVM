@@ -564,12 +564,26 @@ static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &
 		lexer.Next();
 
 		isOperator = true;
-		operatorType = OperatorType::CAST;
 
-		dataType = ParseDataType(err, lexer);
-		IFERR_RETURN(err, nullptr)
+		if (lexer.Get().type == TokenType::LESS)
+		{
+			lexer.Next();
 
-		// TODO: handle explicit cast operators
+			operatorType = OperatorType::EXPLICIT_CAST;
+
+			dataType = ParseDataType(err, lexer);
+			IFERR_RETURN(err, nullptr)
+
+			ASSERT_TOKEN(err, lexer, TokenType::GREATER, nullptr)
+			lexer.Next();
+		}
+		else
+		{
+			operatorType = OperatorType::IMPLICIT_CAST;
+
+			dataType = ParseDataType(err, lexer);
+			IFERR_RETURN(err, nullptr)
+		}
 	}
 	else if (lexer.Get().type == TokenType::TILDE)
 	{
