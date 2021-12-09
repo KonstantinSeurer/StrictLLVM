@@ -21,10 +21,37 @@ String ASTItem::ToStringImplementation(UInt32 indentation) const
 	return "\n";
 }
 
+static String ToString(const Token &token)
+{
+	String result = ToString(token.type);
+
+	switch (token.type)
+	{
+	case TokenType::STRING_LITERAL:
+	case TokenType::IDENTIFIER:
+		result += String("(") + token.data.stringData + ")";
+		break;
+	case TokenType::INT_LITERAL:
+		result += "(" + std::to_string(token.data.intData) + ")";
+		break;
+	case TokenType::UINT_LITERAL:
+		result += "(" + std::to_string(token.data.uintData) + ")";
+		break;
+	case TokenType::FLOAT_LITERAL:
+		result += "(" + std::to_string(token.data.floatData) + ")";
+		break;
+	default:
+		break;
+	}
+
+	return result;
+}
+
 #define ENUM_VAR(indentation, name) Indentation(indentation) + #name + " = " + ::ToString(name) + "\n"
 #define STRING_VAR(indentation, name) Indentation(indentation) + #name + " = " + name + "\n"
 #define AST_VAR(indentation, name) Indentation(indentation) + #name + " = " + (name ? name->ToString(indentation) : "null\n")
 #define PRIMITIVE_VAR(indentation, name) Indentation(indentation) + #name + " = " + std::to_string(name)
+#define TOKEN_VAR(indentation, name) Indentation(indentation) + #name + " = " + ::ToString(name) + "\n"
 
 String DataType::ToStringImplementation(UInt32 indentation) const
 {
@@ -51,9 +78,83 @@ String Expression::ToStringImplementation(UInt32 indentation) const
 	return ENUM_VAR(indentation, expressionType);
 }
 
+String LiteralExpression::ToStringImplementation(UInt32 indentation) const
+{
+	return Expression::ToStringImplementation(indentation) + TOKEN_VAR(indentation, data);
+}
+
+String VariableExpression::ToStringImplementation(UInt32 indentation) const
+{
+	return Expression::ToStringImplementation(indentation) + STRING_VAR(indentation, name);
+}
+
+String OperatorExpression::ToStringImplementation(UInt32 indentation) const
+{
+	String result = Expression::ToStringImplementation(indentation) + ENUM_VAR(indentation, operatorType) + AST_VAR(indentation, a) + Indentation(indentation) + "b:\n";
+	if (b)
+	{
+		result += AST_VAR(indentation + 1, b->expression) + AST_VAR(indentation + 1, b->dataType);
+	}
+	else
+	{
+		result += Indentation(indentation + 1) + "null\n";
+	}
+	return result;
+}
+
+String CallExpression::ToStringImplementation(UInt32 indentation) const
+{
+	String result = Expression::ToStringImplementation(indentation) + AST_VAR(indentation, method) + Indentation(indentation) + "arguments = [\n";
+	for (const auto &argument : arguments)
+	{
+		result += Indentation(indentation + 1) + argument->ToString(indentation + 1);
+	}
+	return result + Indentation(indentation) + "]\n";
+}
+
 String Statement::ToStringImplementation(UInt32 indentation) const
 {
 	return ENUM_VAR(indentation, statementType);
+}
+
+String BlockStatement::ToStringImplementation(UInt32 indentation) const
+{
+	String result = Statement::ToStringImplementation(indentation) + Indentation(indentation) + "statements = [\n";
+	for (const auto &statement : statements)
+	{
+		result += Indentation(indentation + 1) + statement->ToString(indentation + 1);
+	}
+	return result + Indentation(indentation) + "]\n";
+}
+
+String ExpressionStatement::ToStringImplementation(UInt32 indentation) const
+{
+	return Statement::ToStringImplementation(indentation) + AST_VAR(indentation, expression);
+}
+
+String IfStatement::ToStringImplementation(UInt32 indentation) const
+{
+	return Statement::ToStringImplementation(indentation) + AST_VAR(indentation, condition) + AST_VAR(indentation, thenStatement) + AST_VAR(indentation, elseStatement);
+}
+
+String ForStatement::ToStringImplementation(UInt32 indentation) const
+{
+	return Statement::ToStringImplementation(indentation) + AST_VAR(indentation, startStatement) + AST_VAR(indentation, condition) + AST_VAR(indentation, incrementStatement) + AST_VAR(indentation, bodyStatement);
+}
+
+String WhileStatement::ToStringImplementation(UInt32 indentation) const
+{
+	return Statement::ToStringImplementation(indentation) + AST_VAR(indentation, condition) + AST_VAR(indentation, bodyStatement) + PRIMITIVE_VAR(indentation, checkAfterBody);
+}
+
+String ReturnStatement::ToStringImplementation(UInt32 indentation) const
+{
+	return Statement::ToStringImplementation(indentation) + AST_VAR(indentation, expression);
+}
+
+String VariableDeclarationStatement::ToStringImplementation(UInt32 indentation) const
+{
+	return Statement::ToStringImplementation(indentation) + AST_VAR(indentation, declaration);
 }
 
 String Template::ToStringImplementation(UInt32 indentation) const

@@ -134,50 +134,8 @@ protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 };
 
-STRICT_ENUM(ExpressionType,
-			LITERAL)
-
-class Expression : public ASTItem
-{
-public:
-	ExpressionType expressionType;
-
-public:
-	Expression()
-		: ASTItem(ASTItemType::EXPRESSION)
-	{
-	}
-
-	virtual ~Expression()
-	{
-	}
-
-protected:
-	virtual String ToStringImplementation(UInt32 indentation) const;
-};
-
-STRICT_ENUM(StatementType,
-			NOP,
-			BLOCK)
-
-class Statement : public ASTItem
-{
-public:
-	StatementType statementType;
-
-public:
-	Statement()
-		: ASTItem(ASTItemType::STATEMENT)
-	{
-	}
-
-	virtual ~Statement()
-	{
-	}
-
-protected:
-	virtual String ToStringImplementation(UInt32 indentation) const;
-};
+class Expression;
+class Statement;
 
 class Template : public ASTItem
 {
@@ -509,6 +467,256 @@ public:
 		}
 
 		return nullptr;
+	}
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
+};
+
+STRICT_ENUM(ExpressionType,
+			LITERAL,
+			VARIABLE,
+			OPERATOR,
+			CALL)
+
+class Expression : public ASTItem
+{
+public:
+	ExpressionType expressionType;
+
+public:
+	Expression()
+		: ASTItem(ASTItemType::EXPRESSION)
+	{
+	}
+
+	virtual ~Expression()
+	{
+	}
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
+};
+
+class LiteralExpression : public Expression
+{
+public:
+	Token data;
+
+public:
+	LiteralExpression()
+		: Expression()
+	{
+		expressionType = ExpressionType::LITERAL;
+	}
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
+};
+
+class VariableExpression : public Expression
+{
+public:
+	String name;
+
+public:
+	VariableExpression()
+		: Expression()
+	{
+		expressionType = ExpressionType::VARIABLE;
+	}
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
+};
+
+struct SecondOperand
+{
+public:
+	Ref<Expression> expression;
+	Ref<DataType> dataType;
+};
+
+class OperatorExpression : public Expression
+{
+public:
+	Ref<Expression> a;
+	Ref<SecondOperand> b; // optional
+
+	OperatorType operatorType;
+
+public:
+	OperatorExpression()
+		: Expression()
+	{
+		expressionType = ExpressionType::OPERATOR;
+	}
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
+};
+
+class CallExpression : public Expression
+{
+public:
+	Ref<Expression> method;
+	Array<Ref<Expression>> arguments;
+
+public:
+	CallExpression()
+		: Expression()
+	{
+		expressionType = ExpressionType::CALL;
+	}
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
+};
+
+STRICT_ENUM(StatementType,
+			NOP,
+			BLOCK,
+			EXPRESSION,
+			IF,
+			FOR,
+			WHILE,
+			RETURN,
+			BREAK,
+			CONTINUE,
+			VARIABLE_DECLARATION)
+
+class Statement : public ASTItem
+{
+public:
+	StatementType statementType;
+
+public:
+	Statement()
+		: ASTItem(ASTItemType::STATEMENT)
+	{
+	}
+
+	virtual ~Statement()
+	{
+	}
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
+};
+
+class BlockStatement : public Statement
+{
+public:
+	Array<Ref<Statement>> statements;
+
+public:
+	BlockStatement()
+		: Statement()
+	{
+		statementType = StatementType::BLOCK;
+	}
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
+};
+
+class ExpressionStatement : public Statement
+{
+public:
+	Ref<Expression> expression;
+
+public:
+	ExpressionStatement()
+		: Statement()
+	{
+		statementType = StatementType::EXPRESSION;
+	}
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
+};
+
+class IfStatement : public Statement
+{
+public:
+	Ref<Expression> condition;
+	Ref<Statement> thenStatement;
+	Ref<Statement> elseStatement;
+
+public:
+	IfStatement()
+		: Statement()
+	{
+		statementType = StatementType::IF;
+	}
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
+};
+
+class ForStatement : public Statement
+{
+public:
+	Ref<Statement> startStatement;
+	Ref<Expression> condition;
+	Ref<Statement> incrementStatement;
+	Ref<Statement> bodyStatement;
+
+public:
+	ForStatement()
+		: Statement()
+	{
+		statementType = StatementType::FOR;
+	}
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
+};
+
+class WhileStatement : public Statement
+{
+public:
+	Ref<Expression> condition;
+	Ref<Statement> bodyStatement;
+	bool checkAfterBody;
+
+public:
+	WhileStatement()
+		: Statement()
+	{
+		statementType = StatementType::WHILE;
+	}
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
+};
+
+class ReturnStatement : public Statement
+{
+public:
+	Ref<Expression> expression;
+
+public:
+	ReturnStatement()
+		: Statement()
+	{
+		statementType = StatementType::RETURN;
+	}
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
+};
+
+class VariableDeclarationStatement : public Statement
+{
+public:
+	Ref<VariableDeclaration> declaration;
+
+public:
+	VariableDeclarationStatement()
+		: Statement()
+	{
+		statementType = StatementType::VARIABLE_DECLARATION;
 	}
 
 protected:
