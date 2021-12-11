@@ -450,6 +450,257 @@ static Ref<MethodDeclaration> ParseAccessor(ErrorStream &err, Lexer &lexer)
 	return result;
 }
 
+static Ref<Expression> ParseExpression(ErrorStream &err, Lexer &lexer)
+{
+	switch (lexer.Get().type)
+	{
+	default:
+		break;
+	}
+
+	return nullptr;
+}
+
+static Ref<Statement> ParseStatement(ErrorStream &err, Lexer &lexer);
+
+static Ref<BlockStatement> ParseBlockStatement(ErrorStream &err, Lexer &lexer)
+{
+	ASSERT_TOKEN(err, lexer, TokenType::CURLY_OB, nullptr)
+	lexer.Next();
+
+	Ref<BlockStatement> result = Allocate<BlockStatement>();
+
+	while (lexer.HasNext())
+	{
+		if (lexer.Get().type == TokenType::CURLY_CB)
+		{
+			lexer.Next();
+			break;
+		}
+
+		result->statements.push_back(ParseStatement(err, lexer));
+		IFERR_RETURN(err, nullptr)
+	}
+
+	return result;
+}
+
+static Ref<IfStatement> ParseIfStatement(ErrorStream &err, Lexer &lexer)
+{
+	ASSERT_TOKEN(err, lexer, TokenType::IF, nullptr)
+	lexer.Next();
+
+	Ref<IfStatement> result = Allocate<IfStatement>();
+
+	result->condition = ParseExpression(err, lexer);
+	IFERR_RETURN(err, nullptr)
+
+	result->thenStatement = ParseStatement(err, lexer);
+	IFERR_RETURN(err, nullptr)
+
+	if (lexer.Get().type == TokenType::ELSE)
+	{
+		result->elseStatement = ParseStatement(err, lexer);
+		IFERR_RETURN(err, nullptr)
+	}
+
+	return result;
+}
+
+static Ref<ForStatement> ParseForStatement(ErrorStream &err, Lexer &lexer)
+{
+	ASSERT_TOKEN(err, lexer, TokenType::FOR, nullptr)
+	lexer.Next();
+
+	Ref<ForStatement> result = Allocate<ForStatement>();
+
+	ASSERT_TOKEN(err, lexer, TokenType::ROUND_OB, nullptr)
+	lexer.Next();
+
+	result->startStatement = ParseStatement(err, lexer);
+	IFERR_RETURN(err, nullptr)
+
+	result->condition = ParseExpression(err, lexer);
+	IFERR_RETURN(err, nullptr)
+
+	ASSERT_TOKEN(err, lexer, TokenType::SEMICOLON, nullptr)
+	lexer.Next();
+
+	result->incrementExpression = ParseExpression(err, lexer);
+	IFERR_RETURN(err, nullptr)
+
+	ASSERT_TOKEN(err, lexer, TokenType::ROUND_CB, nullptr)
+	lexer.Next();
+
+	result->bodyStatement = ParseStatement(err, lexer);
+	IFERR_RETURN(err, nullptr)
+
+	return result;
+}
+
+static Ref<WhileStatement> ParseWhileStatement(ErrorStream &err, Lexer &lexer)
+{
+	Ref<WhileStatement> result = Allocate<WhileStatement>();
+
+	if (lexer.Get().type == TokenType::DO)
+	{
+		lexer.Next();
+
+		result->checkAfterBody = true;
+
+		result->bodyStatement = ParseBlockStatement(err, lexer);
+		IFERR_RETURN(err, nullptr)
+
+		ASSERT_TOKEN(err, lexer, TokenType::WHILE, nullptr)
+		lexer.Next();
+
+		result->condition = ParseExpression(err, lexer);
+		IFERR_RETURN(err, nullptr)
+
+		ASSERT_TOKEN(err, lexer, TokenType::SEMICOLON, nullptr)
+		lexer.Next();
+	}
+	else if (lexer.Get().type == TokenType::WHILE)
+	{
+		lexer.Next();
+
+		result->checkAfterBody = false;
+
+		result->condition = ParseExpression(err, lexer);
+		IFERR_RETURN(err, nullptr)
+
+		result->bodyStatement = ParseBlockStatement(err, lexer);
+		IFERR_RETURN(err, nullptr)
+	}
+	else
+	{
+		err.PrintError(lexer.Get(), "Unexpected token " + ToString(lexer.Get().type) + "! Expected either do or while!");
+		return nullptr;
+	}
+
+	return result;
+}
+
+static Ref<ReturnStatement> ParseReturnStatement(ErrorStream &err, Lexer &lexer)
+{
+	ASSERT_TOKEN(err, lexer, TokenType::RETURN, nullptr)
+	lexer.Next();
+
+	Ref<ReturnStatement> result = Allocate<ReturnStatement>();
+
+	if (lexer.Get().type == TokenType::SEMICOLON)
+	{
+		lexer.Next();
+	}
+	else
+	{
+		result->expression = ParseExpression(err, lexer);
+		IFERR_RETURN(err, nullptr)
+
+		ASSERT_TOKEN(err, lexer, TokenType::SEMICOLON, nullptr)
+		lexer.Next();
+	}
+
+	return result;
+}
+
+static Ref<Statement> ParseTokenStatement(ErrorStream &err, Lexer &lexer, StatementType type)
+{
+	lexer.Next();
+
+	Ref<Statement> result = Allocate<Statement>(type);
+
+	ASSERT_TOKEN(err, lexer, TokenType::SEMICOLON, nullptr)
+	lexer.Next();
+
+	return result;
+}
+
+static Ref<ExpressionStatement> ParseExpressionStatement(ErrorStream &err, Lexer &lexer)
+{
+	Ref<ExpressionStatement> result = Allocate<ExpressionStatement>();
+
+	result->expression = ParseExpression(err, lexer);
+	IFERR_RETURN(err, nullptr)
+
+	ASSERT_TOKEN(err, lexer, TokenType::SEMICOLON, nullptr)
+	lexer.Next();
+
+	return result;
+}
+
+static Ref<VariableDeclarationStatement> ParseVariableDeclarationStatement(ErrorStream &err, Lexer &lexer)
+{
+	Ref<VariableDeclarationStatement> result = Allocate<VariableDeclarationStatement>();
+	result->declaration = Allocate<VariableDeclaration>();
+
+	result->declaration->dataType = ParseDataType(err, lexer);
+	IFERR_RETURN(err, nullptr)
+
+	ASSERT_TOKEN(err, lexer, TokenType::IDENTIFIER, nullptr)
+	result->declaration->name = lexer.Next().data.stringData;
+
+	if (lexer.Get().type == TokenType::EQUALS)
+	{
+		lexer.Next();
+
+		result->value = ParseExpression(err, lexer);
+		IFERR_RETURN(err, nullptr)
+	}
+
+	ASSERT_TOKEN(err, lexer, TokenType::SEMICOLON, nullptr)
+	lexer.Next();
+
+	return result;
+}
+
+static Ref<Statement> ParseStatement(ErrorStream &err, Lexer &lexer)
+{
+	switch (lexer.Get().type)
+	{
+	case TokenType::SEMICOLON:
+		lexer.Next();
+		return Allocate<Statement>(StatementType::NOP);
+	case TokenType::CURLY_OB:
+		return ParseBlockStatement(err, lexer);
+	case TokenType::IF:
+		return ParseIfStatement(err, lexer);
+	case TokenType::FOR:
+		return ParseForStatement(err, lexer);
+	case TokenType::DO:
+	case TokenType::WHILE:
+		return ParseWhileStatement(err, lexer);
+	case TokenType::RETURN:
+		return ParseReturnStatement(err, lexer);
+	case TokenType::BREAK:
+		return ParseTokenStatement(err, lexer, StatementType::BREAK);
+	case TokenType::CONTINUE:
+		return ParseTokenStatement(err, lexer, StatementType::CONTINUE);
+	default:
+	{
+		lexer.Push();
+		err.Try();
+
+		Ref<Statement> result = ParseExpressionStatement(err, lexer);
+
+		if (err.Catch())
+		{
+			lexer.Revert();
+
+			result = ParseVariableDeclarationStatement(err, lexer);
+			IFERR_RETURN(err, nullptr)
+		}
+		else
+		{
+			lexer.Pop();
+		}
+
+		return result;
+	}
+	}
+	return nullptr;
+}
+
 struct pair_hash
 {
 	template <class T1, class T2>
@@ -764,6 +1015,13 @@ static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &
 
 		if (lexer.Get().type == TokenType::CURLY_OB)
 		{
+			lexer.Push(); // remove Push/Revert and tempBody
+
+			result->body = ParseBlockStatement(err, lexer);
+			IFERR_RETURN(err, nullptr)
+
+			lexer.Revert();
+
 			result->tempBody = ScanAndSkipNested(err, lexer, TokenType::CURLY_OB, TokenType::CURLY_CB);
 			IFERR_RETURN(err, nullptr)
 		}

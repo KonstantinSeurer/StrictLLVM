@@ -204,7 +204,7 @@ public:
 
 public:
 	VariableDeclaration()
-		: ASTItem(ASTItemType::VARIABLE_DECLARATION), variableType(VariableDeclarationType::VARIABLE)
+		: ASTItem(ASTItemType::VARIABLE_DECLARATION), variableType(VariableDeclarationType::VARIABLE), flags(DeclarationFlags::PRIVATE)
 	{
 	}
 
@@ -330,6 +330,7 @@ class MemberVariableDeclaration : public VariableDeclaration
 {
 public:
 	Array<Ref<MethodDeclaration>> accessors;
+	Ref<Expression> value;
 
 public:
 	MemberVariableDeclaration()
@@ -596,8 +597,8 @@ public:
 	StatementType statementType;
 
 public:
-	Statement()
-		: ASTItem(ASTItemType::STATEMENT)
+	Statement(StatementType statementType)
+		: ASTItem(ASTItemType::STATEMENT), statementType(statementType)
 	{
 	}
 
@@ -616,9 +617,8 @@ public:
 
 public:
 	BlockStatement()
-		: Statement()
+		: Statement(StatementType::BLOCK)
 	{
-		statementType = StatementType::BLOCK;
 	}
 
 protected:
@@ -632,9 +632,8 @@ public:
 
 public:
 	ExpressionStatement()
-		: Statement()
+		: Statement(StatementType::EXPRESSION)
 	{
-		statementType = StatementType::EXPRESSION;
 	}
 
 protected:
@@ -650,9 +649,8 @@ public:
 
 public:
 	IfStatement()
-		: Statement()
+		: Statement(StatementType::IF)
 	{
-		statementType = StatementType::IF;
 	}
 
 protected:
@@ -664,14 +662,13 @@ class ForStatement : public Statement
 public:
 	Ref<Statement> startStatement;
 	Ref<Expression> condition;
-	Ref<Statement> incrementStatement;
+	Ref<Expression> incrementExpression;
 	Ref<Statement> bodyStatement;
 
 public:
 	ForStatement()
-		: Statement()
+		: Statement(StatementType::FOR)
 	{
-		statementType = StatementType::FOR;
 	}
 
 protected:
@@ -687,9 +684,8 @@ public:
 
 public:
 	WhileStatement()
-		: Statement()
+		: Statement(StatementType::WHILE)
 	{
-		statementType = StatementType::WHILE;
 	}
 
 protected:
@@ -703,9 +699,8 @@ public:
 
 public:
 	ReturnStatement()
-		: Statement()
+		: Statement(StatementType::RETURN)
 	{
-		statementType = StatementType::RETURN;
 	}
 
 protected:
@@ -716,12 +711,12 @@ class VariableDeclarationStatement : public Statement
 {
 public:
 	Ref<VariableDeclaration> declaration;
+	Ref<Expression> value;
 
 public:
 	VariableDeclarationStatement()
-		: Statement()
+		: Statement(StatementType::VARIABLE_DECLARATION)
 	{
-		statementType = StatementType::VARIABLE_DECLARATION;
 	}
 
 protected:

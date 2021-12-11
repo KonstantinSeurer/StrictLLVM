@@ -139,7 +139,7 @@ String IfStatement::ToStringImplementation(UInt32 indentation) const
 
 String ForStatement::ToStringImplementation(UInt32 indentation) const
 {
-	return Statement::ToStringImplementation(indentation) + AST_VAR(indentation, startStatement) + AST_VAR(indentation, condition) + AST_VAR(indentation, incrementStatement) + AST_VAR(indentation, bodyStatement);
+	return Statement::ToStringImplementation(indentation) + AST_VAR(indentation, startStatement) + AST_VAR(indentation, condition) + AST_VAR(indentation, incrementExpression) + AST_VAR(indentation, bodyStatement);
 }
 
 String WhileStatement::ToStringImplementation(UInt32 indentation) const
@@ -154,7 +154,7 @@ String ReturnStatement::ToStringImplementation(UInt32 indentation) const
 
 String VariableDeclarationStatement::ToStringImplementation(UInt32 indentation) const
 {
-	return Statement::ToStringImplementation(indentation) + AST_VAR(indentation, declaration);
+	return Statement::ToStringImplementation(indentation) + AST_VAR(indentation, declaration) + AST_VAR(indentation, value);
 }
 
 String Template::ToStringImplementation(UInt32 indentation) const
@@ -209,7 +209,12 @@ String OperatorDeclaration::ToStringImplementation(UInt32 indentation) const
 
 String MemberVariableDeclaration::ToStringImplementation(UInt32 indentation) const
 {
-	return VariableDeclaration::ToStringImplementation(indentation);
+	String result = VariableDeclaration::ToStringImplementation(indentation) + AST_VAR(indentation, value) + Indentation(indentation) + "accessors = [\n";
+	for (const auto &accessor : accessors)
+	{
+		result += Indentation(indentation + 1) + accessor->ToString(indentation + 1);
+	}
+	return result + Indentation(indentation) + "]\n";
 }
 
 String TemplateDeclaration::ToStringImplementation(UInt32 indentation) const
