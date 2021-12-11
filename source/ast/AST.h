@@ -270,7 +270,9 @@ protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 };
 
+// TODO: Add AND_AND and OR_OR
 STRICT_ENUM(OperatorType,
+			NONE,
 			// Non mutating binary operators
 			PLUS,
 			MINUS,
@@ -295,6 +297,7 @@ STRICT_ENUM(OperatorType,
 			AND_EQUAL,
 			OR_EQUAL,
 			XOR_EQUAL,
+			ASSIGN,
 			// Misc binary operators
 			ARRAY_ACCESS,
 			// Non mutating unary operators

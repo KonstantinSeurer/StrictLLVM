@@ -450,15 +450,461 @@ static Ref<MethodDeclaration> ParseAccessor(ErrorStream &err, Lexer &lexer)
 	return result;
 }
 
-static Ref<Expression> ParseExpression(ErrorStream &err, Lexer &lexer)
+static Ref<Expression> ParseExpression(ErrorStream &err, Lexer &lexer, UInt32 basePrecedence = 0);
+
+static Ref<LiteralExpression> ParseLiteralExpression(Lexer &lexer)
+{
+	Ref<LiteralExpression> result = Allocate<LiteralExpression>();
+
+	result->data = lexer.Next();
+
+	return result;
+}
+
+static Ref<VariableExpression> ParseVariableExpression(Lexer &lexer)
+{
+	Ref<VariableExpression> result = Allocate<VariableExpression>();
+
+	result->name = lexer.Next().data.stringData;
+
+	return result;
+}
+
+static Ref<Expression> ParseBracketExpression(ErrorStream &err, Lexer &lexer)
+{
+	ASSERT_TOKEN(err, lexer, TokenType::ROUND_OB, nullptr)
+	lexer.Next();
+
+	Ref<Expression> result = ParseExpression(err, lexer);
+	IFERR_RETURN(err, nullptr)
+
+	ASSERT_TOKEN(err, lexer, TokenType::ROUND_CB, nullptr)
+	lexer.Next();
+
+	return result;
+}
+
+#define ACCESS_PRECEDENCE 70
+#define UNARY_PRECEDENCE 60
+#define ARITHMETIC_PRECEDENCE 50
+#define COMPARE_PRECEDENCE 40
+#define LOGIC_PRECEDENCE 30
+#define BINARY_MUTATE_PRECEDENCE 10
+
+#define PRECEDENCE_FACTOR 1000
+
+static HashMap<OperatorType, UInt32> operatorPrecedences = {
+	{OperatorType::NONE, 0},
+	// Non mutating binary operators
+	{OperatorType::PLUS, ARITHMETIC_PRECEDENCE},
+	{OperatorType::MINUS, ARITHMETIC_PRECEDENCE},
+	{OperatorType::MULTIPLY, ARITHMETIC_PRECEDENCE + 1},
+	{OperatorType::DIVIDE, ARITHMETIC_PRECEDENCE + 1},
+	{OperatorType::AND, LOGIC_PRECEDENCE},
+	{OperatorType::OR, LOGIC_PRECEDENCE},
+	{OperatorType::XOR, LOGIC_PRECEDENCE},
+	{OperatorType::SHIFT_LEFT, LOGIC_PRECEDENCE},
+	{OperatorType::SHIFT_RIGHT, LOGIC_PRECEDENCE},
+	{OperatorType::GREATER, COMPARE_PRECEDENCE},
+	{OperatorType::LESS, COMPARE_PRECEDENCE},
+	{OperatorType::EQUAL, COMPARE_PRECEDENCE},
+	{OperatorType::NOT_EQUAL, COMPARE_PRECEDENCE},
+	{OperatorType::GREATER_EQUAL, COMPARE_PRECEDENCE},
+	{OperatorType::LESS_EQUAL, COMPARE_PRECEDENCE},
+	// Mutating binary operators
+	{OperatorType::PLUS_EQUAL, BINARY_MUTATE_PRECEDENCE + 2},
+	{OperatorType::MINUS_EQUAL, BINARY_MUTATE_PRECEDENCE + 2},
+	{OperatorType::MULTIPLY_EQUAL, BINARY_MUTATE_PRECEDENCE + 3},
+	{OperatorType::DIVIDE_EQUAL, BINARY_MUTATE_PRECEDENCE + 3},
+	{OperatorType::AND_EQUAL, BINARY_MUTATE_PRECEDENCE + 1},
+	{OperatorType::OR_EQUAL, BINARY_MUTATE_PRECEDENCE + 1},
+	{OperatorType::XOR_EQUAL, BINARY_MUTATE_PRECEDENCE + 1},
+	{OperatorType::ASSIGN, BINARY_MUTATE_PRECEDENCE},
+	// Misc binary operators
+	{OperatorType::ARRAY_ACCESS, ACCESS_PRECEDENCE},
+	// Non mutating unary operators
+	{OperatorType::NEGATIVE, UNARY_PRECEDENCE},
+	{OperatorType::NOT, UNARY_PRECEDENCE},
+	{OperatorType::INVERSE, UNARY_PRECEDENCE},
+	{OperatorType::IMPLICIT_CAST, UNARY_PRECEDENCE + 1},
+	{OperatorType::EXPLICIT_CAST, UNARY_PRECEDENCE + 1},
+	// Mutating unary operators
+	{OperatorType::INCREMENT, UNARY_PRECEDENCE + 2},
+	{OperatorType::DECREMENT, UNARY_PRECEDENCE + 2},
+	// Internal operators
+	{OperatorType::ACCESS, ACCESS_PRECEDENCE + 1}};
+
+static UInt32 GetOperatorPrecedence(OperatorType type)
+{
+	return operatorPrecedences.at(type) * PRECEDENCE_FACTOR;
+}
+
+static HashSet<OperatorType> binaryOperatorSet = {
+	// Non mutating binary operators
+	OperatorType::PLUS,
+	OperatorType::MINUS,
+	OperatorType::MULTIPLY,
+	OperatorType::DIVIDE,
+	OperatorType::AND,
+	OperatorType::OR,
+	OperatorType::XOR,
+	OperatorType::SHIFT_LEFT,
+	OperatorType::SHIFT_RIGHT,
+	OperatorType::GREATER,
+	OperatorType::LESS,
+	OperatorType::EQUAL,
+	OperatorType::NOT_EQUAL,
+	OperatorType::GREATER_EQUAL,
+	OperatorType::LESS_EQUAL,
+	// Misc binary operators
+	OperatorType::ARRAY_ACCESS,
+	// Mutating binary operators
+	OperatorType::PLUS_EQUAL,
+	OperatorType::MINUS_EQUAL,
+	OperatorType::MULTIPLY_EQUAL,
+	OperatorType::DIVIDE_EQUAL,
+	OperatorType::AND_EQUAL,
+	OperatorType::OR_EQUAL,
+	OperatorType::XOR_EQUAL,
+	// Internal operators
+	OperatorType::ACCESS};
+
+static bool IsBinaryOperator(OperatorType type)
+{
+	return binaryOperatorSet.find(type) != binaryOperatorSet.end();
+}
+
+static Ref<OperatorExpression> ParsePrimaryUnaryExpression(ErrorStream &err, Lexer &lexer)
+{
+	Ref<OperatorExpression> result = Allocate<OperatorExpression>();
+
+	switch (lexer.Get().type)
+	{
+	case TokenType::MINUS:
+		result->operatorType = OperatorType::MINUS;
+		break;
+	case TokenType::NOT:
+		result->operatorType = OperatorType::NOT;
+		break;
+	case TokenType::TILDE:
+		result->operatorType = OperatorType::INVERSE;
+		break;
+	default:
+		err.PrintError(lexer.Get(), "Unexpected token " + ToString(lexer.Get().type) + "! Expected '-', '!' or '~'.");
+		return nullptr;
+	}
+	lexer.Next();
+
+	result->a = ParseExpression(err, lexer, GetOperatorPrecedence(result->operatorType));
+	IFERR_RETURN(err, nullptr)
+
+	return result;
+}
+
+static Ref<Expression> ParsePrimaryExpression(ErrorStream &err, Lexer &lexer)
 {
 	switch (lexer.Get().type)
 	{
+	case TokenType::INT_LITERAL:
+	case TokenType::UINT_LITERAL:
+	case TokenType::FLOAT_LITERAL:
+	case TokenType::STRING_LITERAL:
+		return ParseLiteralExpression(lexer);
+	case TokenType::IDENTIFIER:
+		return ParseVariableExpression(lexer);
+	case TokenType::ROUND_OB:
+		return ParseBracketExpression(err, lexer);
+	case TokenType::MINUS:
+	case TokenType::NOT:
+	case TokenType::TILDE:
+		return ParsePrimaryUnaryExpression(err, lexer);
+	default:
+		err.PrintError(lexer.Get(), "Unexpected token " + ToString(lexer.Get().type) + "!");
+		return nullptr;
+	}
+
+	return nullptr;
+}
+
+static OperatorType ParseOperatorType(ErrorStream &err, Lexer &lexer)
+{
+	switch (lexer.Next().type)
+	{
+	case TokenType::PLUS:
+		if (lexer.Get().type == TokenType::PLUS)
+		{
+			lexer.Next();
+			return OperatorType::INCREMENT;
+		}
+
+		if (lexer.Get().type == TokenType::EQUALS)
+		{
+			lexer.Next();
+			return OperatorType::PLUS_EQUAL;
+		}
+
+		return OperatorType::PLUS;
+	case TokenType::MINUS:
+		if (lexer.Get().type == TokenType::MINUS)
+		{
+			lexer.Next();
+			return OperatorType::DECREMENT;
+		}
+
+		if (lexer.Get().type == TokenType::EQUALS)
+		{
+			lexer.Next();
+			return OperatorType::MINUS_EQUAL;
+		}
+
+		return OperatorType::MINUS;
+	case TokenType::STAR:
+		if (lexer.Get().type == TokenType::EQUALS)
+		{
+			lexer.Next();
+			return OperatorType::MULTIPLY_EQUAL;
+		}
+
+		return OperatorType::MULTIPLY;
+	case TokenType::SLASH:
+		if (lexer.Get().type == TokenType::EQUALS)
+		{
+			lexer.Next();
+			return OperatorType::DIVIDE_EQUAL;
+		}
+
+		return OperatorType::DIVIDE;
+	case TokenType::AND:
+		if (lexer.Get().type == TokenType::EQUALS)
+		{
+			lexer.Next();
+			return OperatorType::AND_EQUAL;
+		}
+
+		return OperatorType::AND;
+	case TokenType::OR:
+		if (lexer.Get().type == TokenType::EQUALS)
+		{
+			lexer.Next();
+			return OperatorType::OR_EQUAL;
+		}
+
+		return OperatorType::OR;
+	case TokenType::POWER:
+		if (lexer.Get().type == TokenType::EQUALS)
+		{
+			lexer.Next();
+			return OperatorType::XOR_EQUAL;
+		}
+
+		return OperatorType::XOR;
+	case TokenType::GREATER:
+		if (lexer.Get().type == TokenType::EQUALS)
+		{
+			lexer.Next();
+			return OperatorType::GREATER_EQUAL;
+		}
+
+		if (lexer.Get().type == TokenType::GREATER)
+		{
+			lexer.Next();
+			return OperatorType::SHIFT_RIGHT;
+		}
+
+		return OperatorType::GREATER;
+	case TokenType::LESS:
+		if (lexer.Get().type == TokenType::EQUALS)
+		{
+			lexer.Next();
+			return OperatorType::LESS_EQUAL;
+		}
+
+		if (lexer.Get().type == TokenType::LESS)
+		{
+			lexer.Next();
+			return OperatorType::SHIFT_LEFT;
+		}
+
+		return OperatorType::LESS;
+	case TokenType::EQUALS:
+		if (lexer.Get().type == TokenType::EQUALS)
+		{
+			lexer.Next();
+			return OperatorType::EQUAL;
+		}
+
+		return OperatorType::ASSIGN;
+	case TokenType::NOT:
+		if (lexer.Get().type == TokenType::EQUALS)
+		{
+			lexer.Next();
+			return OperatorType::NOT_EQUAL;
+		}
+
+		break;
+	case TokenType::SQUARE_OB:
+		return OperatorType::ARRAY_ACCESS;
 	default:
 		break;
 	}
 
+	return OperatorType::NONE;
+}
+
+static HashSet<TokenType> expressionEndTokens = {
+	TokenType::SEMICOLON, TokenType::COMMA, TokenType::COLON, TokenType::ROUND_OB, TokenType::ROUND_CB, TokenType::SQUARE_CB, TokenType::QUESTIONMARK};
+
+static Ref<Expression> ParseBinaryOperatorExpression(ErrorStream &err, Lexer &lexer, Ref<Expression> left, UInt32 basePrecedence)
+{
+	while (true)
+	{
+		if (expressionEndTokens.find(lexer.Get().type) != expressionEndTokens.end())
+		{
+			return left;
+		}
+
+		OperatorType operatorType = ParseOperatorType(err, lexer);
+		IFERR_RETURN(err, nullptr)
+
+		Ref<DataType> dataType;
+		if (operatorType == OperatorType::LESS)
+		{
+			lexer.Push();
+			err.Try();
+
+			dataType = ParseDataType(err, lexer);
+
+			if (err.Catch() || lexer.Get().type != TokenType::GREATER)
+			{
+				lexer.Revert();
+			}
+			else
+			{
+				lexer.Pop();
+				lexer.Next();
+
+				operatorType = OperatorType::EXPLICIT_CAST;
+			}
+		}
+
+		const UInt32 precedence = GetOperatorPrecedence(operatorType);
+
+		if (precedence < basePrecedence)
+		{
+			return left;
+		}
+
+		Ref<OperatorExpression> op = Allocate<OperatorExpression>();
+		op->a = left;
+		op->operatorType = operatorType;
+		op->b = Allocate<SecondOperand>();
+
+		if (operatorType == OperatorType::EXPLICIT_CAST)
+		{
+			op->b->dataType = dataType;
+		}
+		else if (IsBinaryOperator(operatorType))
+		{
+			if (operatorType == OperatorType::ARRAY_ACCESS)
+			{
+				op->b->expression = ParseExpression(err, lexer);
+				IFERR_RETURN(err, nullptr)
+
+				ASSERT_TOKEN(err, lexer, TokenType::SQUARE_CB, nullptr)
+				lexer.Next();
+			}
+			else
+			{
+				op->b->expression = ParsePrimaryExpression(err, lexer);
+				IFERR_RETURN(err, nullptr)
+			}
+		}
+
+		if (expressionEndTokens.find(lexer.Get().type) != expressionEndTokens.end())
+		{
+			return op;
+		}
+
+		lexer.Push();
+		const OperatorType nextOperatorType = ParseOperatorType(err, lexer);
+		IFERR_RETURN(err, nullptr)
+		lexer.Revert();
+
+		const UInt32 nextPrecedence = GetOperatorPrecedence(nextOperatorType);
+
+		if (nextPrecedence > precedence && operatorType != OperatorType::EXPLICIT_CAST)
+		{
+			op->b->expression = ParseBinaryOperatorExpression(err, lexer, op->b->expression, precedence + 1);
+			IFERR_RETURN(err, nullptr)
+		}
+
+		left = op;
+	}
+
 	return nullptr;
+}
+
+static Ref<Expression> ParseExpression(ErrorStream &err, Lexer &lexer, UInt32 basePrecedence)
+{
+	Ref<Expression> left = ParsePrimaryExpression(err, lexer);
+	IFERR_RETURN(err, nullptr)
+
+	Ref<Expression> expression = ParseBinaryOperatorExpression(err, lexer, left, basePrecedence);
+	IFERR_RETURN(err, nullptr)
+
+	if (lexer.Get().type == TokenType::QUESTIONMARK)
+	{
+		lexer.Next();
+
+		Ref<TernaryExpression> result = Allocate<TernaryExpression>();
+		result->condition = expression;
+
+		result->thenExpression = ParseExpression(err, lexer);
+		IFERR_RETURN(err, nullptr)
+
+		ASSERT_TOKEN(err, lexer, TokenType::COLON, nullptr)
+		lexer.Next();
+
+		result->elseExpression = ParseExpression(err, lexer);
+		IFERR_RETURN(err, nullptr)
+
+		return result;
+	}
+
+	if (lexer.Get().type == TokenType::ROUND_OB)
+	{
+		lexer.Next();
+		// TODO: This is not correct and does not work with expressions like 'a * b.c()'
+		//       This example would return a call expression: '(a * (b.c))()'
+		//       but the proper implementation would return: 'a * ((b.c)())'
+		Ref<CallExpression> result = Allocate<CallExpression>();
+		result->method = expression;
+
+		while (lexer.HasNext())
+		{
+			if (lexer.Get().type == TokenType::ROUND_CB)
+			{
+				lexer.Next();
+				break;
+			}
+
+			result->arguments.push_back(ParseExpression(err, lexer));
+			IFERR_RETURN(err, nullptr)
+
+			if (lexer.Get().type == TokenType::ROUND_CB)
+			{
+				lexer.Next();
+				break;
+			}
+
+			ASSERT_TOKEN(err, lexer, TokenType::COMMA, nullptr)
+			lexer.Next();
+		}
+
+		return result;
+	}
+
+	return expression;
 }
 
 static Ref<Statement> ParseStatement(ErrorStream &err, Lexer &lexer);
@@ -490,16 +936,24 @@ static Ref<IfStatement> ParseIfStatement(ErrorStream &err, Lexer &lexer)
 	ASSERT_TOKEN(err, lexer, TokenType::IF, nullptr)
 	lexer.Next();
 
+	ASSERT_TOKEN(err, lexer, TokenType::ROUND_OB, nullptr)
+	lexer.Next();
+
 	Ref<IfStatement> result = Allocate<IfStatement>();
 
 	result->condition = ParseExpression(err, lexer);
 	IFERR_RETURN(err, nullptr)
+
+	ASSERT_TOKEN(err, lexer, TokenType::ROUND_CB, nullptr)
+	lexer.Next();
 
 	result->thenStatement = ParseStatement(err, lexer);
 	IFERR_RETURN(err, nullptr)
 
 	if (lexer.Get().type == TokenType::ELSE)
 	{
+		lexer.Next();
+
 		result->elseStatement = ParseStatement(err, lexer);
 		IFERR_RETURN(err, nullptr)
 	}
@@ -744,39 +1198,6 @@ static HashMap<Pair<TokenType, TokenType>, OperatorType, pair_hash> operatorType
 	// Mutating unary operators
 	{{TokenType::PLUS, TokenType::PLUS}, OperatorType::INCREMENT},
 	{{TokenType::MINUS, TokenType::MINUS}, OperatorType::DECREMENT}};
-
-static HashSet<OperatorType> binaryOperatorSet = {
-	// Non mutating binary operators
-	OperatorType::PLUS,
-	OperatorType::MINUS,
-	OperatorType::MULTIPLY,
-	OperatorType::DIVIDE,
-	OperatorType::AND,
-	OperatorType::OR,
-	OperatorType::XOR,
-	OperatorType::SHIFT_LEFT,
-	OperatorType::SHIFT_RIGHT,
-	OperatorType::GREATER,
-	OperatorType::LESS,
-	OperatorType::EQUAL,
-	OperatorType::NOT_EQUAL,
-	OperatorType::GREATER_EQUAL,
-	OperatorType::LESS_EQUAL,
-	// Misc binary operators
-	OperatorType::ARRAY_ACCESS,
-	// Mutating binary operators
-	OperatorType::PLUS_EQUAL,
-	OperatorType::MINUS_EQUAL,
-	OperatorType::MULTIPLY_EQUAL,
-	OperatorType::DIVIDE_EQUAL,
-	OperatorType::AND_EQUAL,
-	OperatorType::OR_EQUAL,
-	OperatorType::XOR_EQUAL};
-
-static bool IsBinaryOperator(OperatorType type)
-{
-	return binaryOperatorSet.find(type) != binaryOperatorSet.end();
-}
 
 static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &lexer, const String &unitName)
 {
