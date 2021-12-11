@@ -112,6 +112,11 @@ String CallExpression::ToStringImplementation(UInt32 indentation) const
 	return result + Indentation(indentation) + "]\n";
 }
 
+String TernaryExpression::ToStringImplementation(UInt32 indentation) const
+{
+	return Expression::ToStringImplementation(indentation) + AST_VAR(indentation, condition) + AST_VAR(indentation, thenExpression) + AST_VAR(indentation, elseExpression);
+}
+
 String Statement::ToStringImplementation(UInt32 indentation) const
 {
 	return ENUM_VAR(indentation, statementType);

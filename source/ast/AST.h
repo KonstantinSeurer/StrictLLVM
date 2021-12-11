@@ -483,7 +483,8 @@ STRICT_ENUM(ExpressionType,
 			LITERAL,
 			VARIABLE,
 			OPERATOR,
-			CALL)
+			CALL,
+			TERNARY)
 
 class Expression : public ASTItem
 {
@@ -491,8 +492,8 @@ public:
 	ExpressionType expressionType;
 
 public:
-	Expression()
-		: ASTItem(ASTItemType::EXPRESSION)
+	Expression(ExpressionType expressionType)
+		: ASTItem(ASTItemType::EXPRESSION), expressionType(expressionType)
 	{
 	}
 
@@ -511,9 +512,8 @@ public:
 
 public:
 	LiteralExpression()
-		: Expression()
+		: Expression(ExpressionType::LITERAL)
 	{
-		expressionType = ExpressionType::LITERAL;
 	}
 
 protected:
@@ -527,9 +527,8 @@ public:
 
 public:
 	VariableExpression()
-		: Expression()
+		: Expression(ExpressionType::VARIABLE)
 	{
-		expressionType = ExpressionType::VARIABLE;
 	}
 
 protected:
@@ -553,9 +552,8 @@ public:
 
 public:
 	OperatorExpression()
-		: Expression()
+		: Expression(ExpressionType::OPERATOR)
 	{
-		expressionType = ExpressionType::OPERATOR;
 	}
 
 protected:
@@ -570,9 +568,25 @@ public:
 
 public:
 	CallExpression()
-		: Expression()
+		: Expression(ExpressionType::CALL)
 	{
-		expressionType = ExpressionType::CALL;
+	}
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
+};
+
+class TernaryExpression : public Expression
+{
+public:
+	Ref<Expression> condition;
+	Ref<Expression> thenExpression;
+	Ref<Expression> elseExpression;
+
+public:
+	TernaryExpression()
+		: Expression(ExpressionType::TERNARY)
+	{
 	}
 
 protected:
