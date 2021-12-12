@@ -486,7 +486,8 @@ static Ref<Expression> ParseBracketExpression(ErrorStream &err, Lexer &lexer)
 	return result;
 }
 
-#define ACCESS_PRECEDENCE 70
+#define ACCESS_PRECEDENCE 80
+#define CAST_PRECEDENCE 70
 #define UNARY_PRECEDENCE 60
 #define ARITHMETIC_PRECEDENCE 50
 #define COMPARE_PRECEDENCE 40
@@ -530,8 +531,7 @@ static HashMap<OperatorType, UInt32> operatorPrecedences = {
 	{OperatorType::NEGATIVE, UNARY_PRECEDENCE},
 	{OperatorType::NOT, UNARY_PRECEDENCE},
 	{OperatorType::INVERSE, UNARY_PRECEDENCE},
-	{OperatorType::IMPLICIT_CAST, UNARY_PRECEDENCE + 1},
-	{OperatorType::EXPLICIT_CAST, UNARY_PRECEDENCE + 1},
+	{OperatorType::EXPLICIT_CAST, CAST_PRECEDENCE},
 	// Mutating unary operators
 	{OperatorType::INCREMENT, UNARY_PRECEDENCE + 2},
 	{OperatorType::DECREMENT, UNARY_PRECEDENCE + 2},
@@ -862,6 +862,60 @@ static Ref<Expression> ParseBinaryOperatorExpression(ErrorStream &err, Lexer &le
 	return nullptr;
 }
 
+static const UInt32 CALL_PRECEDENCE = CAST_PRECEDENCE * PRECEDENCE_FACTOR - 1;
+
+static Ref<CallExpression> ParseCallExpression(ErrorStream &err, Lexer &lexer, Ref<Expression> method)
+{
+	ASSERT_TOKEN(err, lexer, TokenType::ROUND_OB, nullptr)
+	lexer.Next();
+	// TODO: This is not correct and does not work with expressions like 'a * b.c()'
+	//       This example would return a call expression: '(a * (b.c))()'
+	//       but the proper implementation would return: 'a * ((b.c)())'
+	Ref<CallExpression> call = Allocate<CallExpression>();
+
+	while (lexer.HasNext())
+	{
+		if (lexer.Get().type == TokenType::ROUND_CB)
+		{
+			lexer.Next();
+			break;
+		}
+
+		call->arguments.push_back(ParseExpression(err, lexer));
+		IFERR_RETURN(err, nullptr)
+
+		if (lexer.Get().type == TokenType::ROUND_CB)
+		{
+			lexer.Next();
+			break;
+		}
+
+		ASSERT_TOKEN(err, lexer, TokenType::COMMA, nullptr)
+		lexer.Next();
+	}
+
+	if (method->expressionType == ExpressionType::VARIABLE || method->expressionType == ExpressionType::BRACKET)
+	{
+		call->method = method;
+		return call;
+	}
+	else if (method->expressionType == ExpressionType::OPERATOR)
+	{
+		Ref<OperatorExpression> operatorExpression = std::dynamic_pointer_cast<OperatorExpression>(method);
+
+		if (GetOperatorPrecedence(operatorExpression->operatorType) > CALL_PRECEDENCE)
+		{
+			call->method = method;
+			return call;
+		}
+
+		return nullptr;
+	}
+
+	err.PrintError(lexer.Get(), "Illegal expression type " + ToString(method->expressionType) + " for a call!");
+	return nullptr;
+}
+
 static Ref<Expression> ParseExpression(ErrorStream &err, Lexer &lexer, UInt32 basePrecedence)
 {
 	Ref<Expression> left = ParsePrimaryExpression(err, lexer);
@@ -891,35 +945,7 @@ static Ref<Expression> ParseExpression(ErrorStream &err, Lexer &lexer, UInt32 ba
 
 	if (lexer.Get().type == TokenType::ROUND_OB)
 	{
-		lexer.Next();
-		// TODO: This is not correct and does not work with expressions like 'a * b.c()'
-		//       This example would return a call expression: '(a * (b.c))()'
-		//       but the proper implementation would return: 'a * ((b.c)())'
-		Ref<CallExpression> result = Allocate<CallExpression>();
-		result->method = expression;
-
-		while (lexer.HasNext())
-		{
-			if (lexer.Get().type == TokenType::ROUND_CB)
-			{
-				lexer.Next();
-				break;
-			}
-
-			result->arguments.push_back(ParseExpression(err, lexer));
-			IFERR_RETURN(err, nullptr)
-
-			if (lexer.Get().type == TokenType::ROUND_CB)
-			{
-				lexer.Next();
-				break;
-			}
-
-			ASSERT_TOKEN(err, lexer, TokenType::COMMA, nullptr)
-			lexer.Next();
-		}
-
-		return result;
+		return ParseCallExpression(err, lexer, expression);
 	}
 
 	return expression;
