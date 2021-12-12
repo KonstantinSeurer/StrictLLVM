@@ -501,7 +501,9 @@ static HashMap<OperatorType, UInt32> operatorPrecedences = {
 	{OperatorType::MULTIPLY, ARITHMETIC_PRECEDENCE + 1},
 	{OperatorType::DIVIDE, ARITHMETIC_PRECEDENCE + 1},
 	{OperatorType::AND, LOGIC_PRECEDENCE},
+	{OperatorType::AND_AND, LOGIC_PRECEDENCE},
 	{OperatorType::OR, LOGIC_PRECEDENCE},
+	{OperatorType::OR_OR, LOGIC_PRECEDENCE},
 	{OperatorType::XOR, LOGIC_PRECEDENCE},
 	{OperatorType::SHIFT_LEFT, LOGIC_PRECEDENCE},
 	{OperatorType::SHIFT_RIGHT, LOGIC_PRECEDENCE},
@@ -546,7 +548,9 @@ static HashSet<OperatorType> binaryOperatorSet = {
 	OperatorType::MULTIPLY,
 	OperatorType::DIVIDE,
 	OperatorType::AND,
+	OperatorType::AND_AND,
 	OperatorType::OR,
+	OperatorType::OR_OR,
 	OperatorType::XOR,
 	OperatorType::SHIFT_LEFT,
 	OperatorType::SHIFT_RIGHT,
@@ -675,6 +679,12 @@ static OperatorType ParseOperatorType(ErrorStream &err, Lexer &lexer)
 
 		return OperatorType::DIVIDE;
 	case TokenType::AND:
+		if (lexer.Get().type == TokenType::AND)
+		{
+			lexer.Next();
+			return OperatorType::AND_AND;
+		}
+
 		if (lexer.Get().type == TokenType::EQUALS)
 		{
 			lexer.Next();
@@ -683,6 +693,12 @@ static OperatorType ParseOperatorType(ErrorStream &err, Lexer &lexer)
 
 		return OperatorType::AND;
 	case TokenType::OR:
+		if (lexer.Get().type == TokenType::OR)
+		{
+			lexer.Next();
+			return OperatorType::OR_OR;
+		}
+
 		if (lexer.Get().type == TokenType::EQUALS)
 		{
 			lexer.Next();
