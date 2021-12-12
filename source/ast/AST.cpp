@@ -83,6 +83,11 @@ String LiteralExpression::ToStringImplementation(UInt32 indentation) const
 	return Expression::ToStringImplementation(indentation) + TOKEN_VAR(indentation, data);
 }
 
+String BracketExpression::ToStringImplementation(UInt32 indentation) const
+{
+	return Expression::ToStringImplementation(indentation) + AST_VAR(indentation, expression);
+}
+
 String VariableExpression::ToStringImplementation(UInt32 indentation) const
 {
 	return Expression::ToStringImplementation(indentation) + STRING_VAR(indentation, name);

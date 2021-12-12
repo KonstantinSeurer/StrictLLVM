@@ -488,7 +488,8 @@ STRICT_ENUM(ExpressionType,
 			VARIABLE,
 			OPERATOR,
 			CALL,
-			TERNARY)
+			TERNARY,
+			BRACKET)
 
 class Expression : public ASTItem
 {
@@ -517,6 +518,21 @@ public:
 public:
 	LiteralExpression()
 		: Expression(ExpressionType::LITERAL)
+	{
+	}
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
+};
+
+class BracketExpression : public Expression
+{
+public:
+	Ref<Expression> expression;
+
+public:
+	BracketExpression()
+		: Expression(ExpressionType::BRACKET)
 	{
 	}
 

@@ -475,7 +475,9 @@ static Ref<Expression> ParseBracketExpression(ErrorStream &err, Lexer &lexer)
 	ASSERT_TOKEN(err, lexer, TokenType::ROUND_OB, nullptr)
 	lexer.Next();
 
-	Ref<Expression> result = ParseExpression(err, lexer);
+	Ref<BracketExpression> result = Allocate<BracketExpression>();
+
+	result->expression = ParseExpression(err, lexer);
 	IFERR_RETURN(err, nullptr)
 
 	ASSERT_TOKEN(err, lexer, TokenType::ROUND_CB, nullptr)
