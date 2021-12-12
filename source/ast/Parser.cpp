@@ -868,9 +868,7 @@ static Ref<Expression> ParseCallExpression(ErrorStream &err, Lexer &lexer, Ref<E
 {
 	ASSERT_TOKEN(err, lexer, TokenType::ROUND_OB, nullptr)
 	lexer.Next();
-	// TODO: This is not correct and does not work with expressions like 'a * b.c()'
-	//       This example would return a call expression: '(a * (b.c))()'
-	//       but the proper implementation would return: 'a * ((b.c)())'
+
 	Ref<CallExpression> call = Allocate<CallExpression>();
 
 	while (lexer.HasNext())
