@@ -864,7 +864,7 @@ static Ref<Expression> ParseBinaryOperatorExpression(ErrorStream &err, Lexer &le
 
 static const UInt32 CALL_PRECEDENCE = CAST_PRECEDENCE * PRECEDENCE_FACTOR - 1;
 
-static Ref<CallExpression> ParseCallExpression(ErrorStream &err, Lexer &lexer, Ref<Expression> method)
+static Ref<Expression> ParseCallExpression(ErrorStream &err, Lexer &lexer, Ref<Expression> method)
 {
 	ASSERT_TOKEN(err, lexer, TokenType::ROUND_OB, nullptr)
 	lexer.Next();
@@ -894,22 +894,39 @@ static Ref<CallExpression> ParseCallExpression(ErrorStream &err, Lexer &lexer, R
 		lexer.Next();
 	}
 
+	call->method = method;
+
 	if (method->expressionType == ExpressionType::VARIABLE || method->expressionType == ExpressionType::BRACKET)
 	{
-		call->method = method;
 		return call;
 	}
 	else if (method->expressionType == ExpressionType::OPERATOR)
 	{
 		Ref<OperatorExpression> operatorExpression = std::dynamic_pointer_cast<OperatorExpression>(method);
+		Ref<OperatorExpression> prevOperatorExpression;
+		Ref<OperatorExpression> currentOperatorExpression = operatorExpression;
 
-		if (GetOperatorPrecedence(operatorExpression->operatorType) > CALL_PRECEDENCE)
+		// Follow the operator linked list backwards until we hit a operator or expression that does not belong to the call expression
+		while (GetOperatorPrecedence(currentOperatorExpression->operatorType) > CALL_PRECEDENCE)
 		{
-			call->method = method;
-			return call;
+			if (currentOperatorExpression->a == nullptr || currentOperatorExpression->a->expressionType != ExpressionType::OPERATOR)
+			{
+				return call;
+			}
+
+			prevOperatorExpression = currentOperatorExpression;
+			currentOperatorExpression = std::dynamic_pointer_cast<OperatorExpression>(currentOperatorExpression->a);
 		}
 
-		return nullptr;
+		// Remove this low precedence operator from the linked list by linking the right expression instead of the operator
+		// so that operatorExpression only contains expressions relevant for the call.
+		prevOperatorExpression->a = currentOperatorExpression->b->expression;
+
+		// Wrap the call expression into thelow precedence operator by setting the the right side of the currentOperatorExpression to the call.
+		currentOperatorExpression->b->expression = call;
+
+		// Return currentOperatorExpression since it now is the root of the operator tree.
+		return currentOperatorExpression;
 	}
 
 	err.PrintError(lexer.Get(), "Illegal expression type " + ToString(method->expressionType) + " for a call!");
