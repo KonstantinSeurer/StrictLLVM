@@ -7,6 +7,8 @@
 #include "ErrorStream.h"
 #include "passes/Pass.h"
 
+#include <fstream>
+
 struct UnitTask
 {
 public:
@@ -103,8 +105,11 @@ private:
 
 	UInt32 errorCount;
 
+	bool logToFile;
+	std::ofstream logFileOutput;
+
 public:
-	BuildContext(const Array<String> &modulePath, const String &outputPath, const String &cachePath, TargetFlags target);
+	BuildContext(const Array<String> &modulePath, const String &outputPath, const String &cachePath, const Optional<String> &logFile, TargetFlags target);
 
 	String ResolveModulePath(const String &moduleName) const;
 	Pair<String, String> ResolveUnitIdentifier(const String &identifier) const;
@@ -118,6 +123,8 @@ public:
 	}
 
 private:
+	void Print(const String &string);
+
 	void MarkChangedUnits(bool &build);
 	void AddModuleToLastWriteJSON(Pair<ModuleTask, Array<UnitTask>> &module, JSON &target);
 

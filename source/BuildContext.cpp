@@ -5,7 +5,6 @@
 
 #include <iostream>
 #include <filesystem>
-#include <fstream>
 
 // TODO: What happend when source files get deleted -> add cache cleanup pass for deleted/renamed files
 
@@ -26,7 +25,7 @@ bool operator==(const ModuleTask &a, const ModuleTask &b)
 	return a.name == b.name;
 }
 
-BuildContext::BuildContext(const Array<String> &modulePath, const String &outputPath, const String &cachePath, TargetFlags target)
+BuildContext::BuildContext(const Array<String> &modulePath, const String &outputPath, const String &cachePath, const Optional<String> &logFile, TargetFlags target)
 	: modulePath(modulePath), outputPath(outputPath), cachePath(cachePath), target(target), errorCount(0)
 {
 	if (!std::filesystem::exists(outputPath))
@@ -38,7 +37,25 @@ BuildContext::BuildContext(const Array<String> &modulePath, const String &output
 	{
 		std::filesystem::create_directory(cachePath);
 	}
+
+	logToFile = logFile.has_value();
+	if (logToFile)
+	{
+		logFileOutput = std::ofstream(*logFile);
+	}
 }
+
+void BuildContext::Print(const String &string)
+{
+	std::cout << string;
+
+	if (logToFile)
+	{
+		logFileOutput << string;
+	}
+}
+
+#define PRINT_FUNCTION [this](const String &string) { this->Print(string); }
 
 String BuildContext::ResolveModulePath(const String &moduleName) const
 {
@@ -113,14 +130,9 @@ void BuildContext::AddModule(const String &name)
 	}
 }
 
-static void Print(const String &string)
-{
-	std::cout << string;
-}
-
 void BuildContext::Build()
 {
-	std::cout << "Generating rebuild graph..." << std::endl;
+	Print("Generating rebuild graph...\n");
 	Time graphGenStart;
 
 	bool build = false;
@@ -132,36 +144,35 @@ void BuildContext::Build()
 		ReduceTasks();
 	}
 
-	std::cout.precision(1);
-	std::cout << "(" << (Time() - graphGenStart).milliSeconds() << "ms)" << std::endl;
+	Print("(" + std::to_string((Time() - graphGenStart).milliSeconds()) + "ms)\n");
 
 	if (!build)
 	{
-		std::cout << "No build required!" << std::endl;
+		Print("No build required!\n");
 		return;
 	}
 
-	std::cout << "Build tasks:" << std::endl;
+	Print("Build tasks:\n");
 
 	for (const auto &module : taskList)
 	{
-		std::cout << "\t" << module.first.name << ":" << std::endl;
+		Print("\t" + module.first.name + ":\n");
 
 		for (const auto &unit : module.second)
 		{
-			std::cout << "\t\t" << unit.name << std::endl;
+			Print("\t\t" + unit.name + "\n");
 		}
 	}
 
 	for (const auto &pass : passes)
 	{
-		if ((pass(Print, *this) & PassResultFlags::CRITICAL_ERROR) == PassResultFlags::CRITICAL_ERROR)
+		if ((pass(PRINT_FUNCTION, *this) & PassResultFlags::CRITICAL_ERROR) == PassResultFlags::CRITICAL_ERROR)
 		{
 			break;
 		}
 	}
 
-	std::cout << "Errors: " << errorCount << std::endl;
+	Print("Errors: " + std::to_string(errorCount) + "\n");
 
 	// TODO: compile every task and write ir to cache files
 }
@@ -276,7 +287,7 @@ void BuildContext::PropagateBuildFlag()
 				Ref<Lexer> lexer = Lexer::Create(unitSource);
 				lexerCache[unitSourcePath] = lexer;
 
-				ErrorStream err(unit.fileName, Print, lexer);
+				ErrorStream err(unit.fileName, PRINT_FUNCTION, lexer);
 
 				unit.unit = ParseUnit(err, *lexer, unit.name);
 
@@ -286,7 +297,7 @@ void BuildContext::PropagateBuildFlag()
 					return;
 				}
 
-				std::cout << unit.unit->ToString(0) << std::endl;
+				Print(unit.unit->ToString(0) + "\n");
 
 				JSON unitJSON = unit.unit->GetStructureJSON();
 
@@ -319,7 +330,7 @@ void BuildContext::PropagateBuildFlag()
 					Ref<Lexer> lexer = Lexer::Create(unitSource);
 					lexerCache[unitSourcePath] = lexer;
 
-					ErrorStream err(unit.fileName, Print, lexer);
+					ErrorStream err(unit.fileName, PRINT_FUNCTION, lexer);
 
 					unit.unit = ParseUnit(err, *lexer, unit.name);
 
