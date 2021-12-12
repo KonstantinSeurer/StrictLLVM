@@ -231,7 +231,6 @@ public:
 	Array<Ref<VariableDeclaration>> parameters;
 
 	Ref<Statement> body;
-	Optional<Lexer> tempBody;
 
 public:
 	MethodDeclaration()
@@ -250,7 +249,6 @@ public:
 	String name;
 
 	Ref<Expression> value;
-	Lexer tempValue;
 };
 
 class ConstructorDeclaration : public MethodDeclaration

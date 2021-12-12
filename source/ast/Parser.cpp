@@ -403,52 +403,6 @@ static Ref<TemplateDeclaration> ParseTemplateDeclaration(ErrorStream &err, Lexer
 	return result;
 }
 
-static Ref<MethodDeclaration> ParseAccessor(ErrorStream &err, Lexer &lexer)
-{
-	Ref<MethodDeclaration> result = Allocate<MethodDeclaration>();
-	result->flags = ParseDeclarationFlags(lexer);
-
-	result->dataType = ParseDataType(err, lexer);
-	IFERR_RETURN(err, nullptr)
-
-	if (lexer.Get().type == TokenType::GET)
-	{
-		lexer.Next();
-
-		result->methodType = MethodType::GETTER;
-	}
-	else if (lexer.Get().type == TokenType::SET)
-	{
-		lexer.Next();
-
-		result->methodType = MethodType::SETTER;
-	}
-	else
-	{
-		err.PrintError(lexer.Get(), "Unexpected token " + ToString(lexer.Get().type) + "! Expected either get or set.");
-		return nullptr;
-	}
-
-	ASSERT_TOKEN(err, lexer, TokenType::ROUND_OB, nullptr)
-	lexer.Next();
-
-	ParseParameterList(err, lexer, result->parameters, TokenType::ROUND_CB);
-	IFERR_RETURN(err, nullptr)
-
-	if (lexer.Get().type == TokenType::CURLY_OB)
-	{
-		result->tempBody = ScanAndSkipNested(err, lexer, TokenType::CURLY_OB, TokenType::CURLY_CB);
-		IFERR_RETURN(err, nullptr)
-	}
-	else
-	{
-		ASSERT_TOKEN(err, lexer, TokenType::SEMICOLON, nullptr)
-		lexer.Next();
-	}
-
-	return result;
-}
-
 static Ref<Expression> ParseExpression(ErrorStream &err, Lexer &lexer, UInt32 basePrecedence = 0);
 
 static Ref<LiteralExpression> ParseLiteralExpression(Lexer &lexer)
@@ -1213,6 +1167,52 @@ static Ref<Statement> ParseStatement(ErrorStream &err, Lexer &lexer)
 	return nullptr;
 }
 
+static Ref<MethodDeclaration> ParseAccessor(ErrorStream &err, Lexer &lexer)
+{
+	Ref<MethodDeclaration> result = Allocate<MethodDeclaration>();
+	result->flags = ParseDeclarationFlags(lexer);
+
+	result->dataType = ParseDataType(err, lexer);
+	IFERR_RETURN(err, nullptr)
+
+	if (lexer.Get().type == TokenType::GET)
+	{
+		lexer.Next();
+
+		result->methodType = MethodType::GETTER;
+	}
+	else if (lexer.Get().type == TokenType::SET)
+	{
+		lexer.Next();
+
+		result->methodType = MethodType::SETTER;
+	}
+	else
+	{
+		err.PrintError(lexer.Get(), "Unexpected token " + ToString(lexer.Get().type) + "! Expected either get or set.");
+		return nullptr;
+	}
+
+	ASSERT_TOKEN(err, lexer, TokenType::ROUND_OB, nullptr)
+	lexer.Next();
+
+	ParseParameterList(err, lexer, result->parameters, TokenType::ROUND_CB);
+	IFERR_RETURN(err, nullptr)
+
+	if (lexer.Get().type == TokenType::CURLY_OB)
+	{
+		result->body = ParseBlockStatement(err, lexer);
+		IFERR_RETURN(err, nullptr)
+	}
+	else
+	{
+		ASSERT_TOKEN(err, lexer, TokenType::SEMICOLON, nullptr)
+		lexer.Next();
+	}
+
+	return result;
+}
+
 struct pair_hash
 {
 	template <class T1, class T2>
@@ -1446,9 +1446,13 @@ static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &
 					initializer.name = lexer.Next().data.stringData;
 
 					ASSERT_TOKEN(err, lexer, TokenType::ROUND_OB, nullptr)
+					lexer.Next();
 
-					initializer.tempValue = ScanAndSkipNested(err, lexer, TokenType::ROUND_OB, TokenType::ROUND_CB);
+					initializer.value = ParseExpression(err, lexer);
 					IFERR_RETURN(err, nullptr)
+
+					ASSERT_TOKEN(err, lexer, TokenType::ROUND_CB, nullptr)
+					lexer.Next();
 
 					constructor->initializers.push_back(initializer);
 
@@ -1494,14 +1498,7 @@ static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &
 
 		if (lexer.Get().type == TokenType::CURLY_OB)
 		{
-			lexer.Push(); // remove Push/Revert and tempBody
-
 			result->body = ParseBlockStatement(err, lexer);
-			IFERR_RETURN(err, nullptr)
-
-			lexer.Revert();
-
-			result->tempBody = ScanAndSkipNested(err, lexer, TokenType::CURLY_OB, TokenType::CURLY_CB);
 			IFERR_RETURN(err, nullptr)
 		}
 		else
