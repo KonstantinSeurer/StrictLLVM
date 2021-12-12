@@ -68,7 +68,7 @@ public:
 
 public:
 	DataType()
-		: ASTItem(ASTItemType::DATA_TYPE)
+		: ASTItem(ASTItemType::DATA_TYPE), flags(DeclarationFlags::PRIVATE)
 	{
 	}
 
