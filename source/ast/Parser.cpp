@@ -191,22 +191,19 @@ static Ref<UnitDeclaration> ParseErrorDeclaration(ErrorStream &err, Lexer &lexer
 	return result;
 }
 
-static HashMap<TokenType, Ref<PrimitiveType>> primitiveTypes;
-static_block
-{
-	primitiveTypes[TokenType::VOID] = Allocate<PrimitiveType>(TokenType::VOID);
-	primitiveTypes[TokenType::BOOL] = Allocate<PrimitiveType>(TokenType::BOOL);
-	primitiveTypes[TokenType::INT8] = Allocate<PrimitiveType>(TokenType::INT8);
-	primitiveTypes[TokenType::UINT8] = Allocate<PrimitiveType>(TokenType::UINT8);
-	primitiveTypes[TokenType::INT16] = Allocate<PrimitiveType>(TokenType::INT16);
-	primitiveTypes[TokenType::UINT16] = Allocate<PrimitiveType>(TokenType::UINT16);
-	primitiveTypes[TokenType::INT32] = Allocate<PrimitiveType>(TokenType::INT32);
-	primitiveTypes[TokenType::UINT32] = Allocate<PrimitiveType>(TokenType::UINT32);
-	primitiveTypes[TokenType::INT64] = Allocate<PrimitiveType>(TokenType::INT64);
-	primitiveTypes[TokenType::UINT64] = Allocate<PrimitiveType>(TokenType::UINT64);
-	primitiveTypes[TokenType::FLOAT32] = Allocate<PrimitiveType>(TokenType::FLOAT32);
-	primitiveTypes[TokenType::FLOAT64] = Allocate<PrimitiveType>(TokenType::FLOAT64);
-};
+static HashSet<TokenType> primitiveTypeSet = {
+	TokenType::VOID,
+	TokenType::BOOL,
+	TokenType::INT8,
+	TokenType::UINT8,
+	TokenType::INT16,
+	TokenType::UINT16,
+	TokenType::INT32,
+	TokenType::UINT32,
+	TokenType::INT64,
+	TokenType::UINT64,
+	TokenType::FLOAT32,
+	TokenType::FLOAT64};
 
 static Ref<DataType> ParseDataType(ErrorStream &err, Lexer &lexer);
 
@@ -276,7 +273,7 @@ static Ref<DataType> ParseDataType(ErrorStream &err, Lexer &lexer)
 		result = ParseDataType(err, lexer);
 		IFERR_RETURN(err, nullptr)
 
-		result->flags = (DeclarationFlags)((UInt64)result->flags | (UInt64)flags);
+		result->flags = result->flags | flags;
 	}
 	else
 	{
@@ -285,6 +282,7 @@ static Ref<DataType> ParseDataType(ErrorStream &err, Lexer &lexer)
 			lexer.Next();
 
 			result = Allocate<DataType>();
+			result->flags = flags;
 			result->dataTypeType = DataTypeType::TYPE;
 		}
 		else if (lexer.Get().type == TokenType::IDENTIFIER)
@@ -307,13 +305,14 @@ static Ref<DataType> ParseDataType(ErrorStream &err, Lexer &lexer)
 		{
 			const TokenType primitiveType = lexer.Get().type;
 
-			if (primitiveTypes.find(primitiveType) == primitiveTypes.end())
+			if (primitiveTypeSet.find(primitiveType) == primitiveTypeSet.end())
 			{
 				err.PrintError(lexer.Get(), String("Unexpected token ") + ToString(primitiveType) + " expected primitive type!");
 				return nullptr;
 			}
 
-			result = primitiveTypes.at(primitiveType);
+			result = Allocate<PrimitiveType>(primitiveType);
+			result->flags = flags;
 			lexer.Next();
 		}
 	}
@@ -1290,7 +1289,7 @@ static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &
 
 	if (isConstructor)
 	{
-		dataType = primitiveTypes.at(TokenType::VOID);
+		dataType = Allocate<PrimitiveType>(TokenType::VOID);
 
 		ASSERT_TOKEN(err, lexer, TokenType::ROUND_OB, nullptr)
 	}
@@ -1335,7 +1334,7 @@ static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &
 		lexer.Next();
 
 		isDestructor = true;
-		dataType = primitiveTypes.at(TokenType::VOID);
+		dataType = Allocate<PrimitiveType>(TokenType::VOID);
 	}
 	else
 	{
