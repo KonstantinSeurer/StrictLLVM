@@ -1132,6 +1132,22 @@ static Ref<VariableDeclarationStatement> ParseVariableDeclarationStatement(Error
 	return result;
 }
 
+static Ref<DeleteStatement> ParseDeleteStatement(ErrorStream &err, Lexer &lexer)
+{
+	ASSERT_TOKEN(err, lexer, TokenType::DELETE, nullptr)
+	lexer.Next();
+
+	Ref<DeleteStatement> result = Allocate<DeleteStatement>();
+
+	result->expression = ParseExpression(err, lexer);
+	IFERR_RETURN(err, nullptr)
+
+	ASSERT_TOKEN(err, lexer, TokenType::SEMICOLON, nullptr)
+	lexer.Next();
+
+	return result;
+}
+
 static Ref<Statement> ParseStatement(ErrorStream &err, Lexer &lexer)
 {
 	switch (lexer.Get().type)
@@ -1154,6 +1170,8 @@ static Ref<Statement> ParseStatement(ErrorStream &err, Lexer &lexer)
 		return ParseTokenStatement(err, lexer, StatementType::BREAK);
 	case TokenType::CONTINUE:
 		return ParseTokenStatement(err, lexer, StatementType::CONTINUE);
+	case TokenType::DELETE:
+		return ParseDeleteStatement(err, lexer);
 	default:
 	{
 		lexer.Push();

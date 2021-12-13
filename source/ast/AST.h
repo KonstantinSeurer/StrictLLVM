@@ -640,7 +640,8 @@ STRICT_ENUM(StatementType,
 			RETURN,
 			BREAK,
 			CONTINUE,
-			VARIABLE_DECLARATION)
+			VARIABLE_DECLARATION,
+			DELETE)
 
 class Statement : public ASTItem
 {
@@ -767,6 +768,21 @@ public:
 public:
 	VariableDeclarationStatement()
 		: Statement(StatementType::VARIABLE_DECLARATION)
+	{
+	}
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
+};
+
+class DeleteStatement : public Statement
+{
+public:
+	Ref<Expression> expression;
+
+public:
+	DeleteStatement()
+		: Statement(StatementType::DELETE)
 	{
 	}
 

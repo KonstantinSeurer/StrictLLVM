@@ -177,6 +177,11 @@ String VariableDeclarationStatement::ToStringImplementation(UInt32 indentation) 
 	return Statement::ToStringImplementation(indentation) + AST_VAR(indentation, declaration) + AST_VAR(indentation, value);
 }
 
+String DeleteStatement::ToStringImplementation(UInt32 indentation) const
+{
+	return Statement::ToStringImplementation(indentation) + AST_VAR(indentation, expression);
+}
+
 String Template::ToStringImplementation(UInt32 indentation) const
 {
 	String result = Indentation(indentation) + "arguments = [\n";
