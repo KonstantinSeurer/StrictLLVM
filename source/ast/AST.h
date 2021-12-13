@@ -487,7 +487,8 @@ STRICT_ENUM(ExpressionType,
 			OPERATOR,
 			CALL,
 			TERNARY,
-			BRACKET)
+			BRACKET,
+			NEW)
 
 class Expression : public ASTItem
 {
@@ -604,6 +605,22 @@ public:
 public:
 	TernaryExpression()
 		: Expression(ExpressionType::TERNARY)
+	{
+	}
+
+protected:
+	virtual String ToStringImplementation(UInt32 indentation) const;
+};
+
+class NewExpression : public Expression
+{
+public:
+	Ref<DataType> dataType;
+	Array<Ref<Expression>> arguments;
+
+public:
+	NewExpression()
+		: Expression(ExpressionType::CALL)
 	{
 	}
 

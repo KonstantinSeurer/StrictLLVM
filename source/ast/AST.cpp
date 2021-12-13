@@ -122,6 +122,16 @@ String TernaryExpression::ToStringImplementation(UInt32 indentation) const
 	return Expression::ToStringImplementation(indentation) + AST_VAR(indentation, condition) + AST_VAR(indentation, thenExpression) + AST_VAR(indentation, elseExpression);
 }
 
+String NewExpression::ToStringImplementation(UInt32 indentation) const
+{
+	String result = Expression::ToStringImplementation(indentation) + AST_VAR(indentation, dataType) + Indentation(indentation) + "arguments = [\n";
+	for (const auto &argument : arguments)
+	{
+		result += Indentation(indentation + 1) + argument->ToString(indentation + 1);
+	}
+	return result + Indentation(indentation) + "]\n";
+}
+
 String Statement::ToStringImplementation(UInt32 indentation) const
 {
 	return ENUM_VAR(indentation, statementType);
