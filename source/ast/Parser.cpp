@@ -260,6 +260,8 @@ static Ref<Template> ParseTemplate(ErrorStream &err, Lexer &lexer)
 	return nullptr;
 }
 
+static Ref<Expression> ParseExpression(ErrorStream &err, Lexer &lexer, UInt32 basePrecedence = 0);
+
 static Ref<DataType> ParseDataType(ErrorStream &err, Lexer &lexer)
 {
 	Ref<DataType> result;
@@ -345,7 +347,11 @@ static Ref<DataType> ParseDataType(ErrorStream &err, Lexer &lexer)
 			pointerResult->dataTypeType = DataTypeType::ARRAY;
 			lexer.Next();
 
-			// TODO: parse size expression
+			if (lexer.Get().type != TokenType::SQUARE_CB)
+			{
+				pointerResult->arrayLength = ParseExpression(err, lexer);
+				IFERR_RETURN(err, nullptr)
+			}
 
 			ASSERT_TOKEN(err, lexer, TokenType::SQUARE_CB, nullptr)
 			break;
@@ -402,8 +408,6 @@ static Ref<TemplateDeclaration> ParseTemplateDeclaration(ErrorStream &err, Lexer
 
 	return result;
 }
-
-static Ref<Expression> ParseExpression(ErrorStream &err, Lexer &lexer, UInt32 basePrecedence = 0);
 
 static Ref<LiteralExpression> ParseLiteralExpression(Lexer &lexer)
 {
@@ -489,7 +493,8 @@ static HashMap<OperatorType, UInt32> operatorPrecedences = {
 	{OperatorType::INCREMENT, UNARY_PRECEDENCE + 2},
 	{OperatorType::DECREMENT, UNARY_PRECEDENCE + 2},
 	// Internal operators
-	{OperatorType::ACCESS, ACCESS_PRECEDENCE + 1}};
+	{OperatorType::ACCESS, ACCESS_PRECEDENCE + 1},
+	{OperatorType::CALL, CAST_PRECEDENCE - 1}};
 
 static UInt32 GetOperatorPrecedence(OperatorType type)
 {
@@ -560,6 +565,45 @@ static Ref<OperatorExpression> ParsePrimaryUnaryExpression(ErrorStream &err, Lex
 	return result;
 }
 
+static Ref<NewExpression> ParseNewExpression(ErrorStream &err, Lexer &lexer)
+{
+	ASSERT_TOKEN(err, lexer, TokenType::NEW, nullptr)
+	lexer.Next();
+
+	Ref<NewExpression> result = Allocate<NewExpression>();
+
+	result->dataType = ParseDataType(err, lexer);
+	IFERR_RETURN(err, nullptr)
+
+	if (lexer.Get().type == TokenType::ROUND_OB)
+	{
+		lexer.Next();
+
+		while (lexer.HasNext())
+		{
+			if (lexer.Get().type == TokenType::ROUND_CB)
+			{
+				lexer.Next();
+				break;
+			}
+
+			result->arguments.push_back(ParseExpression(err, lexer));
+			IFERR_RETURN(err, nullptr)
+
+			if (lexer.Get().type == TokenType::ROUND_CB)
+			{
+				lexer.Next();
+				break;
+			}
+
+			ASSERT_TOKEN(err, lexer, TokenType::COMMA, nullptr)
+			lexer.Next();
+		}
+	}
+
+	return result;
+}
+
 static Ref<Expression> ParsePrimaryExpression(ErrorStream &err, Lexer &lexer)
 {
 	switch (lexer.Get().type)
@@ -577,6 +621,8 @@ static Ref<Expression> ParsePrimaryExpression(ErrorStream &err, Lexer &lexer)
 	case TokenType::NOT:
 	case TokenType::TILDE:
 		return ParsePrimaryUnaryExpression(err, lexer);
+	case TokenType::NEW:
+		return ParseNewExpression(err, lexer);
 	default:
 		err.PrintError(lexer.Get(), "Unexpected token " + ToString(lexer.Get().type) + "!");
 		return nullptr;
@@ -715,6 +761,10 @@ static OperatorType ParseOperatorType(ErrorStream &err, Lexer &lexer)
 		break;
 	case TokenType::SQUARE_OB:
 		return OperatorType::ARRAY_ACCESS;
+	case TokenType::PERIOD:
+		return OperatorType::ACCESS;
+	case TokenType::ROUND_OB:
+		return OperatorType::CALL;
 	default:
 		break;
 	}
@@ -723,7 +773,7 @@ static OperatorType ParseOperatorType(ErrorStream &err, Lexer &lexer)
 }
 
 static HashSet<TokenType> expressionEndTokens = {
-	TokenType::SEMICOLON, TokenType::COMMA, TokenType::COLON, TokenType::ROUND_OB, TokenType::ROUND_CB, TokenType::SQUARE_CB, TokenType::QUESTIONMARK};
+	TokenType::SEMICOLON, TokenType::COMMA, TokenType::COLON, TokenType::ROUND_CB, TokenType::SQUARE_CB, TokenType::QUESTIONMARK};
 
 static Ref<Expression> ParseBinaryOperatorExpression(ErrorStream &err, Lexer &lexer, Ref<Expression> left, UInt32 basePrecedence)
 {
@@ -765,122 +815,89 @@ static Ref<Expression> ParseBinaryOperatorExpression(ErrorStream &err, Lexer &le
 			return left;
 		}
 
-		Ref<OperatorExpression> op = Allocate<OperatorExpression>();
-		op->a = left;
-		op->operatorType = operatorType;
-		op->b = Allocate<SecondOperand>();
+		if (operatorType == OperatorType::CALL)
+		{
+			Ref<CallExpression> call = Allocate<CallExpression>();
+			call->method = left;
 
-		if (operatorType == OperatorType::EXPLICIT_CAST)
-		{
-			op->b->dataType = dataType;
-		}
-		else if (IsBinaryOperator(operatorType))
-		{
-			if (operatorType == OperatorType::ARRAY_ACCESS)
+			while (lexer.HasNext())
 			{
-				op->b->expression = ParseExpression(err, lexer);
+				if (lexer.Get().type == TokenType::ROUND_CB)
+				{
+					lexer.Next();
+					break;
+				}
+
+				call->arguments.push_back(ParseExpression(err, lexer));
 				IFERR_RETURN(err, nullptr)
 
-				ASSERT_TOKEN(err, lexer, TokenType::SQUARE_CB, nullptr)
+				if (lexer.Get().type == TokenType::ROUND_CB)
+				{
+					lexer.Next();
+					break;
+				}
+
+				ASSERT_TOKEN(err, lexer, TokenType::COMMA, nullptr)
 				lexer.Next();
 			}
-			else
-			{
-				op->b->expression = ParsePrimaryExpression(err, lexer);
-				IFERR_RETURN(err, nullptr)
-			}
-		}
 
-		if (expressionEndTokens.find(lexer.Get().type) != expressionEndTokens.end())
-		{
-			return op;
-		}
-
-		lexer.Push();
-		const OperatorType nextOperatorType = ParseOperatorType(err, lexer);
-		IFERR_RETURN(err, nullptr)
-		lexer.Revert();
-
-		const UInt32 nextPrecedence = GetOperatorPrecedence(nextOperatorType);
-
-		if (nextPrecedence > precedence && operatorType != OperatorType::EXPLICIT_CAST)
-		{
-			op->b->expression = ParseBinaryOperatorExpression(err, lexer, op->b->expression, precedence + 1);
-			IFERR_RETURN(err, nullptr)
-		}
-
-		left = op;
-	}
-
-	return nullptr;
-}
-
-static const UInt32 CALL_PRECEDENCE = CAST_PRECEDENCE * PRECEDENCE_FACTOR - 1;
-
-static Ref<Expression> ParseCallExpression(ErrorStream &err, Lexer &lexer, Ref<Expression> method)
-{
-	ASSERT_TOKEN(err, lexer, TokenType::ROUND_OB, nullptr)
-	lexer.Next();
-
-	Ref<CallExpression> call = Allocate<CallExpression>();
-
-	while (lexer.HasNext())
-	{
-		if (lexer.Get().type == TokenType::ROUND_CB)
-		{
-			lexer.Next();
-			break;
-		}
-
-		call->arguments.push_back(ParseExpression(err, lexer));
-		IFERR_RETURN(err, nullptr)
-
-		if (lexer.Get().type == TokenType::ROUND_CB)
-		{
-			lexer.Next();
-			break;
-		}
-
-		ASSERT_TOKEN(err, lexer, TokenType::COMMA, nullptr)
-		lexer.Next();
-	}
-
-	call->method = method;
-
-	if (method->expressionType == ExpressionType::VARIABLE || method->expressionType == ExpressionType::BRACKET)
-	{
-		return call;
-	}
-	else if (method->expressionType == ExpressionType::OPERATOR)
-	{
-		Ref<OperatorExpression> operatorExpression = std::dynamic_pointer_cast<OperatorExpression>(method);
-		Ref<OperatorExpression> prevOperatorExpression;
-		Ref<OperatorExpression> currentOperatorExpression = operatorExpression;
-
-		// Follow the operator linked list backwards until we hit a operator or expression that does not belong to the call expression
-		while (GetOperatorPrecedence(currentOperatorExpression->operatorType) > CALL_PRECEDENCE)
-		{
-			if (currentOperatorExpression->a == nullptr || currentOperatorExpression->a->expressionType != ExpressionType::OPERATOR)
+			if (expressionEndTokens.find(lexer.Get().type) != expressionEndTokens.end())
 			{
 				return call;
 			}
 
-			prevOperatorExpression = currentOperatorExpression;
-			currentOperatorExpression = std::dynamic_pointer_cast<OperatorExpression>(currentOperatorExpression->a);
+			left = call;
 		}
+		else
+		{
+			Ref<OperatorExpression> op = Allocate<OperatorExpression>();
+			op->a = left;
+			op->operatorType = operatorType;
+			op->b = Allocate<SecondOperand>();
 
-		// Remove this low precedence operator from the linked list by linking the right expression instead of the operator
-		// so that operatorExpression only contains expressions relevant for the call.
-		prevOperatorExpression->a = currentOperatorExpression->b->expression;
+			if (operatorType == OperatorType::EXPLICIT_CAST)
+			{
+				op->b->dataType = dataType;
+			}
+			else if (IsBinaryOperator(operatorType))
+			{
+				if (operatorType == OperatorType::ARRAY_ACCESS)
+				{
+					op->b->expression = ParseExpression(err, lexer);
+					IFERR_RETURN(err, nullptr)
 
-		// Wrap the call expression into thelow precedence operator by setting the the right side of the currentOperatorExpression to the call.
-		currentOperatorExpression->b->expression = call;
+					ASSERT_TOKEN(err, lexer, TokenType::SQUARE_CB, nullptr)
+					lexer.Next();
+				}
+				else
+				{
+					op->b->expression = ParsePrimaryExpression(err, lexer);
+					IFERR_RETURN(err, nullptr)
+				}
+			}
 
-		// Return currentOperatorExpression since it now is the root of the operator tree.
-		return currentOperatorExpression;
+			if (expressionEndTokens.find(lexer.Get().type) != expressionEndTokens.end())
+			{
+				return op;
+			}
+
+			lexer.Push();
+			const OperatorType nextOperatorType = ParseOperatorType(err, lexer);
+			IFERR_RETURN(err, nullptr)
+			lexer.Revert();
+
+			const UInt32 nextPrecedence = GetOperatorPrecedence(nextOperatorType);
+
+			if (nextPrecedence > precedence && operatorType != OperatorType::EXPLICIT_CAST)
+			{
+				op->b->expression = ParseBinaryOperatorExpression(err, lexer, op->b->expression, precedence + 1);
+				IFERR_RETURN(err, nullptr)
+			}
+
+			left = op;
+		}
 	}
 
-	err.PrintError(lexer.Get(), "Illegal expression type " + ToString(method->expressionType) + " for a call!");
 	return nullptr;
 }
 
@@ -909,11 +926,6 @@ static Ref<Expression> ParseExpression(ErrorStream &err, Lexer &lexer, UInt32 ba
 		IFERR_RETURN(err, nullptr)
 
 		return result;
-	}
-
-	if (lexer.Get().type == TokenType::ROUND_OB)
-	{
-		return ParseCallExpression(err, lexer, expression);
 	}
 
 	return expression;

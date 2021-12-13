@@ -119,10 +119,14 @@ protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 };
 
+class Expression;
+class Statement;
+
 class PointerType : public DataType
 {
 public:
 	Ref<DataType> value;
+	Ref<Expression> arrayLength;
 
 public:
 	PointerType()
@@ -133,9 +137,6 @@ public:
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 };
-
-class Expression;
-class Statement;
 
 class Template : public ASTItem
 {
@@ -309,7 +310,8 @@ STRICT_ENUM(OperatorType,
 			INCREMENT,
 			DECREMENT,
 			// Internal operators
-			ACCESS)
+			ACCESS,
+			CALL)
 
 class OperatorDeclaration : public MethodDeclaration
 {
