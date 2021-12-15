@@ -234,8 +234,8 @@ public:
 	Ref<Statement> body;
 
 public:
-	MethodDeclaration()
-		: VariableDeclaration()
+	MethodDeclaration(MethodType methodType)
+		: VariableDeclaration(), methodType(methodType)
 	{
 		variableType = VariableDeclarationType::METHOD;
 	}
@@ -259,10 +259,8 @@ public:
 
 public:
 	ConstructorDeclaration()
-		: MethodDeclaration()
+		: MethodDeclaration(MethodType::CONSTRUCTOR)
 	{
-		variableType = VariableDeclarationType::METHOD;
-		methodType = MethodType::CONSTRUCTOR;
 	}
 
 protected:
@@ -320,10 +318,8 @@ public:
 
 public:
 	OperatorDeclaration()
-		: MethodDeclaration()
+		: MethodDeclaration(MethodType::OPERATOR)
 	{
-		variableType = VariableDeclarationType::METHOD;
-		methodType = MethodType::OPERATOR;
 	}
 
 protected:
@@ -622,7 +618,7 @@ public:
 
 public:
 	NewExpression()
-		: Expression(ExpressionType::CALL)
+		: Expression(ExpressionType::NEW)
 	{
 	}
 

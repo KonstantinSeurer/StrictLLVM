@@ -530,6 +530,7 @@ static HashSet<OperatorType> binaryOperatorSet = {
 	OperatorType::AND_EQUAL,
 	OperatorType::OR_EQUAL,
 	OperatorType::XOR_EQUAL,
+	OperatorType::ASSIGN,
 	// Internal operators
 	OperatorType::ACCESS};
 
@@ -768,6 +769,10 @@ static OperatorType ParseOperatorType(ErrorStream &err, Lexer &lexer)
 	default:
 		break;
 	}
+
+	lexer.Prev();
+	err.PrintError(lexer.Get(), "Unexpected token " + ToString(lexer.Get().type) + " for operator type!");
+	lexer.Next();
 
 	return OperatorType::NONE;
 }
@@ -1199,7 +1204,7 @@ static Ref<Statement> ParseStatement(ErrorStream &err, Lexer &lexer)
 
 static Ref<MethodDeclaration> ParseAccessor(ErrorStream &err, Lexer &lexer)
 {
-	Ref<MethodDeclaration> result = Allocate<MethodDeclaration>();
+	Ref<MethodDeclaration> result = Allocate<MethodDeclaration>(MethodType::METHOD);
 	result->flags = ParseDeclarationFlags(lexer);
 
 	result->dataType = ParseDataType(err, lexer);
@@ -1429,8 +1434,7 @@ static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &
 		}
 		else if (isDestructor)
 		{
-			result = Allocate<MethodDeclaration>();
-			result->methodType = MethodType::DESTRUCTOR;
+			result = Allocate<MethodDeclaration>(MethodType::DESTRUCTOR);
 		}
 		else if (isOperator)
 		{
@@ -1438,22 +1442,12 @@ static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream &err, Lexer &
 		}
 		else
 		{
-			result = Allocate<MethodDeclaration>();
+			result = Allocate<MethodDeclaration>(MethodType::METHOD);
 		}
 
 		result->flags = flags;
 		result->name = name;
 		result->dataType = dataType;
-
-		result->methodType = MethodType::METHOD;
-		if (isConstructor)
-		{
-			result->methodType = MethodType::CONSTRUCTOR;
-		}
-		else if (isDestructor)
-		{
-			result->methodType = MethodType::DESTRUCTOR;
-		}
 
 		ParseParameterList(err, lexer, result->parameters, TokenType::ROUND_CB);
 		IFERR_RETURN(err, nullptr)
