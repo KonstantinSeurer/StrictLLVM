@@ -123,7 +123,7 @@ public:
 	}
 
 private:
-	void Print(const String &string);
+	void Print(const String &string, bool console = true);
 
 	void MarkChangedUnits(bool &build);
 	void AddModuleToLastWriteJSON(Pair<ModuleTask, Array<UnitTask>> &module, JSON &target);

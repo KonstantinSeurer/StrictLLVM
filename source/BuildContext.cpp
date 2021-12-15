@@ -45,9 +45,12 @@ BuildContext::BuildContext(const Array<String> &modulePath, const String &output
 	}
 }
 
-void BuildContext::Print(const String &string)
+void BuildContext::Print(const String &string, bool console)
 {
-	std::cout << string;
+	if (console)
+	{
+		std::cout << string;
+	}
 
 	if (logToFile)
 	{
@@ -55,7 +58,7 @@ void BuildContext::Print(const String &string)
 	}
 }
 
-#define PRINT_FUNCTION [this](const String &string) { this->Print(string); }
+#define PRINT_FUNCTION [this](const String &string) { Print(string); }
 
 String BuildContext::ResolveModulePath(const String &moduleName) const
 {
@@ -297,7 +300,7 @@ void BuildContext::PropagateBuildFlag()
 					return;
 				}
 
-				Print(unit.unit->ToString(0) + "\n");
+				Print(unit.unit->ToString(0) + "\n", false);
 
 				JSON unitJSON = unit.unit->GetStructureJSON();
 
