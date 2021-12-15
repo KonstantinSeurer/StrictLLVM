@@ -6,6 +6,8 @@
 
 using PrintFunction = Function<void(const String &)>;
 
+// TODO: Buffer error strings in Try/Catch to be able to print errors
+
 class ErrorStream
 {
 private:
