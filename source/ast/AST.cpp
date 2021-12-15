@@ -70,7 +70,12 @@ String ObjectType::ToStringImplementation(UInt32 indentation) const
 
 String PointerType::ToStringImplementation(UInt32 indentation) const
 {
-	return DataType::ToStringImplementation(indentation) + AST_VAR(indentation, value);
+	String result = DataType::ToStringImplementation(indentation) + AST_VAR(indentation, value);
+	if (dataTypeType == DataTypeType::ARRAY)
+	{
+		result += AST_VAR(indentation, arrayLength);
+	}
+	return result;
 }
 
 String Expression::ToStringImplementation(UInt32 indentation) const
