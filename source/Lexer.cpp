@@ -347,6 +347,16 @@ const Token &Lexer::Next()
 	return result;
 }
 
+void Lexer::Prev()
+{
+	if (offset <= 0)
+	{
+		return;
+	}
+
+	offset--;
+}
+
 Bool Lexer::HasNext() const
 {
 	return offset < length - 1;

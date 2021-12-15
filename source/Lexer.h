@@ -133,6 +133,7 @@ public:
 
 	const Token &Get() const;
 	const Token &Next();
+	void Prev();
 	Bool HasNext() const;
 
 	void Push();
