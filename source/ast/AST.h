@@ -441,30 +441,18 @@ TargetFlags JSONToTargetFlags(const JSON &json);
 
 class Module
 {
-private:
+public:
 	String name;
 	Array<Ref<Unit>> units;
 	Array<Ref<Module>> dependencies;
 
 public:
-	Module(const String &name, const Array<Ref<Unit>> &units, const Array<Ref<Module>> &dependencies)
-		: name(name), units(units), dependencies(dependencies)
+	Module(const String &name)
+		: name(name)
 	{
 	}
 
-	Ref<Module> Create(const JSON &json);
-
-	const String &getName() const
-	{
-		return name;
-	}
-
-	const Array<Ref<Unit>> &getUnits() const
-	{
-		return units;
-	}
-
-	Ref<Unit> getUnit(const String &name) const
+	Ref<Unit> GetUnit(const String &name) const
 	{
 		for (auto unit : units)
 		{

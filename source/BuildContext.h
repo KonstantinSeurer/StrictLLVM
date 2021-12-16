@@ -40,6 +40,7 @@ public:
 	String name;
 	String canonicalPath;
 	Array<UInt64> dependencyIndices;
+	Ref<Module> module;
 	bool build;
 
 public:
@@ -122,16 +123,23 @@ public:
 		passes.push_back(pass);
 	}
 
+	const Array<Ref<Module>> &GetModules() const
+	{
+		return modules;
+	}
+
+	Array<Ref<Module>> &GetModules()
+	{
+		return modules;
+	}
+
 private:
 	void Print(const String &string, bool console = true);
 
 	void MarkChangedUnits(bool &build);
 	void AddModuleToLastWriteJSON(Pair<ModuleTask, Array<UnitTask>> &module, JSON &target);
 
-	void PropagateBuildFlag();
-	void ParseDependencyInformation(Lexer &lexer, JSON &target) const;
-
-	void ReduceTasks();
+	void PropagateBuildFlagAndParse();
 
 	UInt64 FindModule(const String &name);
 	UInt64 FindUnit(UInt64 moduleIndex, const String &name);

@@ -135,19 +135,13 @@ void BuildContext::AddModule(const String &name)
 
 void BuildContext::Build()
 {
-	Print("Generating rebuild graph...\n");
-	Time graphGenStart;
+	Print("Scanning units... ");
+	Time scanStart;
 
 	bool build = false;
 	MarkChangedUnits(build);
 
-	if (build)
-	{
-		PropagateBuildFlag();
-		ReduceTasks();
-	}
-
-	Print("(" + std::to_string((Time() - graphGenStart).milliSeconds()) + "ms)\n");
+	Print("(" + std::to_string((Time() - scanStart).milliSeconds()) + "ms)\n");
 
 	if (!build)
 	{
@@ -155,17 +149,16 @@ void BuildContext::Build()
 		return;
 	}
 
-	Print("Build tasks:\n");
+	Print("Parsing...\n");
+	Time parseStart;
 
-	for (const auto &module : taskList)
-	{
-		Print("\t" + module.first.name + ":\n");
+	PropagateBuildFlagAndParse();
 
-		for (const auto &unit : module.second)
-		{
-			Print("\t\t" + unit.name + "\n");
-		}
-	}
+	Print("(" + std::to_string((Time() - parseStart).milliSeconds()) + "ms)\n");
+	Print("Errors: " + std::to_string(errorCount) + "\n");
+
+	Print("Compiling...\n");
+	Time compileStart;
 
 	for (const auto &pass : passes)
 	{
@@ -175,7 +168,7 @@ void BuildContext::Build()
 		}
 	}
 
-	Print("Errors: " + std::to_string(errorCount) + "\n");
+	Print("(" + std::to_string((Time() - compileStart).milliSeconds()) + "ms)\n");
 
 	// TODO: compile every task and write ir to cache files
 }
@@ -242,7 +235,7 @@ void BuildContext::AddModuleToLastWriteJSON(Pair<ModuleTask, Array<UnitTask>> &m
 	target[module.first.name] = moduleJSON;
 }
 
-void BuildContext::PropagateBuildFlag()
+void BuildContext::PropagateBuildFlagAndParse()
 {
 	// propagate the ModuleTask build flag
 	for (auto &module : taskList)
@@ -259,6 +252,32 @@ void BuildContext::PropagateBuildFlag()
 				module.first.build = true;
 				break;
 			}
+		}
+	}
+
+	// Create module AST items for module tasks
+	for (auto &module : taskList)
+	{
+		if (!module.first.build)
+		{
+			continue;
+		}
+
+		module.first.module = Allocate<Module>(module.first.name);
+		modules.push_back(module.first.module);
+	}
+
+	// Resolve module dependencies
+	for (auto &module : taskList)
+	{
+		if (!module.first.build)
+		{
+			continue;
+		}
+
+		for (UInt64 dependencyIndex : module.first.dependencyIndices)
+		{
+			module.first.module->dependencies.push_back(taskList[dependencyIndex].first.module);
 		}
 	}
 
@@ -344,32 +363,8 @@ void BuildContext::PropagateBuildFlag()
 					}
 				}
 			}
-		}
-	}
-}
 
-void BuildContext::ReduceTasks()
-{
-	for (Int64 moduleIndex = taskList.size() - 1; moduleIndex >= 0; moduleIndex--)
-	{
-		if (taskList[moduleIndex].first.build)
-		{
-			continue;
-		}
-
-		taskList.erase(taskList.begin() + moduleIndex);
-	}
-
-	for (auto &module : taskList)
-	{
-		for (Int64 unitIndex = module.second.size() - 1; unitIndex >= 0; unitIndex--)
-		{
-			if (module.second[unitIndex].build)
-			{
-				continue;
-			}
-
-			module.second.erase(module.second.begin() + unitIndex);
+			module.first.module->units.push_back(unit.unit);
 		}
 	}
 }

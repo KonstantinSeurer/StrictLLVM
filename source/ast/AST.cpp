@@ -331,11 +331,6 @@ TargetFlags JSONToTargetFlags(const JSON &json)
 	return flags;
 }
 
-Ref<Module> Module::Create(const JSON &json)
-{
-	return nullptr;
-}
-
 String Module::ToStringImplementation(UInt32 indentation) const
 {
 	return "";
