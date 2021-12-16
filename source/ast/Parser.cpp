@@ -481,6 +481,8 @@ static HashMap<OperatorType, UInt32> operatorPrecedences = {
 	{OperatorType::AND_EQUAL, BINARY_MUTATE_PRECEDENCE + 1},
 	{OperatorType::OR_EQUAL, BINARY_MUTATE_PRECEDENCE + 1},
 	{OperatorType::XOR_EQUAL, BINARY_MUTATE_PRECEDENCE + 1},
+	{OperatorType::SHIFT_LEFT_EQUAL, BINARY_MUTATE_PRECEDENCE},
+	{OperatorType::SHIFT_RIGHT_EQUAL, BINARY_MUTATE_PRECEDENCE},
 	{OperatorType::ASSIGN, BINARY_MUTATE_PRECEDENCE},
 	// Misc binary operators
 	{OperatorType::ARRAY_ACCESS, ACCESS_PRECEDENCE},
@@ -530,6 +532,8 @@ static HashSet<OperatorType> binaryOperatorSet = {
 	OperatorType::AND_EQUAL,
 	OperatorType::OR_EQUAL,
 	OperatorType::XOR_EQUAL,
+	OperatorType::SHIFT_LEFT_EQUAL,
+	OperatorType::SHIFT_RIGHT_EQUAL,
 	OperatorType::ASSIGN,
 	// Internal operators
 	OperatorType::ACCESS};
@@ -726,6 +730,13 @@ static OperatorType ParseOperatorType(ErrorStream &err, Lexer &lexer)
 		if (lexer.Get().type == TokenType::GREATER)
 		{
 			lexer.Next();
+
+			if (lexer.Get().type == TokenType::EQUALS)
+			{
+				lexer.Next();
+				return OperatorType::SHIFT_RIGHT_EQUAL;
+			}
+
 			return OperatorType::SHIFT_RIGHT;
 		}
 
@@ -740,6 +751,13 @@ static OperatorType ParseOperatorType(ErrorStream &err, Lexer &lexer)
 		if (lexer.Get().type == TokenType::LESS)
 		{
 			lexer.Next();
+
+			if (lexer.Get().type == TokenType::EQUALS)
+			{
+				lexer.Next();
+				return OperatorType::SHIFT_LEFT_EQUAL;
+			}
+
 			return OperatorType::SHIFT_LEFT;
 		}
 

@@ -295,6 +295,8 @@ STRICT_ENUM(OperatorType,
 			AND_EQUAL,
 			OR_EQUAL,
 			XOR_EQUAL,
+			SHIFT_LEFT_EQUAL,
+			SHIFT_RIGHT_EQUAL,
 			ASSIGN,
 			// Misc binary operators
 			ARRAY_ACCESS,
