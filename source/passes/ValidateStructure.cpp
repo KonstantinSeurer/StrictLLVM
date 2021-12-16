@@ -9,6 +9,8 @@ PassResultFlags ValidateStructure(PrintFunction print, BuildContext &context)
 	{
 		for (const auto &unit : module->units)
 		{
+			// TODO: Catch methods with the same signature
+			//       Catch variables with the same name
 		}
 	}
 
