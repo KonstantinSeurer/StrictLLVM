@@ -3,6 +3,8 @@
 #include "Time.h"
 #include "ast/Parser.h"
 
+#include "passes/ValidateStructure.h"
+
 #include <iostream>
 #include <filesystem>
 
@@ -43,6 +45,9 @@ BuildContext::BuildContext(const Array<String> &modulePath, const String &output
 	{
 		logFileOutput = std::ofstream(*logFile);
 	}
+
+	// Add required passes
+	AddPass(ValidateStructure);
 }
 
 void BuildContext::Print(const String &string, bool console)
