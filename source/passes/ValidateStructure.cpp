@@ -11,6 +11,8 @@ PassResultFlags ValidateStructure(PrintFunction print, BuildContext &context)
 		{
 			// TODO: Catch methods with the same signature
 			//       Catch variables with the same name
+			//       Assert the immutability of members for immutable types
+			//       Assert the immutability of non mutating operators and getters
 		}
 	}
 
