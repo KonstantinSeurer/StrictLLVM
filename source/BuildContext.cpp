@@ -4,6 +4,7 @@
 #include "ast/Parser.h"
 
 #include "passes/ValidateStructure.h"
+#include "passes/LowerImpliedDeclarationFlags.h"
 
 #include <iostream>
 #include <filesystem>
@@ -47,6 +48,7 @@ BuildContext::BuildContext(const Array<String> &modulePath, const String &output
 	}
 
 	// Add required passes
+	AddPass(LowerImpliedDeclarationFlags);
 	AddPass(ValidateStructure);
 }
 
@@ -174,6 +176,19 @@ void BuildContext::Build()
 	}
 
 	Print("(" + std::to_string((Time() - compileStart).milliSeconds()) + "ms)\n");
+
+	for (auto &module : taskList)
+	{
+		for (auto &unit : module.second)
+		{
+			if (!unit.build)
+			{
+				continue;
+			}
+
+			Print(unit.unit->ToString(0) + "\n", false);
+		}
+	}
 
 	// TODO: compile every task and write ir to cache files
 }
@@ -323,8 +338,6 @@ void BuildContext::PropagateBuildFlagAndParse()
 					errorCount += err.GetErrorCount();
 					return;
 				}
-
-				Print(unit.unit->ToString(0) + "\n", false);
 
 				JSON unitJSON = unit.unit->GetStructureJSON();
 
