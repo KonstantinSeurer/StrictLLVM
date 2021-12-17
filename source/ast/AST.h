@@ -5,6 +5,11 @@
 #include "../Lexer.h"
 #include "../JSON.h"
 
+class Template;
+class UnitDeclaration;
+class Expression;
+class Statement;
+
 STRICT_ENUM(ASTItemType,
 			NONE,
 			MODULE,
@@ -58,8 +63,6 @@ STRICT_ENUM(DataTypeType,
 			POINTER,
 			ARRAY)
 
-class Template;
-
 class DataType : public ASTItem
 {
 public:
@@ -109,6 +112,9 @@ public:
 	Ref<Template> typeTemplate;
 
 public:
+	Ref<UnitDeclaration> unit;
+
+public:
 	ObjectType()
 		: DataType()
 	{
@@ -118,9 +124,6 @@ public:
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 };
-
-class Expression;
-class Statement;
 
 class PointerType : public DataType
 {
