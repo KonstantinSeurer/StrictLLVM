@@ -5,6 +5,7 @@
 
 #include "passes/ValidateStructure.h"
 #include "passes/LowerImpliedDeclarationFlags.h"
+#include "passes/ResolveIdentifiers.h"
 
 #include <iostream>
 #include <filesystem>
@@ -50,6 +51,7 @@ BuildContext::BuildContext(const Array<String> &modulePath, const String &output
 	// Add required passes
 	AddPass(LowerImpliedDeclarationFlags);
 	AddPass(ValidateStructure);
+	AddPass(ResolveIdentifiers);
 }
 
 void BuildContext::Print(const String &string, bool console)
@@ -99,6 +101,14 @@ Pair<String, String> BuildContext::ResolveUnitIdentifier(const String &identifie
 
 	std::cerr << "Could not resolve unit '" << identifier << "'!" << std::endl;
 	return Pair<String, String>();
+}
+
+Ref<Unit> BuildContext::ResolveUnit(const String &identifier) const
+{
+	const auto moduleAndUnit = ResolveUnitIdentifier(identifier);
+	const UInt64 moduleIndex = FindModule(moduleAndUnit.first);
+	const UInt64 unitIndex = FindUnit(moduleIndex, moduleAndUnit.second);
+	return taskList[moduleIndex].second[unitIndex].unit;
 }
 
 void BuildContext::AddModule(const String &name)
@@ -387,7 +397,7 @@ void BuildContext::PropagateBuildFlagAndParse()
 	}
 }
 
-UInt64 BuildContext::FindModule(const String &name)
+UInt64 BuildContext::FindModule(const String &name) const
 {
 	for (UInt64 moduleIndex = 0; moduleIndex < taskList.size(); moduleIndex++)
 	{
@@ -401,7 +411,7 @@ UInt64 BuildContext::FindModule(const String &name)
 	return 0;
 }
 
-UInt64 BuildContext::FindUnit(UInt64 moduleIndex, const String &name)
+UInt64 BuildContext::FindUnit(UInt64 moduleIndex, const String &name) const
 {
 	const auto &units = taskList[moduleIndex].second;
 

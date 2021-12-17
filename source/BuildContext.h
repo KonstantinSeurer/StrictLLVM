@@ -114,6 +114,7 @@ public:
 
 	String ResolveModulePath(const String &moduleName) const;
 	Pair<String, String> ResolveUnitIdentifier(const String &identifier) const;
+	Ref<Unit> ResolveUnit(const String &identifier) const;
 
 	void AddModule(const String &moduleName);
 	void Build();
@@ -141,8 +142,8 @@ private:
 
 	void PropagateBuildFlagAndParse();
 
-	UInt64 FindModule(const String &name);
-	UInt64 FindUnit(UInt64 moduleIndex, const String &name);
+	UInt64 FindModule(const String &name) const;
+	UInt64 FindUnit(UInt64 moduleIndex, const String &name) const;
 };
 
 #endif /* SOURCE_BUILDCONTEXT */
