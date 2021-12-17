@@ -12,9 +12,9 @@ LLVM compiler for [Strict](https://github.com/KonstantinSeurer/Strict).
 - [ ] Build system
   - [x] Source file scanning
   - [ ] Caching
-- [ ] Parser
+- [x] Parser
   - [x] Structure parsing
-  - [ ] Method body parsing
+  - [x] Method body parsing
 - [ ] Passes
   - [ ] Pre link validation
   - [ ] Link
@@ -24,4 +24,3 @@ LLVM compiler for [Strict](https://github.com/KonstantinSeurer/Strict).
 - [ ] Module linking
   - [ ] Static linking with lld
   - [ ] Dynamic linking with lld
-  - [ ] Standard IR
