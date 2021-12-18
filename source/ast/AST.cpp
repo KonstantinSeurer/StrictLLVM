@@ -199,7 +199,7 @@ String Template::ToStringImplementation(UInt32 indentation) const
 
 String UnitDeclaration::ToStringImplementation(UInt32 indentation) const
 {
-	return ENUM_VAR(indentation, flags);
+	return ENUM_VAR(indentation, declarationType) + ENUM_VAR(indentation, flags);
 }
 
 String ErrorDeclaration::ToStringImplementation(UInt32 indentation) const

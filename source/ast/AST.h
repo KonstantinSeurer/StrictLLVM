@@ -14,9 +14,7 @@ STRICT_ENUM(ASTItemType,
 			NONE,
 			MODULE,
 			UNIT,
-			CLASS_DECLARATION,
-			ERROR_DECLARATION,
-			TYPE_DECLARATION,
+			UNIT_DECLARATION,
 			TEMPLATE_DECLARATION,
 			TEMPLATE,
 			VARIABLE_DECLARATION,
@@ -156,14 +154,20 @@ protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 };
 
+STRICT_ENUM(UnitDeclarationType,
+			ERROR,
+			TYPE,
+			CLASS)
+
 class UnitDeclaration : public ASTItem
 {
 public:
 	DeclarationFlags flags;
+	UnitDeclarationType declarationType;
 
 public:
-	UnitDeclaration(ASTItemType type)
-		: ASTItem(type)
+	UnitDeclaration(UnitDeclarationType declarationType)
+		: ASTItem(ASTItemType::UNIT_DECLARATION), declarationType(declarationType)
 	{
 	}
 
@@ -171,6 +175,11 @@ public:
 	virtual JSON GetStructureJSON() const
 	{
 		return JSON(JSON::value_t::array);
+	}
+
+	bool IsType() const
+	{
+		return declarationType == UnitDeclarationType::TYPE || declarationType == UnitDeclarationType::CLASS;
 	}
 
 protected:
@@ -185,7 +194,7 @@ public:
 
 public:
 	ErrorDeclaration()
-		: UnitDeclaration(ASTItemType::ERROR_DECLARATION)
+		: UnitDeclaration(UnitDeclarationType::ERROR)
 	{
 	}
 
@@ -372,12 +381,12 @@ public:
 
 public:
 	TypeDeclaration()
-		: UnitDeclaration(ASTItemType::TYPE_DECLARATION)
+		: UnitDeclaration(UnitDeclarationType::TYPE)
 	{
 	}
 
-	TypeDeclaration(ASTItemType type)
-		: UnitDeclaration(type)
+	TypeDeclaration(UnitDeclarationType declarationType)
+		: UnitDeclaration(declarationType)
 	{
 	}
 
@@ -392,12 +401,12 @@ public:
 
 public:
 	ClassDeclaration()
-		: TypeDeclaration(ASTItemType::CLASS_DECLARATION)
+		: TypeDeclaration(UnitDeclarationType::CLASS), isSingleton(false)
 	{
 	}
 
 	ClassDeclaration(bool isSingleton)
-		: TypeDeclaration(ASTItemType::CLASS_DECLARATION), isSingleton(isSingleton)
+		: TypeDeclaration(UnitDeclarationType::CLASS), isSingleton(isSingleton)
 	{
 	}
 

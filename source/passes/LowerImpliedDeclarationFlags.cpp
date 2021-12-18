@@ -71,7 +71,7 @@ PassResultFlags LowerImpliedDeclarationFlags(PrintFunction print, BuildContext &
 	{
 		for (auto &unit : module->units)
 		{
-			if (unit->declaredType->type == ASTItemType::TYPE_DECLARATION || unit->declaredType->type == ASTItemType::CLASS_DECLARATION)
+			if (unit->declaredType->IsType())
 			{
 				LowerImpliedDeclarationFlags(std::dynamic_pointer_cast<TypeDeclaration>(unit->declaredType));
 			}
