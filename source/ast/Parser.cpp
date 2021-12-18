@@ -207,6 +207,8 @@ static HashSet<TokenType> primitiveTypeSet = {
 
 static Ref<DataType> ParseDataType(ErrorStream &err, Lexer &lexer);
 
+static Ref<Expression> ParseExpression(ErrorStream &err, Lexer &lexer, UInt32 basePrecedence = 0);
+
 static Ref<Template> ParseTemplate(ErrorStream &err, Lexer &lexer)
 {
 	Ref<Template> result = Allocate<Template>();
@@ -230,7 +232,7 @@ static Ref<Template> ParseTemplate(ErrorStream &err, Lexer &lexer)
 			lexer.Push();
 			err.Try();
 
-			// TODO: parse expression
+			argument = ParseExpression(err, lexer);
 
 			if (err.Catch())
 			{
@@ -259,8 +261,6 @@ static Ref<Template> ParseTemplate(ErrorStream &err, Lexer &lexer)
 	err.PrintError("Expected token GREATER before end of file!");
 	return nullptr;
 }
-
-static Ref<Expression> ParseExpression(ErrorStream &err, Lexer &lexer, UInt32 basePrecedence = 0);
 
 static Ref<DataType> ParseDataType(ErrorStream &err, Lexer &lexer)
 {
