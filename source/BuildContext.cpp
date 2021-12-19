@@ -5,7 +5,6 @@
 
 #include "passes/ValidateStructure.h"
 #include "passes/LowerImpliedDeclarationFlags.h"
-#include "passes/ResolveIdentifiers.h"
 
 #include <iostream>
 #include <filesystem>
@@ -51,7 +50,6 @@ BuildContext::BuildContext(const Array<String> &modulePath, const String &output
 	// Add required passes
 	AddPass(LowerImpliedDeclarationFlags);
 	AddPass(ValidateStructure);
-	AddPass(ResolveIdentifiers);
 }
 
 void BuildContext::Print(const String &string, bool console)
