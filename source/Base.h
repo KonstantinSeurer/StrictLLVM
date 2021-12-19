@@ -11,6 +11,10 @@
 #include <memory>
 #include <any>
 
+#ifndef NDEBUG
+#define DEBUG
+#endif
+
 using Int8 = char;
 using UInt8 = unsigned char;
 
