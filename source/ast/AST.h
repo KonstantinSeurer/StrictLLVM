@@ -38,10 +38,15 @@ public:
 	{
 	}
 
+public:
 	String ToString(UInt32 indentation) const;
+
+	virtual Ref<ASTItem> Clone() const = 0;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<ASTItem> target) const;
 };
 
 STRICT_FLAGS(DeclarationFlags,
@@ -77,8 +82,13 @@ public:
 	{
 	}
 
+public:
+	virtual Ref<ASTItem> Clone() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<DataType> target) const;
 };
 
 class PrimitiveType : public DataType
@@ -99,8 +109,13 @@ public:
 		dataTypeType = DataTypeType::PRIMITIVE;
 	}
 
+public:
+	virtual Ref<ASTItem> Clone() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<PrimitiveType> target) const;
 };
 
 class ObjectType : public DataType
@@ -119,8 +134,13 @@ public:
 		dataTypeType = DataTypeType::OBJECT;
 	}
 
+public:
+	virtual Ref<ASTItem> Clone() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<ObjectType> target) const;
 };
 
 class PointerType : public DataType
@@ -135,8 +155,13 @@ public:
 	{
 	}
 
+public:
+	virtual Ref<ASTItem> Clone() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<PointerType> target) const;
 };
 
 class Template : public ASTItem
@@ -150,8 +175,13 @@ public:
 	{
 	}
 
+public:
+	virtual Ref<ASTItem> Clone() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<Template> target) const;
 };
 
 STRICT_ENUM(UnitDeclarationType,
@@ -182,8 +212,12 @@ public:
 		return declarationType == UnitDeclarationType::TYPE || declarationType == UnitDeclarationType::CLASS;
 	}
 
+	virtual Ref<ASTItem> Clone() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<UnitDeclaration> target) const;
 };
 
 class ErrorDeclaration : public UnitDeclaration
@@ -198,8 +232,13 @@ public:
 	{
 	}
 
+public:
+	virtual Ref<ASTItem> Clone() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<ErrorDeclaration> target) const;
 };
 
 STRICT_ENUM(VariableDeclarationType,
@@ -225,8 +264,13 @@ public:
 	{
 	}
 
+public:
+	virtual Ref<ASTItem> Clone() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<VariableDeclaration> target) const;
 };
 
 STRICT_ENUM(MethodType,
@@ -252,8 +296,13 @@ public:
 		variableType = VariableDeclarationType::METHOD;
 	}
 
+public:
+	virtual Ref<ASTItem> Clone() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<MethodDeclaration> target) const;
 };
 
 class ConstructorInitializer
@@ -275,8 +324,13 @@ public:
 	{
 	}
 
+public:
+	virtual Ref<ASTItem> Clone() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<ConstructorDeclaration> target) const;
 };
 
 STRICT_ENUM(OperatorType,
@@ -336,8 +390,13 @@ public:
 	{
 	}
 
+public:
+	virtual Ref<ASTItem> Clone() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<OperatorDeclaration> target) const;
 };
 
 class MemberVariableDeclaration : public VariableDeclaration
@@ -353,8 +412,13 @@ public:
 		variableType = VariableDeclarationType::MEMBER_VARIABLE;
 	}
 
+public:
+	virtual Ref<ASTItem> Clone() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<MemberVariableDeclaration> target) const;
 };
 
 class TemplateDeclaration : public ASTItem
@@ -368,8 +432,13 @@ public:
 	{
 	}
 
+public:
+	virtual Ref<ASTItem> Clone() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<TemplateDeclaration> target) const;
 };
 
 class TypeDeclaration : public UnitDeclaration
@@ -390,8 +459,13 @@ public:
 	{
 	}
 
+public:
+	virtual Ref<ASTItem> Clone() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<TypeDeclaration> target) const;
 };
 
 class ClassDeclaration : public TypeDeclaration
@@ -410,8 +484,13 @@ public:
 	{
 	}
 
+public:
+	virtual Ref<ASTItem> Clone() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<ClassDeclaration> target) const;
 };
 
 class Unit : public ASTItem
@@ -432,8 +511,12 @@ public:
 public:
 	JSON GetStructureJSON() const;
 
+	virtual Ref<ASTItem> Clone() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<Unit> target) const;
 };
 
 STRICT_ENUM(ModuleType,
@@ -451,7 +534,7 @@ STRICT_FLAGS(TargetFlags,
 bool IsTargetActive(TargetFlags target, TargetFlags buildTarget);
 TargetFlags JSONToTargetFlags(const JSON &json);
 
-class Module
+class Module : public ASTItem
 {
 public:
 	String name;
@@ -460,7 +543,7 @@ public:
 
 public:
 	Module(const String &name)
-		: name(name)
+		: ASTItem(ASTItemType::MODULE), name(name)
 	{
 	}
 
@@ -477,8 +560,12 @@ public:
 		return nullptr;
 	}
 
+	virtual Ref<ASTItem> Clone() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<Module> target) const;
 };
 
 STRICT_ENUM(ExpressionType,
@@ -505,8 +592,13 @@ public:
 	{
 	}
 
+public:
+	virtual Ref<ASTItem> Clone() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<Expression> target) const;
 };
 
 class LiteralExpression : public Expression
@@ -520,8 +612,13 @@ public:
 	{
 	}
 
+public:
+	virtual Ref<ASTItem> Clone() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<LiteralExpression> target) const;
 };
 
 class BracketExpression : public Expression
@@ -535,8 +632,13 @@ public:
 	{
 	}
 
+public:
+	virtual Ref<ASTItem> Clone() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<BracketExpression> target) const;
 };
 
 class VariableExpression : public Expression
@@ -550,8 +652,13 @@ public:
 	{
 	}
 
+public:
+	virtual Ref<ASTItem> Clone() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<VariableExpression> target) const;
 };
 
 struct SecondOperand
@@ -575,8 +682,13 @@ public:
 	{
 	}
 
+public:
+	virtual Ref<ASTItem> Clone() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<OperatorExpression> target) const;
 };
 
 class CallExpression : public Expression
@@ -591,8 +703,13 @@ public:
 	{
 	}
 
+public:
+	virtual Ref<ASTItem> Clone() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<CallExpression> target) const;
 };
 
 class TernaryExpression : public Expression
@@ -608,8 +725,13 @@ public:
 	{
 	}
 
+public:
+	virtual Ref<ASTItem> Clone() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<TernaryExpression> target) const;
 };
 
 class NewExpression : public Expression
@@ -624,8 +746,13 @@ public:
 	{
 	}
 
+public:
+	virtual Ref<ASTItem> Clone() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<NewExpression> target) const;
 };
 
 STRICT_ENUM(StatementType,
@@ -656,8 +783,13 @@ public:
 	{
 	}
 
+public:
+	virtual Ref<ASTItem> Clone() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<Statement> target) const;
 };
 
 class BlockStatement : public Statement
@@ -671,8 +803,13 @@ public:
 	{
 	}
 
+public:
+	virtual Ref<ASTItem> Clone() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<BlockStatement> target) const;
 };
 
 class ExpressionStatement : public Statement
@@ -686,8 +823,13 @@ public:
 	{
 	}
 
+public:
+	virtual Ref<ASTItem> Clone() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<ExpressionStatement> target) const;
 };
 
 class IfStatement : public Statement
@@ -703,8 +845,13 @@ public:
 	{
 	}
 
+public:
+	virtual Ref<ASTItem> Clone() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<IfStatement> target) const;
 };
 
 class ForStatement : public Statement
@@ -721,8 +868,13 @@ public:
 	{
 	}
 
+public:
+	virtual Ref<ASTItem> Clone() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<ForStatement> target) const;
 };
 
 class WhileStatement : public Statement
@@ -738,8 +890,13 @@ public:
 	{
 	}
 
+public:
+	virtual Ref<ASTItem> Clone() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<WhileStatement> target) const;
 };
 
 class ReturnStatement : public Statement
@@ -753,8 +910,13 @@ public:
 	{
 	}
 
+public:
+	virtual Ref<ASTItem> Clone() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<ReturnStatement> target) const;
 };
 
 class VariableDeclarationStatement : public Statement
@@ -768,6 +930,11 @@ public:
 		: Statement(StatementType::VARIABLE_DECLARATION)
 	{
 	}
+
+public:
+	virtual Ref<ASTItem> Clone() const;
+
+	void CloneImplementation(Ref<VariableDeclarationStatement> target) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -784,8 +951,13 @@ public:
 	{
 	}
 
+public:
+	virtual Ref<ASTItem> Clone() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<DeleteStatement> target) const;
 };
 
 #endif /* SOURCE_AST_AST */
