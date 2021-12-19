@@ -5,6 +5,7 @@
 #include "Base.h"
 #include "BuildContext.h"
 #include "Time.h"
+#include "DebugAllocator.h"
 
 enum class Flag
 {
@@ -232,6 +233,10 @@ int main(int argc, const char **args)
 	std::cout << " (" << (Time() - scanStart).milliSeconds() << "ms)" << std::endl;
 
 	context.Build();
+
+#if USE_DEBUG_ALLOCATOR
+	std::cout << "Maximum allocation size: " << (GetMaxAllocationSize() >> 10) << "kB" << std::endl;
+#endif
 
 	return 0;
 }
