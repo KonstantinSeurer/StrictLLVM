@@ -43,11 +43,15 @@ public:
 
 	virtual Ref<ASTItem> Clone() const = 0;
 
+	bool operator==(const ASTItem &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<ASTItem> target) const;
 };
+
+DECLARE_HASH(ASTItem)
 
 STRICT_FLAGS(DeclarationFlags,
 			 PRIVATE = 0,
@@ -85,11 +89,15 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
+	bool operator==(const DataType &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<DataType> target) const;
 };
+
+DECLARE_HASH(DataType)
 
 class PrimitiveType : public DataType
 {
@@ -112,11 +120,15 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
+	bool operator==(const PrimitiveType &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<PrimitiveType> target) const;
 };
+
+DECLARE_HASH(PrimitiveType)
 
 class ObjectType : public DataType
 {
@@ -137,11 +149,15 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
+	bool operator==(const ObjectType &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<ObjectType> target) const;
 };
+
+DECLARE_HASH(ObjectType)
 
 class PointerType : public DataType
 {
@@ -158,16 +174,32 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
+	bool operator==(const PointerType &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<PointerType> target) const;
 };
 
+DECLARE_HASH(PointerType)
+
+class TemplateArgument
+{
+public:
+	Ref<Expression> expression;
+	Ref<DataType> dataType;
+
+public:
+	bool operator==(const TemplateArgument &other) const;
+};
+
+DECLARE_HASH(TemplateArgument)
+
 class Template : public ASTItem
 {
 public:
-	Array<Ref<ASTItem>> arguments;
+	Array<TemplateArgument> arguments;
 
 public:
 	Template()
@@ -178,11 +210,15 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
+	bool operator==(const Template &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<Template> target) const;
 };
+
+DECLARE_HASH(Template)
 
 STRICT_ENUM(UnitDeclarationType,
 			ERROR,
@@ -214,11 +250,15 @@ public:
 
 	virtual Ref<ASTItem> Clone() const;
 
+	bool operator==(const UnitDeclaration &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<UnitDeclaration> target) const;
 };
+
+DECLARE_HASH(UnitDeclaration)
 
 class ErrorDeclaration : public UnitDeclaration
 {
@@ -228,18 +268,22 @@ public:
 
 public:
 	ErrorDeclaration()
-		: UnitDeclaration(UnitDeclarationType::ERROR)
+		: UnitDeclaration(UnitDeclarationType::ERROR), value(0)
 	{
 	}
 
 public:
 	virtual Ref<ASTItem> Clone() const;
 
+	bool operator==(const ErrorDeclaration &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<ErrorDeclaration> target) const;
 };
+
+DECLARE_HASH(ErrorDeclaration)
 
 STRICT_ENUM(VariableDeclarationType,
 			VARIABLE,
@@ -267,11 +311,15 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
+	bool operator==(const VariableDeclaration &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<VariableDeclaration> target) const;
 };
+
+DECLARE_HASH(VariableDeclaration)
 
 STRICT_ENUM(MethodType,
 			METHOD,
@@ -299,11 +347,15 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
+	bool operator==(const MethodDeclaration &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<MethodDeclaration> target) const;
 };
+
+DECLARE_HASH(MethodDeclaration)
 
 class ConstructorInitializer
 {
@@ -311,7 +363,12 @@ public:
 	String name;
 
 	Ref<Expression> value;
+
+public:
+	bool operator==(const ConstructorInitializer &other) const;
 };
+
+DECLARE_HASH(ConstructorInitializer)
 
 class ConstructorDeclaration : public MethodDeclaration
 {
@@ -327,11 +384,15 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
+	bool operator==(const ConstructorDeclaration &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<ConstructorDeclaration> target) const;
 };
+
+DECLARE_HASH(ConstructorDeclaration)
 
 STRICT_ENUM(OperatorType,
 			NONE,
@@ -393,11 +454,15 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
+	bool operator==(const OperatorDeclaration &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<OperatorDeclaration> target) const;
 };
+
+DECLARE_HASH(OperatorDeclaration)
 
 class MemberVariableDeclaration : public VariableDeclaration
 {
@@ -415,11 +480,15 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
+	bool operator==(const MemberVariableDeclaration &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<MemberVariableDeclaration> target) const;
 };
+
+DECLARE_HASH(MemberVariableDeclaration)
 
 class TemplateDeclaration : public ASTItem
 {
@@ -435,11 +504,15 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
+	bool operator==(const TemplateDeclaration &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<TemplateDeclaration> target) const;
 };
+
+DECLARE_HASH(TemplateDeclaration)
 
 class TypeDeclaration : public UnitDeclaration
 {
@@ -462,11 +535,15 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
+	bool operator==(const TypeDeclaration &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<TypeDeclaration> target) const;
 };
+
+DECLARE_HASH(TypeDeclaration)
 
 class ClassDeclaration : public TypeDeclaration
 {
@@ -487,11 +564,15 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
+	bool operator==(const ClassDeclaration &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<ClassDeclaration> target) const;
 };
+
+DECLARE_HASH(ClassDeclaration)
 
 class Unit : public ASTItem
 {
@@ -513,11 +594,15 @@ public:
 
 	virtual Ref<ASTItem> Clone() const;
 
+	bool operator==(const Unit &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<Unit> target) const;
 };
+
+DECLARE_HASH(Unit)
 
 STRICT_ENUM(ModuleType,
 			STATIC,
@@ -562,11 +647,15 @@ public:
 
 	virtual Ref<ASTItem> Clone() const;
 
+	bool operator==(const Module &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<Module> target) const;
 };
+
+DECLARE_HASH(Module)
 
 STRICT_ENUM(ExpressionType,
 			LITERAL,
@@ -595,11 +684,15 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
+	bool operator==(const Expression &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<Expression> target) const;
 };
+
+DECLARE_HASH(Expression)
 
 class LiteralExpression : public Expression
 {
@@ -615,11 +708,15 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
+	bool operator==(const LiteralExpression &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<LiteralExpression> target) const;
 };
+
+DECLARE_HASH(LiteralExpression)
 
 class BracketExpression : public Expression
 {
@@ -635,11 +732,15 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
+	bool operator==(const BracketExpression &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<BracketExpression> target) const;
 };
+
+DECLARE_HASH(BracketExpression)
 
 class VariableExpression : public Expression
 {
@@ -655,24 +756,33 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
+	bool operator==(const VariableExpression &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<VariableExpression> target) const;
 };
 
+DECLARE_HASH(VariableExpression)
+
 struct SecondOperand
 {
 public:
 	Ref<Expression> expression;
 	Ref<DataType> dataType;
+
+public:
+	bool operator==(const SecondOperand &other) const;
 };
+
+DECLARE_HASH(SecondOperand)
 
 class OperatorExpression : public Expression
 {
 public:
 	Ref<Expression> a;
-	Ref<SecondOperand> b; // optional
+	Optional<SecondOperand> b;
 
 	OperatorType operatorType;
 
@@ -685,11 +795,15 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
+	bool operator==(const OperatorExpression &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<OperatorExpression> target) const;
 };
+
+DECLARE_HASH(OperatorExpression)
 
 class CallExpression : public Expression
 {
@@ -706,11 +820,15 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
+	bool operator==(const CallExpression &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<CallExpression> target) const;
 };
+
+DECLARE_HASH(CallExpression)
 
 class TernaryExpression : public Expression
 {
@@ -728,11 +846,15 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
+	bool operator==(const TernaryExpression &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<TernaryExpression> target) const;
 };
+
+DECLARE_HASH(TernaryExpression)
 
 class NewExpression : public Expression
 {
@@ -749,11 +871,15 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
+	bool operator==(const NewExpression &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<NewExpression> target) const;
 };
+
+DECLARE_HASH(NewExpression)
 
 STRICT_ENUM(StatementType,
 			NOP,
@@ -786,11 +912,15 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
+	bool operator==(const Statement &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<Statement> target) const;
 };
+
+DECLARE_HASH(Statement)
 
 class BlockStatement : public Statement
 {
@@ -806,11 +936,15 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
+	bool operator==(const BlockStatement &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<BlockStatement> target) const;
 };
+
+DECLARE_HASH(BlockStatement)
 
 class ExpressionStatement : public Statement
 {
@@ -826,11 +960,15 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
+	bool operator==(const ExpressionStatement &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<ExpressionStatement> target) const;
 };
+
+DECLARE_HASH(ExpressionStatement)
 
 class IfStatement : public Statement
 {
@@ -848,11 +986,15 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
+	bool operator==(const IfStatement &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<IfStatement> target) const;
 };
+
+DECLARE_HASH(IfStatement)
 
 class ForStatement : public Statement
 {
@@ -871,11 +1013,15 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
+	bool operator==(const ForStatement &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<ForStatement> target) const;
 };
+
+DECLARE_HASH(ForStatement)
 
 class WhileStatement : public Statement
 {
@@ -893,11 +1039,15 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
+	bool operator==(const WhileStatement &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<WhileStatement> target) const;
 };
+
+DECLARE_HASH(WhileStatement)
 
 class ReturnStatement : public Statement
 {
@@ -913,11 +1063,15 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
+	bool operator==(const ReturnStatement &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<ReturnStatement> target) const;
 };
+
+DECLARE_HASH(ReturnStatement)
 
 class VariableDeclarationStatement : public Statement
 {
@@ -934,11 +1088,15 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
-	void CloneImplementation(Ref<VariableDeclarationStatement> target) const;
+	bool operator==(const VariableDeclarationStatement &other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
+
+	void CloneImplementation(Ref<VariableDeclarationStatement> target) const;
 };
+
+DECLARE_HASH(VariableDeclarationStatement)
 
 class DeleteStatement : public Statement
 {
@@ -954,10 +1112,14 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
+	bool operator==(const DeleteStatement &other) const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
 	void CloneImplementation(Ref<DeleteStatement> target) const;
 };
+
+DECLARE_HASH(DeleteStatement)
 
 #endif /* SOURCE_AST_AST */

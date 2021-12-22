@@ -224,7 +224,9 @@ static Ref<Template> ParseTemplate(ErrorStream &err, Lexer &lexer)
 		lexer.Push();
 		err.Try();
 
-		Ref<ASTItem> argument = ParseDataType(err, lexer);
+		TemplateArgument argument;
+
+		argument.dataType = ParseDataType(err, lexer);
 
 		if (err.Catch())
 		{
@@ -232,7 +234,7 @@ static Ref<Template> ParseTemplate(ErrorStream &err, Lexer &lexer)
 			lexer.Push();
 			err.Try();
 
-			argument = ParseExpression(err, lexer);
+			argument.expression = ParseExpression(err, lexer);
 
 			if (err.Catch())
 			{
@@ -876,7 +878,7 @@ static Ref<Expression> ParseBinaryOperatorExpression(ErrorStream &err, Lexer &le
 			Ref<OperatorExpression> op = Allocate<OperatorExpression>();
 			op->a = left;
 			op->operatorType = operatorType;
-			op->b = Allocate<SecondOperand>();
+			op->b = SecondOperand();
 
 			if (operatorType == OperatorType::EXPLICIT_CAST)
 			{
