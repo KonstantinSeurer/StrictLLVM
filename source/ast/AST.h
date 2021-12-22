@@ -23,9 +23,15 @@ STRICT_ENUM(ASTItemType,
 			EXPRESSION,
 			STATEMENT)
 
+class ASTItemMeta
+{
+public:
+};
+
 class ASTItem
 {
 public:
+	ASTItemMeta itemMeta;
 	ASTItemType type;
 
 public:
@@ -70,9 +76,15 @@ STRICT_ENUM(DataTypeType,
 			POINTER,
 			ARRAY)
 
+class DataTypeMeta
+{
+public:
+};
+
 class DataType : public ASTItem
 {
 public:
+	DataTypeMeta dataTypeMeta;
 	DataTypeType dataTypeType;
 	DeclarationFlags flags;
 
@@ -99,9 +111,15 @@ protected:
 
 DECLARE_HASH(DataType)
 
+class PrimitiveTypeMeta
+{
+public:
+};
+
 class PrimitiveType : public DataType
 {
 public:
+	PrimitiveTypeMeta primitiveTypeMeta;
 	TokenType primitiveType;
 
 public:
@@ -130,14 +148,18 @@ protected:
 
 DECLARE_HASH(PrimitiveType)
 
+class ObjectTypeMeta
+{
+public:
+	Ref<UnitDeclaration> unit;
+};
+
 class ObjectType : public DataType
 {
 public:
+	ObjectTypeMeta objectTypeMeta;
 	String name;
 	Ref<Template> typeTemplate;
-
-public:
-	Ref<UnitDeclaration> unit;
 
 public:
 	ObjectType()
@@ -159,9 +181,15 @@ protected:
 
 DECLARE_HASH(ObjectType)
 
+class PointerTypeMeta
+{
+public:
+};
+
 class PointerType : public DataType
 {
 public:
+	PointerTypeMeta pointerTypeMeta;
 	Ref<DataType> value;
 	Ref<Expression> arrayLength;
 
@@ -184,9 +212,15 @@ protected:
 
 DECLARE_HASH(PointerType)
 
+class TemplateArgumentMeta
+{
+public:
+};
+
 class TemplateArgument
 {
 public:
+	TemplateArgumentMeta templateArgumentMeta;
 	Ref<Expression> expression;
 	Ref<DataType> dataType;
 
@@ -196,9 +230,15 @@ public:
 
 DECLARE_HASH(TemplateArgument)
 
+class TemplateMeta
+{
+public:
+};
+
 class Template : public ASTItem
 {
 public:
+	TemplateMeta templateMeta;
 	Array<TemplateArgument> arguments;
 
 public:
@@ -225,9 +265,15 @@ STRICT_ENUM(UnitDeclarationType,
 			TYPE,
 			CLASS)
 
+class UnitDeclarationMeta
+{
+public:
+};
+
 class UnitDeclaration : public ASTItem
 {
 public:
+	UnitDeclarationMeta unitDeclarationMeta;
 	DeclarationFlags flags;
 	UnitDeclarationType declarationType;
 
@@ -260,9 +306,15 @@ protected:
 
 DECLARE_HASH(UnitDeclaration)
 
+class ErrorDeclarationMeta
+{
+public:
+};
+
 class ErrorDeclaration : public UnitDeclaration
 {
 public:
+	ErrorDeclarationMeta errorDeclarationMeta;
 	Int32 value;
 	bool hasValue;
 
@@ -290,9 +342,15 @@ STRICT_ENUM(VariableDeclarationType,
 			MEMBER_VARIABLE,
 			METHOD)
 
+class VariableDeclarationMeta
+{
+public:
+};
+
 class VariableDeclaration : public ASTItem
 {
 public:
+	VariableDeclarationMeta variableDeclarationMeta;
 	DeclarationFlags flags;
 	VariableDeclarationType variableType;
 	String name;
@@ -329,9 +387,15 @@ STRICT_ENUM(MethodType,
 			GETTER,
 			SETTER)
 
+class MethodDeclarationMeta
+{
+public:
+};
+
 class MethodDeclaration : public VariableDeclaration
 {
 public:
+	MethodDeclarationMeta methodDeclarationMeta;
 	MethodType methodType;
 	Array<Ref<VariableDeclaration>> parameters;
 
@@ -357,11 +421,16 @@ protected:
 
 DECLARE_HASH(MethodDeclaration)
 
+class ConstructorInitializerMeta
+{
+public:
+};
+
 class ConstructorInitializer
 {
 public:
+	ConstructorInitializerMeta constructorInitializerMeta;
 	String name;
-
 	Ref<Expression> value;
 
 public:
@@ -370,9 +439,15 @@ public:
 
 DECLARE_HASH(ConstructorInitializer)
 
+class ConstructorDeclarationMeta
+{
+public:
+};
+
 class ConstructorDeclaration : public MethodDeclaration
 {
 public:
+	ConstructorDeclarationMeta constructorDeclarationMeta;
 	Array<ConstructorInitializer> initializers;
 
 public:
@@ -440,9 +515,15 @@ STRICT_ENUM(OperatorType,
 			ACCESS,
 			CALL)
 
+class OperatorDeclarationMeta
+{
+public:
+};
+
 class OperatorDeclaration : public MethodDeclaration
 {
 public:
+	OperatorDeclarationMeta operatorDeclarationMeta;
 	OperatorType operatorType;
 
 public:
@@ -464,9 +545,15 @@ protected:
 
 DECLARE_HASH(OperatorDeclaration)
 
+class MemberVariableDeclarationMeta
+{
+public:
+};
+
 class MemberVariableDeclaration : public VariableDeclaration
 {
 public:
+	MemberVariableDeclarationMeta memberVariableDeclarationMeta;
 	Array<Ref<MethodDeclaration>> accessors;
 	Ref<Expression> value;
 
@@ -490,9 +577,15 @@ protected:
 
 DECLARE_HASH(MemberVariableDeclaration)
 
+class TemplateDeclarationMeta
+{
+public:
+};
+
 class TemplateDeclaration : public ASTItem
 {
 public:
+	TemplateDeclarationMeta templateDeclarationMeta;
 	Array<Ref<VariableDeclaration>> parameters;
 
 public:
@@ -514,9 +607,15 @@ protected:
 
 DECLARE_HASH(TemplateDeclaration)
 
+class TypeDeclarationMeta
+{
+public:
+};
+
 class TypeDeclaration : public UnitDeclaration
 {
 public:
+	TypeDeclarationMeta typeDeclarationMeta;
 	Array<Ref<VariableDeclaration>> members;
 	Ref<TemplateDeclaration> typeTemplate;
 	Array<Ref<ObjectType>> superTypes;
@@ -545,9 +644,15 @@ protected:
 
 DECLARE_HASH(TypeDeclaration)
 
+class ClassDeclarationMeta
+{
+public:
+};
+
 class ClassDeclaration : public TypeDeclaration
 {
 public:
+	ClassDeclarationMeta classDeclarationMeta;
 	bool isSingleton;
 
 public:
@@ -574,9 +679,15 @@ protected:
 
 DECLARE_HASH(ClassDeclaration)
 
+class UnitMeta
+{
+public:
+};
+
 class Unit : public ASTItem
 {
 public:
+	UnitMeta unitMeta;
 	Array<String> dependencyNames;
 	String name;
 	Ref<UnitDeclaration> declaredType;
@@ -619,9 +730,15 @@ STRICT_FLAGS(TargetFlags,
 bool IsTargetActive(TargetFlags target, TargetFlags buildTarget);
 TargetFlags JSONToTargetFlags(const JSON &json);
 
+class ModuleMeta
+{
+public:
+};
+
 class Module : public ASTItem
 {
 public:
+	ModuleMeta moduleMeta;
 	String name;
 	Array<Ref<Unit>> units;
 	Array<Ref<Module>> dependencies;
@@ -666,9 +783,15 @@ STRICT_ENUM(ExpressionType,
 			BRACKET,
 			NEW)
 
+class ExpressionMeta
+{
+public:
+};
+
 class Expression : public ASTItem
 {
 public:
+	ExpressionMeta expressionMeta;
 	ExpressionType expressionType;
 
 public:
@@ -694,9 +817,15 @@ protected:
 
 DECLARE_HASH(Expression)
 
+class LiteralExpressionMeta
+{
+public:
+};
+
 class LiteralExpression : public Expression
 {
 public:
+	LiteralExpressionMeta literalExpressionMeta;
 	Token data;
 
 public:
@@ -718,9 +847,15 @@ protected:
 
 DECLARE_HASH(LiteralExpression)
 
+class BracketExpressionMeta
+{
+public:
+};
+
 class BracketExpression : public Expression
 {
 public:
+	BracketExpressionMeta bracketExpressionMeta;
 	Ref<Expression> expression;
 
 public:
@@ -742,9 +877,15 @@ protected:
 
 DECLARE_HASH(BracketExpression)
 
+class VariableExpressionMeta
+{
+public:
+};
+
 class VariableExpression : public Expression
 {
 public:
+	VariableExpressionMeta variableExpressionMeta;
 	String name;
 
 public:
@@ -766,9 +907,15 @@ protected:
 
 DECLARE_HASH(VariableExpression)
 
+class SecondOperandMeta
+{
+public:
+};
+
 struct SecondOperand
 {
 public:
+	SecondOperandMeta secondOperandMeta;
 	Ref<Expression> expression;
 	Ref<DataType> dataType;
 
@@ -778,9 +925,15 @@ public:
 
 DECLARE_HASH(SecondOperand)
 
+class OperatorExpressionMeta
+{
+public:
+};
+
 class OperatorExpression : public Expression
 {
 public:
+	OperatorExpressionMeta operatorExpressionMeta;
 	Ref<Expression> a;
 	Optional<SecondOperand> b;
 
@@ -805,9 +958,15 @@ protected:
 
 DECLARE_HASH(OperatorExpression)
 
+class CallExpressionMeta
+{
+public:
+};
+
 class CallExpression : public Expression
 {
 public:
+	CallExpressionMeta callExpressionMeta;
 	Ref<Expression> method;
 	Array<Ref<Expression>> arguments;
 
@@ -830,9 +989,15 @@ protected:
 
 DECLARE_HASH(CallExpression)
 
+class TernaryExpressionMeta
+{
+public:
+};
+
 class TernaryExpression : public Expression
 {
 public:
+	TernaryExpressionMeta ternaryExpressionMeta;
 	Ref<Expression> condition;
 	Ref<Expression> thenExpression;
 	Ref<Expression> elseExpression;
@@ -856,9 +1021,15 @@ protected:
 
 DECLARE_HASH(TernaryExpression)
 
+class NewExpressionMeta
+{
+public:
+};
+
 class NewExpression : public Expression
 {
 public:
+	NewExpressionMeta newExpressionMeta;
 	Ref<DataType> dataType;
 	Array<Ref<Expression>> arguments;
 
@@ -894,9 +1065,15 @@ STRICT_ENUM(StatementType,
 			VARIABLE_DECLARATION,
 			DELETE)
 
+class StatementMeta
+{
+public:
+};
+
 class Statement : public ASTItem
 {
 public:
+	StatementMeta statementMeta;
 	StatementType statementType;
 
 public:
@@ -922,9 +1099,15 @@ protected:
 
 DECLARE_HASH(Statement)
 
+class BlockStatementMeta
+{
+public:
+};
+
 class BlockStatement : public Statement
 {
 public:
+	BlockStatementMeta blockStatementMeta;
 	Array<Ref<Statement>> statements;
 
 public:
@@ -946,9 +1129,15 @@ protected:
 
 DECLARE_HASH(BlockStatement)
 
+class ExpressionStatementMeta
+{
+public:
+};
+
 class ExpressionStatement : public Statement
 {
 public:
+	ExpressionStatementMeta expressionStatementMeta;
 	Ref<Expression> expression;
 
 public:
@@ -970,9 +1159,15 @@ protected:
 
 DECLARE_HASH(ExpressionStatement)
 
+class IfStatementMeta
+{
+public:
+};
+
 class IfStatement : public Statement
 {
 public:
+	IfStatementMeta ifStatementMeta;
 	Ref<Expression> condition;
 	Ref<Statement> thenStatement;
 	Ref<Statement> elseStatement;
@@ -996,9 +1191,15 @@ protected:
 
 DECLARE_HASH(IfStatement)
 
+class ForStatementMeta
+{
+public:
+};
+
 class ForStatement : public Statement
 {
 public:
+	ForStatementMeta forStatementMeta;
 	Ref<Statement> startStatement;
 	Ref<Expression> condition;
 	Ref<Expression> incrementExpression;
@@ -1023,9 +1224,15 @@ protected:
 
 DECLARE_HASH(ForStatement)
 
+class WhileStatementMeta
+{
+public:
+};
+
 class WhileStatement : public Statement
 {
 public:
+	WhileStatementMeta whileStatementMeta;
 	Ref<Expression> condition;
 	Ref<Statement> bodyStatement;
 	bool checkAfterBody;
@@ -1049,9 +1256,15 @@ protected:
 
 DECLARE_HASH(WhileStatement)
 
+class ReturnStatementMeta
+{
+public:
+};
+
 class ReturnStatement : public Statement
 {
 public:
+	ReturnStatementMeta returnStatementMeta;
 	Ref<Expression> expression;
 
 public:
@@ -1073,9 +1286,15 @@ protected:
 
 DECLARE_HASH(ReturnStatement)
 
+class VariableDeclarationStatementMeta
+{
+public:
+};
+
 class VariableDeclarationStatement : public Statement
 {
 public:
+	VariableDeclarationStatementMeta variableDeclarationStatementMeta;
 	Ref<VariableDeclaration> declaration;
 	Ref<Expression> value;
 
@@ -1098,9 +1317,15 @@ protected:
 
 DECLARE_HASH(VariableDeclarationStatement)
 
+class DeleteStatementMeta
+{
+public:
+};
+
 class DeleteStatement : public Statement
 {
 public:
+	DeleteStatementMeta deleteStatementMeta;
 	Ref<Expression> expression;
 
 public:
