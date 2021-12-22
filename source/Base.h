@@ -151,4 +151,51 @@ namespace strict
 	name operator&(name a, name b);
 #endif
 
+#define DECLARE_HASH(Type)                         \
+	namespace std                                  \
+	{                                              \
+		template <>                                \
+		struct hash<Type>                          \
+		{                                          \
+			size_t operator()(const Type &) const; \
+		};                                         \
+	}
+
+#define DEFINE_HASH(Type, implementation)                           \
+	std::size_t std::hash<Type>::operator()(const Type &data) const \
+	{                                                               \
+		std::size_t result = 0x0;                                   \
+		implementation return result;                               \
+	}
+
+#define DEFINE_HASH_WITH_SUPER(Type, SuperType, implementation)     \
+	std::size_t std::hash<Type>::operator()(const Type &data) const \
+	{                                                               \
+		std::size_t result = std::hash<SuperType>()(data);          \
+		implementation return result;                               \
+	}
+
+#define HASH_VALUE(Type, value) result ^= std::hash<Type>()(data.value);
+
+#define HASH_REF(Type, reference)                       \
+	if (data.reference)                                 \
+	{                                                   \
+		result ^= std::hash<Type>()(*(data.reference)); \
+	}
+
+#define HASH_ACCESS(member) data.member
+
+#define EQUALS_REF(otherName, variableName)                                         \
+	if (variableName != otherName.variableName)                                     \
+	{                                                                               \
+		if (variableName.operator bool() != otherName.variableName.operator bool()) \
+		{                                                                           \
+			return false;                                                           \
+		}                                                                           \
+		if (variableName && !(variableName->operator==(*otherName.variableName)))   \
+		{                                                                           \
+			return false;                                                           \
+		}                                                                           \
+	}
+
 #endif /* SOURCE_BASE */
