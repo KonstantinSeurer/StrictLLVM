@@ -101,6 +101,9 @@ public:
 	TokenData data;
 	TokenType type;
 	UInt32 characterIndex;
+
+public:
+	bool operator==(const Token &other) const;
 };
 
 class Lexer

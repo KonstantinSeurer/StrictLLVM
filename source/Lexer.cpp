@@ -4,6 +4,31 @@
 #include <string.h>
 #include <iostream>
 
+bool Token::operator==(const Token &other) const
+{
+	if (type != other.type)
+	{
+		return false;
+	}
+
+	// The characterIndex is ignored since it is only relevant for printing error messages and has nothing to do with the functionality of the compiler.
+
+	switch (type)
+	{
+	case TokenType::STRING_LITERAL:
+	case TokenType::IDENTIFIER:
+		return strcmp(data.stringData, other.data.stringData) == 0;
+	case TokenType::INT_LITERAL:
+		return data.intData == other.data.intData;
+	case TokenType::UINT_LITERAL:
+		return data.uintData == other.data.uintData;
+	case TokenType::FLOAT_LITERAL:
+		return data.floatData == other.data.floatData;
+	default:
+		return true;
+	}
+}
+
 Lexer::~Lexer()
 {
 	if (tokens.use_count() == 1)
