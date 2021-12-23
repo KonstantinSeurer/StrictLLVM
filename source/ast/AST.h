@@ -103,6 +103,11 @@ public:
 
 	bool operator==(const DataType &other) const;
 
+	bool IsPointer() const
+	{
+		return dataTypeType == DataTypeType::POINTER || dataTypeType == DataTypeType::REFERENCE || dataTypeType == DataTypeType::ARRAY;
+	}
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
