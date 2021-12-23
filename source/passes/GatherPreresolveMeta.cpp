@@ -170,7 +170,7 @@ static void GatherPreresolveMeta(Ref<TypeDeclaration> type, Ref<MethodDeclaratio
 
 static void GatherPreresolveMeta(Ref<TypeDeclaration> type, Ref<MemberVariableDeclaration> variable)
 {
-	for (auto &accessor : variable->accessors)
+	for (auto accessor : variable->accessors)
 	{
 		GatherPreresolveMeta(type, accessor);
 	}
@@ -178,7 +178,7 @@ static void GatherPreresolveMeta(Ref<TypeDeclaration> type, Ref<MemberVariableDe
 
 static void GatherPreresolveMeta(Ref<TypeDeclaration> type)
 {
-	for (auto &member : type->members)
+	for (auto member : type->members)
 	{
 		TryToInsertTemplatedObjectType(type->typeDeclarationMeta.usedTemplateTypes, *member->dataType);
 
@@ -200,9 +200,9 @@ static void GatherPreresolveMeta(Ref<TypeDeclaration> type)
 
 PassResultFlags GatherPreresolveMeta(PrintFunction print, BuildContext &context)
 {
-	for (auto &module : context.GetModules())
+	for (auto module : context.GetModules())
 	{
-		for (auto &unit : module->units)
+		for (auto unit : module->units)
 		{
 			if (unit->declaredType->IsType())
 			{

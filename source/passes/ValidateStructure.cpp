@@ -5,9 +5,9 @@ PassResultFlags ValidateStructure(PrintFunction print, BuildContext &context)
 {
 	PassResultFlags result = PassResultFlags::SUCCESS;
 
-	for (const auto &module : context.GetModules())
+	for (const auto module : context.GetModules())
 	{
-		for (const auto &unit : module->units)
+		for (const auto unit : module->units)
 		{
 			// TODO: Catch methods with the same signature
 			//       Catch variables with the same name

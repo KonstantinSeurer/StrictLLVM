@@ -43,7 +43,7 @@ void LowerImpliedDeclarationFlags(Ref<MethodDeclaration> method, bool isVirtualT
 
 void LowerImpliedDeclarationFlags(Ref<MemberVariableDeclaration> variable)
 {
-	for (auto &accessor : variable->accessors)
+	for (auto accessor : variable->accessors)
 	{
 		LowerImpliedDeclarationFlags(accessor, false);
 	}
@@ -51,7 +51,7 @@ void LowerImpliedDeclarationFlags(Ref<MemberVariableDeclaration> variable)
 
 void LowerImpliedDeclarationFlags(Ref<TypeDeclaration> type)
 {
-	for (auto &member : type->members)
+	for (auto member : type->members)
 	{
 		if (member->variableType == VariableDeclarationType::MEMBER_VARIABLE)
 		{
@@ -67,9 +67,9 @@ void LowerImpliedDeclarationFlags(Ref<TypeDeclaration> type)
 
 PassResultFlags LowerImpliedDeclarationFlags(PrintFunction print, BuildContext &context)
 {
-	for (auto &module : context.GetModules())
+	for (auto module : context.GetModules())
 	{
-		for (auto &unit : module->units)
+		for (auto unit : module->units)
 		{
 			if (unit->declaredType->IsType())
 			{
