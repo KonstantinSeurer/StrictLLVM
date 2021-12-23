@@ -615,6 +615,7 @@ DECLARE_HASH(TemplateDeclaration)
 class TypeDeclarationMeta
 {
 public:
+	HashSet<ObjectType> usedTemplateTypes;
 };
 
 class TypeDeclaration : public UnitDeclaration
