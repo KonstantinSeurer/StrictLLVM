@@ -6,6 +6,7 @@
 #include "passes/ValidateStructure.h"
 #include "passes/LowerImpliedDeclarationFlags.h"
 #include "passes/GatherPreresolveMeta.h"
+#include "passes/InlineTemplates.h"
 
 #include <iostream>
 #include <filesystem>
@@ -52,6 +53,7 @@ BuildContext::BuildContext(const Array<String> &modulePath, const String &output
 	AddPass(LowerImpliedDeclarationFlags);
 	AddPass(ValidateStructure);
 	AddPass(GatherPreresolveMeta);
+	AddPass(InlineTemplates);
 }
 
 void BuildContext::Print(const String &string, bool console)
