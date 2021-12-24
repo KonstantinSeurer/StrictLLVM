@@ -883,6 +883,19 @@ void Unit::CloneImplementation(Ref<Unit> target) const
 
 DEFINE_HASH_WITH_SUPER(Unit, ASTItem, HASH_VALUE(String, name))
 
+Ref<Unit> Unit::GetDependency(const String &name) const
+{
+	for (auto dependency : unitMeta.dependencies)
+	{
+		if (dependency->name == name)
+		{
+			return dependency;
+		}
+	}
+
+	return nullptr;
+}
+
 bool IsTargetActive(TargetFlags target, TargetFlags buildTarget)
 {
 	return (target & buildTarget) == target; // target must be a subset of buildTarget to be active

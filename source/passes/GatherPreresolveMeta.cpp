@@ -198,18 +198,28 @@ static void GatherPreresolveMeta(Ref<TypeDeclaration> type)
 	}
 }
 
+static void GatherPreresolveMeta(BuildContext &context, Ref<Unit> unit)
+{
+	if (unit->declaredType->IsType())
+	{
+		GatherPreresolveMeta(std::dynamic_pointer_cast<TypeDeclaration>(unit->declaredType));
+	}
+
+	for (const String &dependencyName : unit->dependencyNames)
+	{
+		unit->unitMeta.dependencies.push_back(context.ResolveUnit(dependencyName));
+	}
+}
+
 PassResultFlags GatherPreresolveMeta(PrintFunction print, BuildContext &context)
 {
 	for (auto module : context.GetModules())
 	{
 		for (auto unit : module->units)
 		{
-			if (unit->declaredType->IsType())
-			{
-				GatherPreresolveMeta(std::dynamic_pointer_cast<TypeDeclaration>(unit->declaredType));
-			}
+			GatherPreresolveMeta(context, unit);
 		}
 	}
-	// TODO: TypeDeclarationMeta::usedObjectTypes
+
 	return PassResultFlags::SUCCESS;
 }

@@ -6,6 +6,7 @@
 #include "../JSON.h"
 
 class Template;
+class Unit;
 class UnitDeclaration;
 class Expression;
 class Statement;
@@ -688,6 +689,7 @@ DECLARE_HASH(ClassDeclaration)
 class UnitMeta
 {
 public:
+	Array<Ref<Unit>> dependencies;
 };
 
 class Unit : public ASTItem
@@ -712,6 +714,8 @@ public:
 	virtual Ref<ASTItem> Clone() const;
 
 	bool operator==(const Unit &other) const;
+
+	Ref<Unit> GetDependency(const String &name) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
