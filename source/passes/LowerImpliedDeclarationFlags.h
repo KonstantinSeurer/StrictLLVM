@@ -3,6 +3,6 @@
 
 #include "../BuildContext.h"
 
-PassResultFlags LowerImpliedDeclarationFlags(PrintFunction print, BuildContext &context);
+PassResultFlags LowerImpliedDeclarationFlags(PrintFunction print, BuildContext& context);
 
 #endif /* SOURCE_PASSES_LOWERIMPLIEDDECLARATIONFLAGS */

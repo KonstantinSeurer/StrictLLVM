@@ -3,13 +3,13 @@
 #include "Time.h"
 #include "ast/Parser.h"
 
-#include "passes/ValidateStructure.h"
-#include "passes/LowerImpliedDeclarationFlags.h"
 #include "passes/GatherPreresolveMeta.h"
 #include "passes/InlineTemplates.h"
+#include "passes/LowerImpliedDeclarationFlags.h"
+#include "passes/ValidateStructure.h"
 
-#include <iostream>
 #include <filesystem>
+#include <iostream>
 
 // TODO: What happend when source files get deleted -> add cache cleanup pass for deleted/renamed files
 
@@ -20,17 +20,18 @@ void UnitTask::InitFileName()
 	fileName += ".strict";
 }
 
-bool operator==(const UnitTask &a, const UnitTask &b)
+bool operator==(const UnitTask& a, const UnitTask& b)
 {
 	return a.name == b.name;
 }
 
-bool operator==(const ModuleTask &a, const ModuleTask &b)
+bool operator==(const ModuleTask& a, const ModuleTask& b)
 {
 	return a.name == b.name;
 }
 
-BuildContext::BuildContext(const Array<String> &modulePath, const String &outputPath, const String &cachePath, const Optional<String> &logFile, TargetFlags target)
+BuildContext::BuildContext(const Array<String>& modulePath, const String& outputPath, const String& cachePath, const Optional<String>& logFile,
+                           TargetFlags target)
 	: modulePath(modulePath), outputPath(outputPath), cachePath(cachePath), target(target), errorCount(0)
 {
 	if (!std::filesystem::exists(outputPath))
@@ -56,7 +57,7 @@ BuildContext::BuildContext(const Array<String> &modulePath, const String &output
 	AddPass(InlineTemplates);
 }
 
-void BuildContext::Print(const String &string, bool console)
+void BuildContext::Print(const String& string, bool console)
 {
 	if (console)
 	{
@@ -69,16 +70,16 @@ void BuildContext::Print(const String &string, bool console)
 	}
 }
 
-#define PRINT_FUNCTION [this](const String &string) { Print(string); }
+#define PRINT_FUNCTION [this](const String& string) { Print(string); }
 
-String BuildContext::ResolveModulePath(const String &moduleName) const
+String BuildContext::ResolveModulePath(const String& moduleName) const
 {
 	String moduleNameCopy = moduleName;
 	std::replace(moduleNameCopy.begin(), moduleNameCopy.end(), '.', '/');
 	const String moduleSubDirectory = String("/") + moduleNameCopy;
 	const String moduleFile = moduleSubDirectory + "/module.json";
 
-	for (const String &path : modulePath)
+	for (const String& path : modulePath)
 	{
 		String canonicalModuleFile = path + moduleFile;
 		if (std::filesystem::exists(canonicalModuleFile))
@@ -91,9 +92,9 @@ String BuildContext::ResolveModulePath(const String &moduleName) const
 	return "";
 }
 
-Pair<String, String> BuildContext::ResolveUnitIdentifier(const String &identifier) const
+Pair<String, String> BuildContext::ResolveUnitIdentifier(const String& identifier) const
 {
-	for (const auto &module : taskList)
+	for (const auto& module : taskList)
 	{
 		if (identifier.find(module.first.name) == 0)
 		{
@@ -105,7 +106,7 @@ Pair<String, String> BuildContext::ResolveUnitIdentifier(const String &identifie
 	return Pair<String, String>();
 }
 
-Ref<Unit> BuildContext::ResolveUnit(const String &identifier) const
+Ref<Unit> BuildContext::ResolveUnit(const String& identifier) const
 {
 	const auto moduleAndUnit = ResolveUnitIdentifier(identifier);
 	const UInt64 moduleIndex = FindModule(moduleAndUnit.first);
@@ -113,7 +114,7 @@ Ref<Unit> BuildContext::ResolveUnit(const String &identifier) const
 	return taskList[moduleIndex].second[unitIndex].unit;
 }
 
-void BuildContext::AddModule(const String &name)
+void BuildContext::AddModule(const String& name)
 {
 	if (moduleSet.find(name) != moduleSet.end())
 	{
@@ -133,7 +134,7 @@ void BuildContext::AddModule(const String &name)
 	ModuleTask moduleTask(name, modulePath);
 	if (moduleJSON.contains("requires"))
 	{
-		for (const auto &requireJSON : moduleJSON["requires"])
+		for (const auto& requireJSON : moduleJSON["requires"])
 		{
 			AddModule(String(requireJSON));
 			moduleTask.dependencyIndices.push_back(taskList.size() - 1);
@@ -145,7 +146,7 @@ void BuildContext::AddModule(const String &name)
 	if (moduleJSON.contains("units"))
 	{
 		const JSON unitsJSON = moduleJSON["units"];
-		for (const auto &unitJSON : unitsJSON)
+		for (const auto& unitJSON : unitsJSON)
 		{
 			taskList[taskList.size() - 1].second.push_back(UnitTask(String(unitJSON)));
 		}
@@ -179,7 +180,7 @@ void BuildContext::Build()
 	Print("Compiling...\n");
 	Time compileStart;
 
-	for (const auto &pass : passes)
+	for (const auto& pass : passes)
 	{
 		if ((pass(PRINT_FUNCTION, *this) & PassResultFlags::CRITICAL_ERROR) == PassResultFlags::CRITICAL_ERROR)
 		{
@@ -189,9 +190,9 @@ void BuildContext::Build()
 
 	Print("(" + std::to_string((Time() - compileStart).milliSeconds()) + "ms)\n");
 
-	for (auto &module : taskList)
+	for (auto& module : taskList)
 	{
-		for (auto &unit : module.second)
+		for (auto& unit : module.second)
 		{
 			if (!unit.build)
 			{
@@ -205,7 +206,7 @@ void BuildContext::Build()
 	// TODO: compile every task and write ir to cache files
 }
 
-void BuildContext::MarkChangedUnits(bool &build)
+void BuildContext::MarkChangedUnits(bool& build)
 {
 	const String lastWriteTimesFile = cachePath + "/lastWriteTimes.json";
 
@@ -218,7 +219,7 @@ void BuildContext::MarkChangedUnits(bool &build)
 		lastWriteTimesJSON = JSON::parse(lastWriteTimesContent);
 	}
 
-	for (auto &module : taskList)
+	for (auto& module : taskList)
 	{
 		if (lastWriteTimesJSON.find(module.first.name) == lastWriteTimesJSON.end())
 		{
@@ -227,9 +228,9 @@ void BuildContext::MarkChangedUnits(bool &build)
 			continue;
 		}
 
-		JSON &moduleJSON = lastWriteTimesJSON[module.first.name];
+		JSON& moduleJSON = lastWriteTimesJSON[module.first.name];
 
-		for (auto &unit : module.second)
+		for (auto& unit : module.second)
 		{
 			std::filesystem::file_time_type lastWrite = std::filesystem::last_write_time(module.first.canonicalPath + "/" + unit.fileName);
 
@@ -250,14 +251,14 @@ void BuildContext::MarkChangedUnits(bool &build)
 	lastWriteTimesStream << lastWriteTimesJSON;
 }
 
-void BuildContext::AddModuleToLastWriteJSON(Pair<ModuleTask, Array<UnitTask>> &module, JSON &target)
+void BuildContext::AddModuleToLastWriteJSON(Pair<ModuleTask, Array<UnitTask>>& module, JSON& target)
 {
 	module.first.build = true; // build new/uncached modules
 
 	JSON moduleJSON;
 	for (UInt64 unitIndex = 0; unitIndex < module.second.size(); unitIndex++)
 	{
-		auto &unit = module.second[unitIndex];
+		auto& unit = module.second[unitIndex];
 		unit.build = true;
 
 		std::filesystem::file_time_type lastWrite = std::filesystem::last_write_time(module.first.canonicalPath + "/" + unit.fileName);
@@ -270,7 +271,7 @@ void BuildContext::AddModuleToLastWriteJSON(Pair<ModuleTask, Array<UnitTask>> &m
 void BuildContext::PropagateBuildFlagAndParse()
 {
 	// propagate the ModuleTask build flag
-	for (auto &module : taskList)
+	for (auto& module : taskList)
 	{
 		if (module.first.build)
 		{
@@ -288,7 +289,7 @@ void BuildContext::PropagateBuildFlagAndParse()
 	}
 
 	// Create module AST items for module tasks
-	for (auto &module : taskList)
+	for (auto& module : taskList)
 	{
 		if (!module.first.build)
 		{
@@ -300,7 +301,7 @@ void BuildContext::PropagateBuildFlagAndParse()
 	}
 
 	// Resolve module dependencies
-	for (auto &module : taskList)
+	for (auto& module : taskList)
 	{
 		if (!module.first.build)
 		{
@@ -313,7 +314,7 @@ void BuildContext::PropagateBuildFlagAndParse()
 		}
 	}
 
-	for (auto &module : taskList)
+	for (auto& module : taskList)
 	{
 		if (!module.first.build)
 		{
@@ -327,7 +328,7 @@ void BuildContext::PropagateBuildFlagAndParse()
 			std::filesystem::create_directory(moduleCachePath);
 		}
 
-		for (auto &unit : module.second)
+		for (auto& unit : module.second)
 		{
 			const String unitCachePath = moduleCachePath + "/" + unit.name + ".json";
 
@@ -363,7 +364,7 @@ void BuildContext::PropagateBuildFlagAndParse()
 
 				unit.unit = Allocate<Unit>(JSON::parse(unitCacheContent));
 
-				for (const auto &dependencyName : unit.unit->dependencyNames)
+				for (const auto& dependencyName : unit.unit->dependencyNames)
 				{
 					const auto moduleAndUnit = ResolveUnitIdentifier(dependencyName);
 					const UInt64 moduleIndex = FindModule(moduleAndUnit.first);
@@ -399,7 +400,7 @@ void BuildContext::PropagateBuildFlagAndParse()
 	}
 }
 
-UInt64 BuildContext::FindModule(const String &name) const
+UInt64 BuildContext::FindModule(const String& name) const
 {
 	for (UInt64 moduleIndex = 0; moduleIndex < taskList.size(); moduleIndex++)
 	{
@@ -413,9 +414,9 @@ UInt64 BuildContext::FindModule(const String &name) const
 	return 0;
 }
 
-UInt64 BuildContext::FindUnit(UInt64 moduleIndex, const String &name) const
+UInt64 BuildContext::FindUnit(UInt64 moduleIndex, const String& name) const
 {
-	const auto &units = taskList[moduleIndex].second;
+	const auto& units = taskList[moduleIndex].second;
 
 	for (UInt64 unitIndex = 0; unitIndex < units.size(); unitIndex++)
 	{

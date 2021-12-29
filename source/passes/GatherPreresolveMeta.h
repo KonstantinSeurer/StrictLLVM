@@ -3,6 +3,6 @@
 
 #include "../BuildContext.h"
 
-PassResultFlags GatherPreresolveMeta(PrintFunction print, BuildContext &context);
+PassResultFlags GatherPreresolveMeta(PrintFunction print, BuildContext& context);
 
 #endif /* SOURCE_PASSES_GATHERPRERESOLVEMETA */

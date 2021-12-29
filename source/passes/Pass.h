@@ -7,6 +7,6 @@ STRICT_FLAGS(PassResultFlags, SUCCESS = 0, WARNING = 1, ERROR = 2, CRITICAL_ERRO
 
 class BuildContext;
 
-using BuildPass = Function<PassResultFlags(PrintFunction, BuildContext &)>;
+using BuildPass = Function<PassResultFlags(PrintFunction, BuildContext&)>;
 
 #endif /* SOURCE_PASSES_PASS */

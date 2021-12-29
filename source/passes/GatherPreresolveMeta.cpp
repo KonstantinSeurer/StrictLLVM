@@ -3,11 +3,11 @@
 
 #include <iostream>
 
-static void TryToInsertTemplatedObjectType(HashSet<ObjectType> &target, const DataType &dataType)
+static void TryToInsertTemplatedObjectType(HashSet<ObjectType>& target, const DataType& dataType)
 {
 	if (dataType.dataTypeType == DataTypeType::OBJECT)
 	{
-		const ObjectType &objectType = (const ObjectType &)dataType;
+		const ObjectType& objectType = (const ObjectType&)dataType;
 
 		if (objectType.typeTemplate)
 		{
@@ -19,7 +19,7 @@ static void TryToInsertTemplatedObjectType(HashSet<ObjectType> &target, const Da
 
 	if (dataType.IsPointer())
 	{
-		TryToInsertTemplatedObjectType(target, *((const PointerType &)dataType).value);
+		TryToInsertTemplatedObjectType(target, *((const PointerType&)dataType).value);
 	}
 }
 
@@ -32,14 +32,12 @@ static void GatherPreresolveMeta(Ref<TypeDeclaration> type, Ref<Expression> expr
 
 	switch (expression->expressionType)
 	{
-	case ExpressionType::BRACKET:
-	{
+	case ExpressionType::BRACKET: {
 		Ref<BracketExpression> bracketExpression = std::dynamic_pointer_cast<BracketExpression>(expression);
 		GatherPreresolveMeta(type, bracketExpression->expression);
 		break;
 	}
-	case ExpressionType::CALL:
-	{
+	case ExpressionType::CALL: {
 		Ref<CallExpression> callExpression = std::dynamic_pointer_cast<CallExpression>(expression);
 		GatherPreresolveMeta(type, callExpression->method);
 		for (auto argument : callExpression->arguments)
@@ -48,8 +46,7 @@ static void GatherPreresolveMeta(Ref<TypeDeclaration> type, Ref<Expression> expr
 		}
 		break;
 	}
-	case ExpressionType::NEW:
-	{
+	case ExpressionType::NEW: {
 		Ref<NewExpression> newExpression = std::dynamic_pointer_cast<NewExpression>(expression);
 		TryToInsertTemplatedObjectType(type->typeDeclarationMeta.usedTemplateTypes, *newExpression->dataType);
 		for (auto argument : newExpression->arguments)
@@ -58,8 +55,7 @@ static void GatherPreresolveMeta(Ref<TypeDeclaration> type, Ref<Expression> expr
 		}
 		break;
 	}
-	case ExpressionType::OPERATOR:
-	{
+	case ExpressionType::OPERATOR: {
 		Ref<OperatorExpression> operatorExpression = std::dynamic_pointer_cast<OperatorExpression>(expression);
 		GatherPreresolveMeta(type, operatorExpression->a);
 		if (operatorExpression->b)
@@ -75,8 +71,7 @@ static void GatherPreresolveMeta(Ref<TypeDeclaration> type, Ref<Expression> expr
 		}
 		break;
 	}
-	case ExpressionType::TERNARY:
-	{
+	case ExpressionType::TERNARY: {
 		Ref<TernaryExpression> ternaryExpression = std::dynamic_pointer_cast<TernaryExpression>(expression);
 		GatherPreresolveMeta(type, ternaryExpression->condition);
 		GatherPreresolveMeta(type, ternaryExpression->thenExpression);
@@ -97,8 +92,7 @@ static void GatherPreresolveMeta(Ref<TypeDeclaration> type, Ref<Statement> state
 
 	switch (statement->statementType)
 	{
-	case StatementType::BLOCK:
-	{
+	case StatementType::BLOCK: {
 		Ref<BlockStatement> block = std::dynamic_pointer_cast<BlockStatement>(statement);
 		for (auto subStatement : block->statements)
 		{
@@ -106,20 +100,17 @@ static void GatherPreresolveMeta(Ref<TypeDeclaration> type, Ref<Statement> state
 		}
 		break;
 	}
-	case StatementType::DELETE:
-	{
+	case StatementType::DELETE: {
 		Ref<DeleteStatement> deleteStatement = std::dynamic_pointer_cast<DeleteStatement>(statement);
 		GatherPreresolveMeta(type, deleteStatement->expression);
 		break;
 	}
-	case StatementType::EXPRESSION:
-	{
+	case StatementType::EXPRESSION: {
 		Ref<ExpressionStatement> deleteStatement = std::dynamic_pointer_cast<ExpressionStatement>(statement);
 		GatherPreresolveMeta(type, deleteStatement->expression);
 		break;
 	}
-	case StatementType::FOR:
-	{
+	case StatementType::FOR: {
 		Ref<ForStatement> forStatement = std::dynamic_pointer_cast<ForStatement>(statement);
 		GatherPreresolveMeta(type, forStatement->startStatement);
 		GatherPreresolveMeta(type, forStatement->condition);
@@ -127,29 +118,25 @@ static void GatherPreresolveMeta(Ref<TypeDeclaration> type, Ref<Statement> state
 		GatherPreresolveMeta(type, forStatement->bodyStatement);
 		break;
 	}
-	case StatementType::IF:
-	{
+	case StatementType::IF: {
 		Ref<IfStatement> ifStatement = std::dynamic_pointer_cast<IfStatement>(statement);
 		GatherPreresolveMeta(type, ifStatement->condition);
 		GatherPreresolveMeta(type, ifStatement->thenStatement);
 		GatherPreresolveMeta(type, ifStatement->elseStatement);
 		break;
 	}
-	case StatementType::WHILE:
-	{
+	case StatementType::WHILE: {
 		Ref<WhileStatement> whileStatement = std::dynamic_pointer_cast<WhileStatement>(statement);
 		GatherPreresolveMeta(type, whileStatement->condition);
 		GatherPreresolveMeta(type, whileStatement->bodyStatement);
 		break;
 	}
-	case StatementType::RETURN:
-	{
+	case StatementType::RETURN: {
 		Ref<ReturnStatement> returnStatement = std::dynamic_pointer_cast<ReturnStatement>(statement);
 		GatherPreresolveMeta(type, returnStatement->expression);
 		break;
 	}
-	case StatementType::VARIABLE_DECLARATION:
-	{
+	case StatementType::VARIABLE_DECLARATION: {
 		Ref<VariableDeclarationStatement> variableDeclarationStatement = std::dynamic_pointer_cast<VariableDeclarationStatement>(statement);
 		GatherPreresolveMeta(type, variableDeclarationStatement->value);
 		TryToInsertTemplatedObjectType(type->typeDeclarationMeta.usedTemplateTypes, *variableDeclarationStatement->declaration->dataType);
@@ -198,20 +185,20 @@ static void GatherPreresolveMeta(Ref<TypeDeclaration> type)
 	}
 }
 
-static void GatherPreresolveMeta(BuildContext &context, Ref<Unit> unit)
+static void GatherPreresolveMeta(BuildContext& context, Ref<Unit> unit)
 {
 	if (unit->declaredType->IsType())
 	{
 		GatherPreresolveMeta(std::dynamic_pointer_cast<TypeDeclaration>(unit->declaredType));
 	}
 
-	for (const String &dependencyName : unit->dependencyNames)
+	for (const String& dependencyName : unit->dependencyNames)
 	{
 		unit->unitMeta.dependencies.push_back(context.ResolveUnit(dependencyName));
 	}
 }
 
-PassResultFlags GatherPreresolveMeta(PrintFunction print, BuildContext &context)
+PassResultFlags GatherPreresolveMeta(PrintFunction print, BuildContext& context)
 {
 	for (auto module : context.GetModules())
 	{

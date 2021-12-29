@@ -1,11 +1,11 @@
 
-#include <iostream>
 #include <filesystem>
+#include <iostream>
 
 #include "Base.h"
 #include "BuildContext.h"
-#include "Time.h"
 #include "DebugAllocator.h"
+#include "Time.h"
 
 enum class Flag
 {
@@ -52,7 +52,7 @@ static void PrintHelp()
 	std::cout << "Flags:" << std::endl;
 
 	UInt64 maxLongNameLength = 0;
-	for (const auto &flag : flagData)
+	for (const auto& flag : flagData)
 	{
 		if (maxLongNameLength < flag.longName.length())
 		{
@@ -60,7 +60,7 @@ static void PrintHelp()
 		}
 	}
 
-	for (const auto &flag : flagData)
+	for (const auto& flag : flagData)
 	{
 		std::cout << "\t-" << flag.shortName << " --" << flag.longName;
 
@@ -73,7 +73,7 @@ static void PrintHelp()
 	}
 }
 
-void Split(const String &string, const char delim, Array<String> &out)
+void Split(const String& string, const char delim, Array<String>& out)
 {
 	size_t start;
 	size_t end = 0;
@@ -85,7 +85,7 @@ void Split(const String &string, const char delim, Array<String> &out)
 	}
 }
 
-int main(int argc, const char **args)
+int main(int argc, const char** args)
 {
 	if (argc < 2)
 	{
@@ -100,16 +100,16 @@ int main(int argc, const char **args)
 	UInt64 flagValueIndex = 0;
 	for (UInt64 argumentIndex = 1; argumentIndex < argc; argumentIndex++)
 	{
-		const char *argument = args[argumentIndex];
+		const char* argument = args[argumentIndex];
 
 		if (argument[0] == '-')
 		{
 			if (argument[1] == '-')
 			{
-				const char *argumentFlag = &(argument[2]);
+				const char* argumentFlag = &(argument[2]);
 
 				Bool found = false;
-				for (const auto &flag : flagData)
+				for (const auto& flag : flagData)
 				{
 					if (flag.longName == argumentFlag)
 					{
@@ -136,7 +136,7 @@ int main(int argc, const char **args)
 				for (UInt64 characterIndex = 1; argument[characterIndex] != '\0'; characterIndex++)
 				{
 					Bool found = false;
-					for (const auto &flag : flagData)
+					for (const auto& flag : flagData)
 					{
 						if (flag.shortName == argument[characterIndex])
 						{
@@ -177,7 +177,7 @@ int main(int argc, const char **args)
 	String cachePath = String(std::filesystem::current_path()) + "/cache";
 	Optional<String> logFile;
 
-	for (const auto &flag : valueFlags)
+	for (const auto& flag : valueFlags)
 	{
 		if (flag.first == Flag::MODULE_PATH)
 		{
@@ -197,7 +197,7 @@ int main(int argc, const char **args)
 		}
 	}
 
-	for (const Flag &flag : flags)
+	for (const Flag& flag : flags)
 	{
 		if (flag == Flag::HELP)
 		{
@@ -224,7 +224,7 @@ int main(int argc, const char **args)
 	std::cout << "Scanning modules...";
 	Time scanStart;
 
-	for (const String &moduleName : moduleNames)
+	for (const String& moduleName : moduleNames)
 	{
 		context.AddModule(moduleName);
 	}

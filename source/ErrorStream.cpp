@@ -1,7 +1,7 @@
 
 #include "ErrorStream.h"
 
-void ErrorStream::PrintError(const String &message)
+void ErrorStream::PrintError(const String& message)
 {
 	print(fileName);
 	print(":\n\t");
@@ -13,7 +13,7 @@ void ErrorStream::PrintError(const String &message)
 
 #include <iostream>
 
-void ErrorStream::PrintError(const Token &location, const String &message)
+void ErrorStream::PrintError(const Token& location, const String& message)
 {
 	errorOccured = true;
 
@@ -24,7 +24,7 @@ void ErrorStream::PrintError(const Token &location, const String &message)
 
 	errorCount++;
 
-	const String &source = lexer->GetSource();
+	const String& source = lexer->GetSource();
 
 	Int64 lineStart = location.characterIndex;
 	for (; lineStart >= 0 && source[lineStart] != '\n'; lineStart--)

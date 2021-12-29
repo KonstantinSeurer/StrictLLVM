@@ -3,6 +3,6 @@
 
 #include "../BuildContext.h"
 
-PassResultFlags InlineTemplates(PrintFunction print, BuildContext &context);
+PassResultFlags InlineTemplates(PrintFunction print, BuildContext& context);
 
 #endif /* SOURCE_PASSES_INLINETEMPLATES */

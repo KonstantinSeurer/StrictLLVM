@@ -16,8 +16,8 @@ UInt64 GetMaxAllocationSize()
 
 #if USE_DEBUG_ALLOCATOR
 
-#include <stdlib.h>
 #include <malloc.h>
+#include <stdlib.h>
 
 #ifdef __GLIBC__
 #define ALLOC_SIZE(pointer) malloc_usable_size(pointer)
@@ -27,7 +27,7 @@ UInt64 GetMaxAllocationSize()
 #endif
 #endif
 
-void *operator new(size_t size)
+void* operator new(size_t size)
 {
 	currentAllocationSize += size;
 	if (currentAllocationSize > maxAllocationSize)
@@ -38,7 +38,7 @@ void *operator new(size_t size)
 	return malloc(size);
 }
 
-void operator delete(void *p)
+void operator delete(void* p)
 {
 	currentAllocationSize -= ALLOC_SIZE(p);
 	free(p);

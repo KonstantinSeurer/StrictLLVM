@@ -4,7 +4,7 @@
 #include "Base.h"
 #include "Lexer.h"
 
-using PrintFunction = Function<void(const String &)>;
+using PrintFunction = Function<void(const String&)>;
 
 // TODO: Buffer error strings in Try/Catch to be able to print errors
 
@@ -19,14 +19,14 @@ private:
 	UInt32 errorCount;
 
 public:
-	ErrorStream(const String &fileName, PrintFunction print, Ref<const Lexer> lexer)
+	ErrorStream(const String& fileName, PrintFunction print, Ref<const Lexer> lexer)
 		: fileName(fileName), print(print), lexer(lexer), errorOccured(false), tryCatchLexel(0), errorCount(0)
 	{
 	}
 
 public:
-	void PrintError(const String &message);
-	void PrintError(const Token &location, const String &message);
+	void PrintError(const String& message);
+	void PrintError(const Token& location, const String& message);
 
 	void Try();
 	Bool Catch();

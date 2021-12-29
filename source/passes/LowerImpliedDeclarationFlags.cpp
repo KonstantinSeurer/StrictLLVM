@@ -3,18 +3,10 @@
 
 static HashSet<OperatorType> mutatingOperatorSet = {
 	// Mutating binary operators
-	OperatorType::PLUS_EQUAL,
-	OperatorType::MINUS_EQUAL,
-	OperatorType::MULTIPLY_EQUAL,
-	OperatorType::DIVIDE_EQUAL,
-	OperatorType::AND_EQUAL,
-	OperatorType::OR_EQUAL,
-	OperatorType::XOR_EQUAL,
-	OperatorType::SHIFT_LEFT_EQUAL,
-	OperatorType::SHIFT_RIGHT_EQUAL,
+	OperatorType::PLUS_EQUAL, OperatorType::MINUS_EQUAL, OperatorType::MULTIPLY_EQUAL, OperatorType::DIVIDE_EQUAL, OperatorType::AND_EQUAL,
+	OperatorType::OR_EQUAL, OperatorType::XOR_EQUAL, OperatorType::SHIFT_LEFT_EQUAL, OperatorType::SHIFT_RIGHT_EQUAL,
 	// Mutating unary operators
-	OperatorType::INCREMENT,
-	OperatorType::DECREMENT};
+	OperatorType::INCREMENT, OperatorType::DECREMENT};
 
 void LowerImpliedDeclarationFlags(Ref<MethodDeclaration> method, bool isVirtualType)
 {
@@ -25,10 +17,10 @@ void LowerImpliedDeclarationFlags(Ref<MethodDeclaration> method, bool isVirtualT
 		method->flags = method->flags | DeclarationFlags::MUT;
 		break;
 	case MethodType::DESTRUCTOR:
-		method->flags = method->flags | DeclarationFlags::MUT | DeclarationFlags::PUBLIC | (isVirtualType ? DeclarationFlags::VIRTUAL : DeclarationFlags::PRIVATE);
+		method->flags =
+			method->flags | DeclarationFlags::MUT | DeclarationFlags::PUBLIC | (isVirtualType ? DeclarationFlags::VIRTUAL : DeclarationFlags::PRIVATE);
 		break;
-	case MethodType::OPERATOR:
-	{
+	case MethodType::OPERATOR: {
 		Ref<OperatorDeclaration> operatorDeclaration = std::dynamic_pointer_cast<OperatorDeclaration>(method);
 		if (mutatingOperatorSet.find(operatorDeclaration->operatorType) != mutatingOperatorSet.end())
 		{
@@ -65,7 +57,7 @@ void LowerImpliedDeclarationFlags(Ref<TypeDeclaration> type)
 	}
 }
 
-PassResultFlags LowerImpliedDeclarationFlags(PrintFunction print, BuildContext &context)
+PassResultFlags LowerImpliedDeclarationFlags(PrintFunction print, BuildContext& context)
 {
 	for (auto module : context.GetModules())
 	{

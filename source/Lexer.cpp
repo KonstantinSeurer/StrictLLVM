@@ -1,10 +1,10 @@
 
 #include "Lexer.h"
 
-#include <string.h>
 #include <iostream>
+#include <string.h>
 
-bool Token::operator==(const Token &other) const
+bool Token::operator==(const Token& other) const
 {
 	if (type != other.type)
 	{
@@ -33,7 +33,7 @@ Lexer::~Lexer()
 {
 	if (tokens.use_count() == 1)
 	{
-		for (const Token &token : *tokens)
+		for (const Token& token : *tokens)
 		{
 			if (token.type == TokenType::STRING_LITERAL || token.type == TokenType::IDENTIFIER)
 			{
@@ -95,39 +95,13 @@ static HashMap<String, TokenType> keyWordTable = {
 	{"delete", TokenType::DELETE}};
 
 static HashMap<char, TokenType> singleCharacterTokenTable = {
-	{'(', TokenType::ROUND_OB},
-	{')', TokenType::ROUND_CB},
-	{'{', TokenType::CURLY_OB},
-	{'}', TokenType::CURLY_CB},
-	{'[', TokenType::SQUARE_OB},
-	{']', TokenType::SQUARE_CB},
-	{'.', TokenType::PERIOD},
-	{';', TokenType::SEMICOLON},
-	{':', TokenType::COLON},
-	{',', TokenType::COMMA},
-	{'+', TokenType::PLUS},
-	{'-', TokenType::MINUS},
-	{'*', TokenType::STAR},
-	{'/', TokenType::SLASH},
-	{'&', TokenType::AND},
-	{'|', TokenType::OR},
-	{'!', TokenType::NOT},
-	{'?', TokenType::QUESTIONMARK},
-	{'=', TokenType::EQUALS},
-	{'<', TokenType::LESS},
-	{'>', TokenType::GREATER},
-	{'~', TokenType::TILDE},
-	{'^', TokenType::POWER}};
+	{'(', TokenType::ROUND_OB},  {')', TokenType::ROUND_CB}, {'{', TokenType::CURLY_OB},     {'}', TokenType::CURLY_CB}, {'[', TokenType::SQUARE_OB},
+	{']', TokenType::SQUARE_CB}, {'.', TokenType::PERIOD},   {';', TokenType::SEMICOLON},    {':', TokenType::COLON},    {',', TokenType::COMMA},
+	{'+', TokenType::PLUS},      {'-', TokenType::MINUS},    {'*', TokenType::STAR},         {'/', TokenType::SLASH},    {'&', TokenType::AND},
+	{'|', TokenType::OR},        {'!', TokenType::NOT},      {'?', TokenType::QUESTIONMARK}, {'=', TokenType::EQUALS},   {'<', TokenType::LESS},
+	{'>', TokenType::GREATER},   {'~', TokenType::TILDE},    {'^', TokenType::POWER}};
 
-static HashMap<char, char> escapeSequenceTable = {
-	{'\\', '\\'},
-	{'a', '\a'},
-	{'b', '\b'},
-	{'f', '\f'},
-	{'n', '\n'},
-	{'r', '\r'},
-	{'t', '\t'},
-	{'v', '\v'}};
+static HashMap<char, char> escapeSequenceTable = {{'\\', '\\'}, {'a', '\a'}, {'b', '\b'}, {'f', '\f'}, {'n', '\n'}, {'r', '\r'}, {'t', '\t'}, {'v', '\v'}};
 
 static char convertEscapeSequence(char character, char quote)
 {
@@ -145,7 +119,7 @@ static char convertEscapeSequence(char character, char quote)
 	return escapeSequenceTable.at(character);
 }
 
-Ref<Lexer> Lexer::Create(const String &source)
+Ref<Lexer> Lexer::Create(const String& source)
 {
 	Ref<Array<Token>> tokens = Allocate<Array<Token>>();
 
@@ -265,7 +239,7 @@ Ref<Lexer> Lexer::Create(const String &source)
 			}
 			else
 			{
-				char *data = new char[string.length() + 1];
+				char* data = new char[string.length() + 1];
 				strcpy(data, string.c_str());
 
 				token.type = TokenType::IDENTIFIER;
@@ -333,7 +307,7 @@ Ref<Lexer> Lexer::Create(const String &source)
 				}
 			}
 
-			char *data = new char[string.length() + 1];
+			char* data = new char[string.length() + 1];
 			strncpy(data, string.c_str(), string.length());
 
 			token.type = TokenType::STRING_LITERAL;
@@ -360,14 +334,14 @@ Ref<Lexer> Lexer::Create(const String &source)
 	return Allocate<Lexer>(Allocate<String>(source), tokens);
 }
 
-const Token &Lexer::Get() const
+const Token& Lexer::Get() const
 {
 	return tokens->operator[](offset);
 }
 
-const Token &Lexer::Next()
+const Token& Lexer::Next()
 {
-	const Token &result = Get();
+	const Token& result = Get();
 	offset++;
 	return result;
 }

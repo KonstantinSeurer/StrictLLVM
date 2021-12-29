@@ -1,7 +1,7 @@
 
 #include "ResolveIdentifiers.h"
 
-Ref<UnitDeclaration> ResolveContext::ResolveType(const String &name)
+Ref<UnitDeclaration> ResolveContext::ResolveType(const String& name)
 {
 	Ref<TypeDeclaration> declaration = std::dynamic_pointer_cast<TypeDeclaration>(unit->declaredType);
 
@@ -16,7 +16,7 @@ Ref<UnitDeclaration> ResolveContext::ResolveType(const String &name)
 		}
 	}
 
-	for (const auto &dependency : unit->dependencyNames)
+	for (const auto& dependency : unit->dependencyNames)
 	{
 		if (dependency.find_last_of(name) == dependency.length() - 1 && dependency[dependency.length() - name.length() - 1] == '.')
 		{
@@ -112,7 +112,7 @@ PassResultFlags ResolveContext::ResolveIdentifiers()
 	return result;
 }
 
-PassResultFlags ResolveIdentifiers(PrintFunction print, BuildContext &context)
+PassResultFlags ResolveIdentifiers(PrintFunction print, BuildContext& context)
 {
 	PassResultFlags result = PassResultFlags::SUCCESS;
 

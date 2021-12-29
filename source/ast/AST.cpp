@@ -30,12 +30,12 @@ void ASTItem::CloneImplementation(Ref<ASTItem> target) const
 
 DEFINE_HASH(ASTItem, HASH_VALUE(ASTItemType, type))
 
-bool ASTItem::operator==(const ASTItem &other) const
+bool ASTItem::operator==(const ASTItem& other) const
 {
 	return type == other.type;
 }
 
-static String ToString(const Token &token)
+static String ToString(const Token& token)
 {
 	String result = ToString(token.type);
 
@@ -67,12 +67,12 @@ static String ToString(const Token &token)
 #define PRIMITIVE_VAR(indentation, name) Indentation(indentation) + #name + " = " + std::to_string(name)
 #define TOKEN_VAR(indentation, name) Indentation(indentation) + #name + " = " + ::ToString(name) + "\n"
 
-#define CLONE_METHOD(Type, ...)                         \
-	Ref<ASTItem> Type::Clone() const                    \
-	{                                                   \
-		Ref<Type> result = Allocate<Type>(__VA_ARGS__); \
-		Type::CloneImplementation(result);              \
-		return result;                                  \
+#define CLONE_METHOD(Type, ...)                                                                                                                                \
+	Ref<ASTItem> Type::Clone() const                                                                                                                           \
+	{                                                                                                                                                          \
+		Ref<Type> result = Allocate<Type>(__VA_ARGS__);                                                                                                        \
+		Type::CloneImplementation(result);                                                                                                                     \
+		return result;                                                                                                                                         \
 	}
 
 String DataType::ToStringImplementation(UInt32 indentation) const
@@ -91,7 +91,7 @@ void DataType::CloneImplementation(Ref<DataType> target) const
 
 DEFINE_HASH_WITH_SUPER(DataType, ASTItem, HASH_VALUE(DataTypeType, dataTypeType) HASH_VALUE(DeclarationFlags, flags))
 
-bool DataType::operator==(const DataType &other) const
+bool DataType::operator==(const DataType& other) const
 {
 	return dataTypeType == other.dataTypeType && flags == other.flags;
 }
@@ -111,7 +111,7 @@ void PrimitiveType::CloneImplementation(Ref<PrimitiveType> target) const
 
 DEFINE_HASH_WITH_SUPER(PrimitiveType, DataType, HASH_VALUE(TokenType, primitiveType))
 
-bool PrimitiveType::operator==(const PrimitiveType &other) const
+bool PrimitiveType::operator==(const PrimitiveType& other) const
 {
 	if (!DataType::operator==(other))
 	{
@@ -140,7 +140,7 @@ void ObjectType::CloneImplementation(Ref<ObjectType> target) const
 
 DEFINE_HASH_WITH_SUPER(ObjectType, DataType, HASH_VALUE(String, name) HASH_REF(Template, typeTemplate))
 
-bool ObjectType::operator==(const ObjectType &other) const
+bool ObjectType::operator==(const ObjectType& other) const
 {
 	if (!DataType::operator==(other))
 	{
@@ -176,7 +176,7 @@ void PointerType::CloneImplementation(Ref<PointerType> target) const
 
 DEFINE_HASH_WITH_SUPER(PointerType, DataType, HASH_REF(DataType, value) HASH_REF(Expression, arrayLength))
 
-bool PointerType::operator==(const PointerType &other) const
+bool PointerType::operator==(const PointerType& other) const
 {
 	if (!DataType::operator==(other))
 	{
@@ -203,7 +203,7 @@ void Expression::CloneImplementation(Ref<Expression> target) const
 
 DEFINE_HASH_WITH_SUPER(Expression, ASTItem, HASH_VALUE(ExpressionType, expressionType))
 
-bool Expression::operator==(const Expression &other) const
+bool Expression::operator==(const Expression& other) const
 {
 	return expressionType == other.expressionType;
 }
@@ -223,7 +223,7 @@ void LiteralExpression::CloneImplementation(Ref<LiteralExpression> target) const
 
 DEFINE_HASH_WITH_SUPER(LiteralExpression, Expression, HASH_VALUE(TokenType, data.type))
 
-bool LiteralExpression::operator==(const LiteralExpression &other) const
+bool LiteralExpression::operator==(const LiteralExpression& other) const
 {
 	return data == other.data;
 }
@@ -260,7 +260,8 @@ DEFINE_HASH_WITH_SUPER(VariableExpression, Expression, HASH_VALUE(String, name))
 
 String OperatorExpression::ToStringImplementation(UInt32 indentation) const
 {
-	String result = Expression::ToStringImplementation(indentation) + ENUM_VAR(indentation, operatorType) + AST_VAR(indentation, a) + Indentation(indentation) + "b:\n";
+	String result =
+		Expression::ToStringImplementation(indentation) + ENUM_VAR(indentation, operatorType) + AST_VAR(indentation, a) + Indentation(indentation) + "b:\n";
 	if (b)
 	{
 		result += AST_VAR(indentation + 1, b->expression) + AST_VAR(indentation + 1, b->dataType);
@@ -300,7 +301,7 @@ DEFINE_HASH_WITH_SUPER(OperatorExpression, Expression, HASH_VALUE(OperatorType, 
 String CallExpression::ToStringImplementation(UInt32 indentation) const
 {
 	String result = Expression::ToStringImplementation(indentation) + AST_VAR(indentation, method) + Indentation(indentation) + "arguments = [\n";
-	for (const auto &argument : arguments)
+	for (const auto& argument : arguments)
 	{
 		result += Indentation(indentation + 1) + argument->ToString(indentation + 1);
 	}
@@ -321,12 +322,13 @@ void CallExpression::CloneImplementation(Ref<CallExpression> target) const
 }
 
 DEFINE_HASH_WITH_SUPER(CallExpression, Expression,
-					   HASH_REF(Expression, method) for (UInt64 argumentIndex = 0; argumentIndex < HASH_ACCESS(arguments).size(); argumentIndex++){
-						   HASH_REF(Expression, arguments[argumentIndex])})
+                       HASH_REF(Expression, method) for (UInt64 argumentIndex = 0; argumentIndex < HASH_ACCESS(arguments).size();
+                                                         argumentIndex++){HASH_REF(Expression, arguments[argumentIndex])})
 
 String TernaryExpression::ToStringImplementation(UInt32 indentation) const
 {
-	return Expression::ToStringImplementation(indentation) + AST_VAR(indentation, condition) + AST_VAR(indentation, thenExpression) + AST_VAR(indentation, elseExpression);
+	return Expression::ToStringImplementation(indentation) + AST_VAR(indentation, condition) + AST_VAR(indentation, thenExpression) +
+	       AST_VAR(indentation, elseExpression);
 }
 
 CLONE_METHOD(TernaryExpression)
@@ -344,7 +346,7 @@ DEFINE_HASH_WITH_SUPER(TernaryExpression, Expression, HASH_REF(Expression, condi
 String NewExpression::ToStringImplementation(UInt32 indentation) const
 {
 	String result = Expression::ToStringImplementation(indentation) + AST_VAR(indentation, dataType) + Indentation(indentation) + "arguments = [\n";
-	for (const auto &argument : arguments)
+	for (const auto& argument : arguments)
 	{
 		result += Indentation(indentation + 1) + argument->ToString(indentation + 1);
 	}
@@ -365,8 +367,8 @@ void NewExpression::CloneImplementation(Ref<NewExpression> target) const
 }
 
 DEFINE_HASH_WITH_SUPER(NewExpression, Expression,
-					   HASH_REF(DataType, dataType) for (UInt64 argumentIndex = 0; argumentIndex < HASH_ACCESS(arguments).size(); argumentIndex++){
-						   HASH_REF(Expression, arguments[argumentIndex])})
+                       HASH_REF(DataType, dataType) for (UInt64 argumentIndex = 0; argumentIndex < HASH_ACCESS(arguments).size();
+                                                         argumentIndex++){HASH_REF(Expression, arguments[argumentIndex])})
 
 String Statement::ToStringImplementation(UInt32 indentation) const
 {
@@ -385,7 +387,7 @@ DEFINE_HASH_WITH_SUPER(Statement, ASTItem, HASH_VALUE(StatementType, statementTy
 String BlockStatement::ToStringImplementation(UInt32 indentation) const
 {
 	String result = Statement::ToStringImplementation(indentation) + Indentation(indentation) + "statements = [\n";
-	for (const auto &statement : statements)
+	for (const auto& statement : statements)
 	{
 		result += Indentation(indentation + 1) + statement->ToString(indentation + 1);
 	}
@@ -405,8 +407,8 @@ void BlockStatement::CloneImplementation(Ref<BlockStatement> target) const
 }
 
 DEFINE_HASH_WITH_SUPER(BlockStatement, Statement,
-					   for (UInt64 statementIndex = 0; statementIndex < HASH_ACCESS(statements).size(); statementIndex++){
-						   HASH_REF(Statement, statements[statementIndex])})
+                       for (UInt64 statementIndex = 0; statementIndex < HASH_ACCESS(statements).size();
+                            statementIndex++){HASH_REF(Statement, statements[statementIndex])})
 
 String ExpressionStatement::ToStringImplementation(UInt32 indentation) const
 {
@@ -425,7 +427,8 @@ DEFINE_HASH_WITH_SUPER(ExpressionStatement, Statement, HASH_REF(Expression, expr
 
 String IfStatement::ToStringImplementation(UInt32 indentation) const
 {
-	return Statement::ToStringImplementation(indentation) + AST_VAR(indentation, condition) + AST_VAR(indentation, thenStatement) + AST_VAR(indentation, elseStatement);
+	return Statement::ToStringImplementation(indentation) + AST_VAR(indentation, condition) + AST_VAR(indentation, thenStatement) +
+	       AST_VAR(indentation, elseStatement);
 }
 
 CLONE_METHOD(IfStatement)
@@ -445,7 +448,8 @@ DEFINE_HASH_WITH_SUPER(IfStatement, Statement, HASH_REF(Expression, condition) H
 
 String ForStatement::ToStringImplementation(UInt32 indentation) const
 {
-	return Statement::ToStringImplementation(indentation) + AST_VAR(indentation, startStatement) + AST_VAR(indentation, condition) + AST_VAR(indentation, incrementExpression) + AST_VAR(indentation, bodyStatement);
+	return Statement::ToStringImplementation(indentation) + AST_VAR(indentation, startStatement) + AST_VAR(indentation, condition) +
+	       AST_VAR(indentation, incrementExpression) + AST_VAR(indentation, bodyStatement);
 }
 
 CLONE_METHOD(ForStatement)
@@ -459,11 +463,14 @@ void ForStatement::CloneImplementation(Ref<ForStatement> target) const
 	target->bodyStatement = std::dynamic_pointer_cast<Statement>(bodyStatement->Clone());
 }
 
-DEFINE_HASH_WITH_SUPER(ForStatement, Statement, HASH_REF(Statement, startStatement) HASH_REF(Expression, condition) HASH_REF(Expression, incrementExpression) HASH_REF(Statement, bodyStatement))
+DEFINE_HASH_WITH_SUPER(ForStatement, Statement,
+                       HASH_REF(Statement, startStatement) HASH_REF(Expression, condition) HASH_REF(Expression, incrementExpression)
+                           HASH_REF(Statement, bodyStatement))
 
 String WhileStatement::ToStringImplementation(UInt32 indentation) const
 {
-	return Statement::ToStringImplementation(indentation) + AST_VAR(indentation, condition) + AST_VAR(indentation, bodyStatement) + PRIMITIVE_VAR(indentation, checkAfterBody);
+	return Statement::ToStringImplementation(indentation) + AST_VAR(indentation, condition) + AST_VAR(indentation, bodyStatement) +
+	       PRIMITIVE_VAR(indentation, checkAfterBody);
 }
 
 CLONE_METHOD(WhileStatement)
@@ -526,7 +533,7 @@ DEFINE_HASH_WITH_SUPER(DeleteStatement, Statement, HASH_REF(Expression, expressi
 
 DEFINE_HASH(TemplateArgument, HASH_REF(Expression, expression) HASH_REF(DataType, dataType))
 
-bool TemplateArgument::operator==(const TemplateArgument &other) const
+bool TemplateArgument::operator==(const TemplateArgument& other) const
 {
 	EQUALS_REF(other, expression)
 	EQUALS_REF(other, dataType)
@@ -537,7 +544,7 @@ bool TemplateArgument::operator==(const TemplateArgument &other) const
 String Template::ToStringImplementation(UInt32 indentation) const
 {
 	String result = Indentation(indentation) + "arguments = [\n";
-	for (const auto &argument : arguments)
+	for (const auto& argument : arguments)
 	{
 		result += Indentation(indentation + 1);
 		if (argument.dataType)
@@ -572,10 +579,10 @@ void Template::CloneImplementation(Ref<Template> target) const
 }
 
 DEFINE_HASH_WITH_SUPER(Template, ASTItem,
-					   for (UInt64 argumentIndex = 0; argumentIndex < HASH_ACCESS(arguments).size(); argumentIndex++){
-						   HASH_VALUE(TemplateArgument, arguments[argumentIndex])})
+                       for (UInt64 argumentIndex = 0; argumentIndex < HASH_ACCESS(arguments).size();
+                            argumentIndex++){HASH_VALUE(TemplateArgument, arguments[argumentIndex])})
 
-bool Template::operator==(const Template &other) const
+bool Template::operator==(const Template& other) const
 {
 	if (arguments.size() != other.arguments.size())
 	{
@@ -641,12 +648,15 @@ void VariableDeclaration::CloneImplementation(Ref<VariableDeclaration> target) c
 	target->dataType = std::dynamic_pointer_cast<DataType>(dataType->Clone());
 }
 
-DEFINE_HASH_WITH_SUPER(VariableDeclaration, ASTItem, HASH_VALUE(DeclarationFlags, flags) HASH_VALUE(VariableDeclarationType, variableType) HASH_VALUE(String, name) HASH_REF(DataType, dataType))
+DEFINE_HASH_WITH_SUPER(VariableDeclaration, ASTItem,
+                       HASH_VALUE(DeclarationFlags, flags) HASH_VALUE(VariableDeclarationType, variableType) HASH_VALUE(String, name)
+                           HASH_REF(DataType, dataType))
 
 String MethodDeclaration::ToStringImplementation(UInt32 indentation) const
 {
-	String result = VariableDeclaration::ToStringImplementation(indentation) + ENUM_VAR(indentation, methodType) + Indentation(indentation) + "parameters = [\n";
-	for (const auto &parameter : parameters)
+	String result =
+		VariableDeclaration::ToStringImplementation(indentation) + ENUM_VAR(indentation, methodType) + Indentation(indentation) + "parameters = [\n";
+	for (const auto& parameter : parameters)
 	{
 		result += Indentation(indentation + 1) + parameter->ToString(indentation + 1);
 	}
@@ -671,16 +681,16 @@ void MethodDeclaration::CloneImplementation(Ref<MethodDeclaration> target) const
 }
 
 DEFINE_HASH_WITH_SUPER(MethodDeclaration, VariableDeclaration,
-					   for (UInt64 parameterIndex = 0; parameterIndex < HASH_ACCESS(parameters).size(); parameterIndex++) //
-					   {HASH_REF(VariableDeclaration, parameters[parameterIndex])}										  //
-					   HASH_VALUE(MethodType, methodType) HASH_REF(Statement, body))
+                       for (UInt64 parameterIndex = 0; parameterIndex < HASH_ACCESS(parameters).size(); parameterIndex++) //
+                       {HASH_REF(VariableDeclaration, parameters[parameterIndex])}                                        //
+                       HASH_VALUE(MethodType, methodType) HASH_REF(Statement, body))
 
 DEFINE_HASH(ConstructorInitializer, HASH_VALUE(String, name) HASH_REF(Expression, value))
 
 String ConstructorDeclaration::ToStringImplementation(UInt32 indentation) const
 {
 	String result = MethodDeclaration::ToStringImplementation(indentation) + Indentation(indentation) + "initializers = [\n";
-	for (const auto &initializer : initializers)
+	for (const auto& initializer : initializers)
 	{
 		result += Indentation(indentation + 1) + initializer.name + ": " + (initializer.value ? initializer.value->ToString(indentation + 1) : "null\n");
 	}
@@ -701,8 +711,8 @@ void ConstructorDeclaration::CloneImplementation(Ref<ConstructorDeclaration> tar
 }
 
 DEFINE_HASH_WITH_SUPER(ConstructorDeclaration, MethodDeclaration,
-					   for (UInt64 initializerIndex = 0; initializerIndex < HASH_ACCESS(initializers).size(); initializerIndex++) //
-					   {HASH_VALUE(ConstructorInitializer, initializers[initializerIndex])})
+                       for (UInt64 initializerIndex = 0; initializerIndex < HASH_ACCESS(initializers).size(); initializerIndex++) //
+                       {HASH_VALUE(ConstructorInitializer, initializers[initializerIndex])})
 
 String OperatorDeclaration::ToStringImplementation(UInt32 indentation) const
 {
@@ -722,7 +732,7 @@ DEFINE_HASH_WITH_SUPER(OperatorDeclaration, MethodDeclaration, HASH_VALUE(Operat
 String MemberVariableDeclaration::ToStringImplementation(UInt32 indentation) const
 {
 	String result = VariableDeclaration::ToStringImplementation(indentation) + AST_VAR(indentation, value) + Indentation(indentation) + "accessors = [\n";
-	for (const auto &accessor : accessors)
+	for (const auto& accessor : accessors)
 	{
 		result += Indentation(indentation + 1) + accessor->ToString(indentation + 1);
 	}
@@ -746,14 +756,14 @@ void MemberVariableDeclaration::CloneImplementation(Ref<MemberVariableDeclaratio
 }
 
 DEFINE_HASH_WITH_SUPER(MemberVariableDeclaration, VariableDeclaration,
-					   for (UInt64 accessorIndex = 0; accessorIndex < HASH_ACCESS(accessors).size(); accessorIndex++) //
-					   {HASH_REF(MethodDeclaration, accessors[accessorIndex])}										  //
-					   HASH_REF(Expression, value))
+                       for (UInt64 accessorIndex = 0; accessorIndex < HASH_ACCESS(accessors).size(); accessorIndex++) //
+                       {HASH_REF(MethodDeclaration, accessors[accessorIndex])}                                        //
+                       HASH_REF(Expression, value))
 
 String TemplateDeclaration::ToStringImplementation(UInt32 indentation) const
 {
 	String result = Indentation(indentation) + "parameters = [\n";
-	for (const auto &parameter : parameters)
+	for (const auto& parameter : parameters)
 	{
 		result += Indentation(indentation + 1) + parameter->ToString(indentation + 1);
 	}
@@ -773,18 +783,18 @@ void TemplateDeclaration::CloneImplementation(Ref<TemplateDeclaration> target) c
 }
 
 DEFINE_HASH_WITH_SUPER(TemplateDeclaration, ASTItem,
-					   for (UInt64 parameterIndex = 0; parameterIndex < HASH_ACCESS(parameters).size(); parameterIndex++) //
-					   {HASH_REF(VariableDeclaration, parameters[parameterIndex])})
+                       for (UInt64 parameterIndex = 0; parameterIndex < HASH_ACCESS(parameters).size(); parameterIndex++) //
+                       {HASH_REF(VariableDeclaration, parameters[parameterIndex])})
 
 String TypeDeclaration::ToStringImplementation(UInt32 indentation) const
 {
 	String result = Indentation(indentation) + "members = [\n";
-	for (const auto &member : members)
+	for (const auto& member : members)
 	{
 		result += Indentation(indentation + 1) + member->ToString(indentation + 1);
 	}
 	result += Indentation(indentation) + "]\n" + AST_VAR(indentation, typeTemplate) + Indentation(indentation) + "superTypes = [\n";
-	for (const auto &superType : superTypes)
+	for (const auto& superType : superTypes)
 	{
 		result += Indentation(indentation + 1) + superType->ToString(indentation + 1);
 	}
@@ -813,11 +823,11 @@ void TypeDeclaration::CloneImplementation(Ref<TypeDeclaration> target) const
 }
 
 DEFINE_HASH_WITH_SUPER(TypeDeclaration, UnitDeclaration,
-					   for (UInt64 memberIndex = 0; memberIndex < HASH_ACCESS(members).size(); memberIndex++)			  //
-					   {HASH_REF(VariableDeclaration, members[memberIndex])}											  //
-					   HASH_REF(TemplateDeclaration, typeTemplate)														  //
-					   for (UInt64 superTypeIndex = 0; superTypeIndex < HASH_ACCESS(superTypes).size(); superTypeIndex++) //
-					   {HASH_REF(ObjectType, superTypes[superTypeIndex])})
+                       for (UInt64 memberIndex = 0; memberIndex < HASH_ACCESS(members).size(); memberIndex++)             //
+                       {HASH_REF(VariableDeclaration, members[memberIndex])}                                              //
+                       HASH_REF(TemplateDeclaration, typeTemplate)                                                        //
+                       for (UInt64 superTypeIndex = 0; superTypeIndex < HASH_ACCESS(superTypes).size(); superTypeIndex++) //
+                       {HASH_REF(ObjectType, superTypes[superTypeIndex])})
 
 String ClassDeclaration::ToStringImplementation(UInt32 indentation) const
 {
@@ -834,12 +844,11 @@ void ClassDeclaration::CloneImplementation(Ref<ClassDeclaration> target) const
 
 DEFINE_HASH_WITH_SUPER(ClassDeclaration, TypeDeclaration, HASH_VALUE(bool, isSingleton))
 
-Unit::Unit(const JSON &structureJSON)
-	: ASTItem(ASTItemType::UNIT)
+Unit::Unit(const JSON& structureJSON) : ASTItem(ASTItemType::UNIT)
 {
 	name = structureJSON["name"];
 
-	for (const JSON &dependencyName : structureJSON["dependencies"])
+	for (const JSON& dependencyName : structureJSON["dependencies"])
 	{
 		dependencyNames.push_back(String(dependencyName));
 	}
@@ -864,7 +873,7 @@ JSON Unit::GetStructureJSON() const
 String Unit::ToStringImplementation(UInt32 indentation) const
 {
 	String result = Indentation(indentation) + "dependencyNames = [\n";
-	for (const auto &dependencyName : dependencyNames)
+	for (const auto& dependencyName : dependencyNames)
 	{
 		result += Indentation(indentation + 1) + dependencyName + "\n";
 	}
@@ -883,7 +892,7 @@ void Unit::CloneImplementation(Ref<Unit> target) const
 
 DEFINE_HASH_WITH_SUPER(Unit, ASTItem, HASH_VALUE(String, name))
 
-Ref<Unit> Unit::GetDependency(const String &name) const
+Ref<Unit> Unit::GetDependency(const String& name) const
 {
 	for (auto dependency : unitMeta.dependencies)
 	{
@@ -901,11 +910,11 @@ bool IsTargetActive(TargetFlags target, TargetFlags buildTarget)
 	return (target & buildTarget) == target; // target must be a subset of buildTarget to be active
 }
 
-TargetFlags JSONToTargetFlags(const JSON &json)
+TargetFlags JSONToTargetFlags(const JSON& json)
 {
 	TargetFlags flags = TargetFlags::NONE;
 
-	for (const auto &flag : json)
+	for (const auto& flag : json)
 	{
 		flags = flags | StringToTargetFlags(String(flag));
 	}

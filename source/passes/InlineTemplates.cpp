@@ -5,7 +5,7 @@ void GenerateTemplateSpecializations(Ref<Module> module)
 {
 }
 
-PassResultFlags InlineTemplates(PrintFunction print, BuildContext &context)
+PassResultFlags InlineTemplates(PrintFunction print, BuildContext& context)
 {
 	for (auto module : context.GetModules())
 	{

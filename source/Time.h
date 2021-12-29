@@ -1,9 +1,3 @@
-/*
- * Time.h
- *
- *  Created on: Jun 13, 2021
- *      Author: konstantin
- */
 
 #ifndef TIME_H_
 #define TIME_H_
@@ -26,8 +20,7 @@ public:
 		value = nanoseconds.count();
 	}
 
-	Time(UInt64 value)
-		: value(value)
+	Time(UInt64 value) : value(value)
 	{
 	}
 
