@@ -780,7 +780,7 @@ static Ref<Expression> ParseBinaryOperatorExpression(ErrorStream& err, Lexer& le
 			{
 				lexer.Next();
 
-				operatorType == OperatorType::DEREFERENCE;
+				operatorType = OperatorType::DEREFERENCE;
 			}
 			else
 			{
