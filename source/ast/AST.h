@@ -2,8 +2,8 @@
 #define SOURCE_AST_AST
 
 #include "../Base.h"
-#include "../Lexer.h"
 #include "../JSON.h"
+#include "../Lexer.h"
 
 class Template;
 class Unit;
@@ -11,18 +11,8 @@ class UnitDeclaration;
 class Expression;
 class Statement;
 
-STRICT_ENUM(ASTItemType,
-			NONE,
-			MODULE,
-			UNIT,
-			UNIT_DECLARATION,
-			TEMPLATE_DECLARATION,
-			TEMPLATE,
-			VARIABLE_DECLARATION,
-			METHOD_DECLARATION,
-			DATA_TYPE,
-			EXPRESSION,
-			STATEMENT)
+STRICT_ENUM(ASTItemType, NONE, MODULE, UNIT, UNIT_DECLARATION, TEMPLATE_DECLARATION, TEMPLATE, VARIABLE_DECLARATION, METHOD_DECLARATION, DATA_TYPE, EXPRESSION,
+            STATEMENT)
 
 class ASTItemMeta
 {
@@ -36,8 +26,7 @@ public:
 	ASTItemType type;
 
 public:
-	ASTItem(ASTItemType type)
-		: type(type)
+	ASTItem(ASTItemType type) : type(type)
 	{
 	}
 
@@ -50,7 +39,7 @@ public:
 
 	virtual Ref<ASTItem> Clone() const = 0;
 
-	bool operator==(const ASTItem &other) const;
+	bool operator==(const ASTItem& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -60,22 +49,9 @@ protected:
 
 DECLARE_HASH(ASTItem)
 
-STRICT_FLAGS(DeclarationFlags,
-			 PRIVATE = 0,
-			 INTERNAL = 1,
-			 PROTECTED = 2,
-			 PUBLIC = 7,
-			 MUT = 8,
-			 IMPURE = 16,
-			 VIRTUAL = 32)
+STRICT_FLAGS(DeclarationFlags, PRIVATE = 0, INTERNAL = 1, PROTECTED = 2, PUBLIC = 7, MUT = 8, IMPURE = 16, VIRTUAL = 32)
 
-STRICT_ENUM(DataTypeType,
-			TYPE,
-			PRIMITIVE,
-			OBJECT,
-			REFERENCE,
-			POINTER,
-			ARRAY)
+STRICT_ENUM(DataTypeType, TYPE, PRIMITIVE, OBJECT, REFERENCE, POINTER, ARRAY)
 
 class DataTypeMeta
 {
@@ -90,8 +66,7 @@ public:
 	DeclarationFlags flags;
 
 public:
-	DataType()
-		: ASTItem(ASTItemType::DATA_TYPE), flags(DeclarationFlags::PRIVATE)
+	DataType() : ASTItem(ASTItemType::DATA_TYPE), flags(DeclarationFlags::PRIVATE)
 	{
 	}
 
@@ -102,7 +77,7 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const DataType &other) const;
+	bool operator==(const DataType& other) const;
 
 	bool IsPointer() const
 	{
@@ -129,14 +104,12 @@ public:
 	TokenType primitiveType;
 
 public:
-	PrimitiveType()
-		: DataType()
+	PrimitiveType() : DataType()
 	{
 		dataTypeType = DataTypeType::PRIMITIVE;
 	}
 
-	PrimitiveType(TokenType primitiveType)
-		: DataType(), primitiveType(primitiveType)
+	PrimitiveType(TokenType primitiveType) : DataType(), primitiveType(primitiveType)
 	{
 		dataTypeType = DataTypeType::PRIMITIVE;
 	}
@@ -144,7 +117,7 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const PrimitiveType &other) const;
+	bool operator==(const PrimitiveType& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -168,8 +141,7 @@ public:
 	Ref<Template> typeTemplate;
 
 public:
-	ObjectType()
-		: DataType()
+	ObjectType() : DataType()
 	{
 		dataTypeType = DataTypeType::OBJECT;
 	}
@@ -177,7 +149,7 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const ObjectType &other) const;
+	bool operator==(const ObjectType& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -200,15 +172,14 @@ public:
 	Ref<Expression> arrayLength;
 
 public:
-	PointerType()
-		: DataType()
+	PointerType() : DataType()
 	{
 	}
 
 public:
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const PointerType &other) const;
+	bool operator==(const PointerType& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -231,7 +202,7 @@ public:
 	Ref<DataType> dataType;
 
 public:
-	bool operator==(const TemplateArgument &other) const;
+	bool operator==(const TemplateArgument& other) const;
 };
 
 DECLARE_HASH(TemplateArgument)
@@ -248,15 +219,14 @@ public:
 	Array<TemplateArgument> arguments;
 
 public:
-	Template()
-		: ASTItem(ASTItemType::TEMPLATE)
+	Template() : ASTItem(ASTItemType::TEMPLATE)
 	{
 	}
 
 public:
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const Template &other) const;
+	bool operator==(const Template& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -266,10 +236,7 @@ protected:
 
 DECLARE_HASH(Template)
 
-STRICT_ENUM(UnitDeclarationType,
-			ERROR,
-			TYPE,
-			CLASS)
+STRICT_ENUM(UnitDeclarationType, ERROR, TYPE, CLASS)
 
 class UnitDeclarationMeta
 {
@@ -284,8 +251,7 @@ public:
 	UnitDeclarationType declarationType;
 
 public:
-	UnitDeclaration(UnitDeclarationType declarationType)
-		: ASTItem(ASTItemType::UNIT_DECLARATION), declarationType(declarationType)
+	UnitDeclaration(UnitDeclarationType declarationType) : ASTItem(ASTItemType::UNIT_DECLARATION), declarationType(declarationType)
 	{
 	}
 
@@ -302,7 +268,7 @@ public:
 
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const UnitDeclaration &other) const;
+	bool operator==(const UnitDeclaration& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -325,15 +291,14 @@ public:
 	bool hasValue;
 
 public:
-	ErrorDeclaration()
-		: UnitDeclaration(UnitDeclarationType::ERROR), value(0)
+	ErrorDeclaration() : UnitDeclaration(UnitDeclarationType::ERROR), value(0)
 	{
 	}
 
 public:
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const ErrorDeclaration &other) const;
+	bool operator==(const ErrorDeclaration& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -343,10 +308,7 @@ protected:
 
 DECLARE_HASH(ErrorDeclaration)
 
-STRICT_ENUM(VariableDeclarationType,
-			VARIABLE,
-			MEMBER_VARIABLE,
-			METHOD)
+STRICT_ENUM(VariableDeclarationType, VARIABLE, MEMBER_VARIABLE, METHOD)
 
 class VariableDeclarationMeta
 {
@@ -363,8 +325,7 @@ public:
 	Ref<DataType> dataType;
 
 public:
-	VariableDeclaration()
-		: ASTItem(ASTItemType::VARIABLE_DECLARATION), variableType(VariableDeclarationType::VARIABLE), flags(DeclarationFlags::PRIVATE)
+	VariableDeclaration() : ASTItem(ASTItemType::VARIABLE_DECLARATION), variableType(VariableDeclarationType::VARIABLE), flags(DeclarationFlags::PRIVATE)
 	{
 	}
 
@@ -375,7 +336,7 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const VariableDeclaration &other) const;
+	bool operator==(const VariableDeclaration& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -385,13 +346,7 @@ protected:
 
 DECLARE_HASH(VariableDeclaration)
 
-STRICT_ENUM(MethodType,
-			METHOD,
-			CONSTRUCTOR,
-			DESTRUCTOR,
-			OPERATOR,
-			GETTER,
-			SETTER)
+STRICT_ENUM(MethodType, METHOD, CONSTRUCTOR, DESTRUCTOR, OPERATOR, GETTER, SETTER)
 
 class MethodDeclarationMeta
 {
@@ -408,8 +363,7 @@ public:
 	Ref<Statement> body;
 
 public:
-	MethodDeclaration(MethodType methodType)
-		: VariableDeclaration(), methodType(methodType)
+	MethodDeclaration(MethodType methodType) : VariableDeclaration(), methodType(methodType)
 	{
 		variableType = VariableDeclarationType::METHOD;
 	}
@@ -417,7 +371,7 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const MethodDeclaration &other) const;
+	bool operator==(const MethodDeclaration& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -440,7 +394,7 @@ public:
 	Ref<Expression> value;
 
 public:
-	bool operator==(const ConstructorInitializer &other) const;
+	bool operator==(const ConstructorInitializer& other) const;
 };
 
 DECLARE_HASH(ConstructorInitializer)
@@ -457,15 +411,14 @@ public:
 	Array<ConstructorInitializer> initializers;
 
 public:
-	ConstructorDeclaration()
-		: MethodDeclaration(MethodType::CONSTRUCTOR)
+	ConstructorDeclaration() : MethodDeclaration(MethodType::CONSTRUCTOR)
 	{
 	}
 
 public:
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const ConstructorDeclaration &other) const;
+	bool operator==(const ConstructorDeclaration& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -475,51 +428,19 @@ protected:
 
 DECLARE_HASH(ConstructorDeclaration)
 
-STRICT_ENUM(OperatorType,
-			NONE,
-			// Non mutating binary operators
-			PLUS,
-			MINUS,
-			MULTIPLY,
-			DIVIDE,
-			AND,
-			AND_AND,
-			OR,
-			OR_OR,
-			XOR,
-			SHIFT_LEFT,
-			SHIFT_RIGHT,
-			GREATER,
-			LESS,
-			EQUAL,
-			NOT_EQUAL,
-			GREATER_EQUAL,
-			LESS_EQUAL,
-			// Mutating binary operators
-			PLUS_EQUAL,
-			MINUS_EQUAL,
-			MULTIPLY_EQUAL,
-			DIVIDE_EQUAL,
-			AND_EQUAL,
-			OR_EQUAL,
-			XOR_EQUAL,
-			SHIFT_LEFT_EQUAL,
-			SHIFT_RIGHT_EQUAL,
-			ASSIGN,
-			// Misc binary operators
-			ARRAY_ACCESS,
-			// Non mutating unary operators
-			NEGATIVE,
-			NOT,
-			INVERSE,
-			IMPLICIT_CAST,
-			EXPLICIT_CAST,
-			// Mutating unary operators
-			INCREMENT,
-			DECREMENT,
-			// Internal operators
-			ACCESS,
-			CALL)
+STRICT_ENUM(OperatorType, NONE,
+            // Non mutating binary operators
+            PLUS, MINUS, MULTIPLY, DIVIDE, AND, AND_AND, OR, OR_OR, XOR, SHIFT_LEFT, SHIFT_RIGHT, GREATER, LESS, EQUAL, NOT_EQUAL, GREATER_EQUAL, LESS_EQUAL,
+            // Mutating binary operators
+            PLUS_EQUAL, MINUS_EQUAL, MULTIPLY_EQUAL, DIVIDE_EQUAL, AND_EQUAL, OR_EQUAL, XOR_EQUAL, SHIFT_LEFT_EQUAL, SHIFT_RIGHT_EQUAL, ASSIGN,
+            // Misc binary operators
+            ARRAY_ACCESS,
+            // Non mutating unary operators
+            NEGATIVE, NOT, INVERSE, IMPLICIT_CAST, EXPLICIT_CAST, DEREFERENCE,
+            // Mutating unary operators
+            INCREMENT, DECREMENT,
+            // Internal operators
+            ACCESS, CALL)
 
 class OperatorDeclarationMeta
 {
@@ -533,15 +454,14 @@ public:
 	OperatorType operatorType;
 
 public:
-	OperatorDeclaration()
-		: MethodDeclaration(MethodType::OPERATOR)
+	OperatorDeclaration() : MethodDeclaration(MethodType::OPERATOR)
 	{
 	}
 
 public:
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const OperatorDeclaration &other) const;
+	bool operator==(const OperatorDeclaration& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -564,8 +484,7 @@ public:
 	Ref<Expression> value;
 
 public:
-	MemberVariableDeclaration()
-		: VariableDeclaration()
+	MemberVariableDeclaration() : VariableDeclaration()
 	{
 		variableType = VariableDeclarationType::MEMBER_VARIABLE;
 	}
@@ -573,7 +492,7 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const MemberVariableDeclaration &other) const;
+	bool operator==(const MemberVariableDeclaration& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -595,15 +514,14 @@ public:
 	Array<Ref<VariableDeclaration>> parameters;
 
 public:
-	TemplateDeclaration()
-		: ASTItem(ASTItemType::TEMPLATE_DECLARATION)
+	TemplateDeclaration() : ASTItem(ASTItemType::TEMPLATE_DECLARATION)
 	{
 	}
 
 public:
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const TemplateDeclaration &other) const;
+	bool operator==(const TemplateDeclaration& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -628,20 +546,18 @@ public:
 	Array<Ref<ObjectType>> superTypes;
 
 public:
-	TypeDeclaration()
-		: UnitDeclaration(UnitDeclarationType::TYPE)
+	TypeDeclaration() : UnitDeclaration(UnitDeclarationType::TYPE)
 	{
 	}
 
-	TypeDeclaration(UnitDeclarationType declarationType)
-		: UnitDeclaration(declarationType)
+	TypeDeclaration(UnitDeclarationType declarationType) : UnitDeclaration(declarationType)
 	{
 	}
 
 public:
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const TypeDeclaration &other) const;
+	bool operator==(const TypeDeclaration& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -663,20 +579,18 @@ public:
 	bool isSingleton;
 
 public:
-	ClassDeclaration()
-		: TypeDeclaration(UnitDeclarationType::CLASS), isSingleton(false)
+	ClassDeclaration() : TypeDeclaration(UnitDeclarationType::CLASS), isSingleton(false)
 	{
 	}
 
-	ClassDeclaration(bool isSingleton)
-		: TypeDeclaration(UnitDeclarationType::CLASS), isSingleton(isSingleton)
+	ClassDeclaration(bool isSingleton) : TypeDeclaration(UnitDeclarationType::CLASS), isSingleton(isSingleton)
 	{
 	}
 
 public:
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const ClassDeclaration &other) const;
+	bool operator==(const ClassDeclaration& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -701,21 +615,20 @@ public:
 	Ref<UnitDeclaration> declaredType;
 
 public:
-	Unit()
-		: ASTItem(ASTItemType::UNIT)
+	Unit() : ASTItem(ASTItemType::UNIT)
 	{
 	}
 
-	Unit(const JSON &structureJSON);
+	Unit(const JSON& structureJSON);
 
 public:
 	JSON GetStructureJSON() const;
 
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const Unit &other) const;
+	bool operator==(const Unit& other) const;
 
-	Ref<Unit> GetDependency(const String &name) const;
+	Ref<Unit> GetDependency(const String& name) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -725,20 +638,12 @@ protected:
 
 DECLARE_HASH(Unit)
 
-STRICT_ENUM(ModuleType,
-			STATIC,
-			DYNAMIC,
-			INLINE)
+STRICT_ENUM(ModuleType, STATIC, DYNAMIC, INLINE)
 
-STRICT_FLAGS(TargetFlags,
-			 NONE = 0,
-			 BIT32 = 1,
-			 BIT64 = 2,
-			 X86 = 4,
-			 LINUX = 8)
+STRICT_FLAGS(TargetFlags, NONE = 0, BIT32 = 1, BIT64 = 2, X86 = 4, LINUX = 8)
 
 bool IsTargetActive(TargetFlags target, TargetFlags buildTarget);
-TargetFlags JSONToTargetFlags(const JSON &json);
+TargetFlags JSONToTargetFlags(const JSON& json);
 
 class ModuleMeta
 {
@@ -754,12 +659,11 @@ public:
 	Array<Ref<Module>> dependencies;
 
 public:
-	Module(const String &name)
-		: ASTItem(ASTItemType::MODULE), name(name)
+	Module(const String& name) : ASTItem(ASTItemType::MODULE), name(name)
 	{
 	}
 
-	Ref<Unit> GetUnit(const String &name) const
+	Ref<Unit> GetUnit(const String& name) const
 	{
 		for (auto unit : units)
 		{
@@ -774,7 +678,7 @@ public:
 
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const Module &other) const;
+	bool operator==(const Module& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -784,14 +688,7 @@ protected:
 
 DECLARE_HASH(Module)
 
-STRICT_ENUM(ExpressionType,
-			LITERAL,
-			VARIABLE,
-			OPERATOR,
-			CALL,
-			TERNARY,
-			BRACKET,
-			NEW)
+STRICT_ENUM(ExpressionType, LITERAL, VARIABLE, OPERATOR, CALL, TERNARY, BRACKET, NEW)
 
 class ExpressionMeta
 {
@@ -805,8 +702,7 @@ public:
 	ExpressionType expressionType;
 
 public:
-	Expression(ExpressionType expressionType)
-		: ASTItem(ASTItemType::EXPRESSION), expressionType(expressionType)
+	Expression(ExpressionType expressionType) : ASTItem(ASTItemType::EXPRESSION), expressionType(expressionType)
 	{
 	}
 
@@ -817,7 +713,7 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const Expression &other) const;
+	bool operator==(const Expression& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -839,15 +735,14 @@ public:
 	Token data;
 
 public:
-	LiteralExpression()
-		: Expression(ExpressionType::LITERAL)
+	LiteralExpression() : Expression(ExpressionType::LITERAL)
 	{
 	}
 
 public:
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const LiteralExpression &other) const;
+	bool operator==(const LiteralExpression& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -869,15 +764,14 @@ public:
 	Ref<Expression> expression;
 
 public:
-	BracketExpression()
-		: Expression(ExpressionType::BRACKET)
+	BracketExpression() : Expression(ExpressionType::BRACKET)
 	{
 	}
 
 public:
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const BracketExpression &other) const;
+	bool operator==(const BracketExpression& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -899,15 +793,14 @@ public:
 	String name;
 
 public:
-	VariableExpression()
-		: Expression(ExpressionType::VARIABLE)
+	VariableExpression() : Expression(ExpressionType::VARIABLE)
 	{
 	}
 
 public:
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const VariableExpression &other) const;
+	bool operator==(const VariableExpression& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -930,7 +823,7 @@ public:
 	Ref<DataType> dataType;
 
 public:
-	bool operator==(const SecondOperand &other) const;
+	bool operator==(const SecondOperand& other) const;
 };
 
 DECLARE_HASH(SecondOperand)
@@ -950,15 +843,14 @@ public:
 	OperatorType operatorType;
 
 public:
-	OperatorExpression()
-		: Expression(ExpressionType::OPERATOR)
+	OperatorExpression() : Expression(ExpressionType::OPERATOR)
 	{
 	}
 
 public:
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const OperatorExpression &other) const;
+	bool operator==(const OperatorExpression& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -981,15 +873,14 @@ public:
 	Array<Ref<Expression>> arguments;
 
 public:
-	CallExpression()
-		: Expression(ExpressionType::CALL)
+	CallExpression() : Expression(ExpressionType::CALL)
 	{
 	}
 
 public:
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const CallExpression &other) const;
+	bool operator==(const CallExpression& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -1013,15 +904,14 @@ public:
 	Ref<Expression> elseExpression;
 
 public:
-	TernaryExpression()
-		: Expression(ExpressionType::TERNARY)
+	TernaryExpression() : Expression(ExpressionType::TERNARY)
 	{
 	}
 
 public:
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const TernaryExpression &other) const;
+	bool operator==(const TernaryExpression& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -1044,15 +934,14 @@ public:
 	Array<Ref<Expression>> arguments;
 
 public:
-	NewExpression()
-		: Expression(ExpressionType::NEW)
+	NewExpression() : Expression(ExpressionType::NEW)
 	{
 	}
 
 public:
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const NewExpression &other) const;
+	bool operator==(const NewExpression& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -1062,18 +951,7 @@ protected:
 
 DECLARE_HASH(NewExpression)
 
-STRICT_ENUM(StatementType,
-			NOP,
-			BLOCK,
-			EXPRESSION,
-			IF,
-			FOR,
-			WHILE,
-			RETURN,
-			BREAK,
-			CONTINUE,
-			VARIABLE_DECLARATION,
-			DELETE)
+STRICT_ENUM(StatementType, NOP, BLOCK, EXPRESSION, IF, FOR, WHILE, RETURN, BREAK, CONTINUE, VARIABLE_DECLARATION, DELETE)
 
 class StatementMeta
 {
@@ -1087,8 +965,7 @@ public:
 	StatementType statementType;
 
 public:
-	Statement(StatementType statementType)
-		: ASTItem(ASTItemType::STATEMENT), statementType(statementType)
+	Statement(StatementType statementType) : ASTItem(ASTItemType::STATEMENT), statementType(statementType)
 	{
 	}
 
@@ -1099,7 +976,7 @@ public:
 public:
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const Statement &other) const;
+	bool operator==(const Statement& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -1121,15 +998,14 @@ public:
 	Array<Ref<Statement>> statements;
 
 public:
-	BlockStatement()
-		: Statement(StatementType::BLOCK)
+	BlockStatement() : Statement(StatementType::BLOCK)
 	{
 	}
 
 public:
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const BlockStatement &other) const;
+	bool operator==(const BlockStatement& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -1151,15 +1027,14 @@ public:
 	Ref<Expression> expression;
 
 public:
-	ExpressionStatement()
-		: Statement(StatementType::EXPRESSION)
+	ExpressionStatement() : Statement(StatementType::EXPRESSION)
 	{
 	}
 
 public:
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const ExpressionStatement &other) const;
+	bool operator==(const ExpressionStatement& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -1183,15 +1058,14 @@ public:
 	Ref<Statement> elseStatement;
 
 public:
-	IfStatement()
-		: Statement(StatementType::IF)
+	IfStatement() : Statement(StatementType::IF)
 	{
 	}
 
 public:
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const IfStatement &other) const;
+	bool operator==(const IfStatement& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -1216,15 +1090,14 @@ public:
 	Ref<Statement> bodyStatement;
 
 public:
-	ForStatement()
-		: Statement(StatementType::FOR)
+	ForStatement() : Statement(StatementType::FOR)
 	{
 	}
 
 public:
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const ForStatement &other) const;
+	bool operator==(const ForStatement& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -1248,15 +1121,14 @@ public:
 	bool checkAfterBody;
 
 public:
-	WhileStatement()
-		: Statement(StatementType::WHILE)
+	WhileStatement() : Statement(StatementType::WHILE)
 	{
 	}
 
 public:
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const WhileStatement &other) const;
+	bool operator==(const WhileStatement& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -1278,15 +1150,14 @@ public:
 	Ref<Expression> expression;
 
 public:
-	ReturnStatement()
-		: Statement(StatementType::RETURN)
+	ReturnStatement() : Statement(StatementType::RETURN)
 	{
 	}
 
 public:
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const ReturnStatement &other) const;
+	bool operator==(const ReturnStatement& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -1309,15 +1180,14 @@ public:
 	Ref<Expression> value;
 
 public:
-	VariableDeclarationStatement()
-		: Statement(StatementType::VARIABLE_DECLARATION)
+	VariableDeclarationStatement() : Statement(StatementType::VARIABLE_DECLARATION)
 	{
 	}
 
 public:
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const VariableDeclarationStatement &other) const;
+	bool operator==(const VariableDeclarationStatement& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -1339,15 +1209,14 @@ public:
 	Ref<Expression> expression;
 
 public:
-	DeleteStatement()
-		: Statement(StatementType::DELETE)
+	DeleteStatement() : Statement(StatementType::DELETE)
 	{
 	}
 
 public:
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const DeleteStatement &other) const;
+	bool operator==(const DeleteStatement& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
