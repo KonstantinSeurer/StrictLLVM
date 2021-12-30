@@ -14,19 +14,26 @@ Ref<UnitDeclaration> ResolveContext::ResolveType(const String& name)
 	{
 		for (auto parameter : declaration->typeTemplate->parameters)
 		{
-			if (parameter->name != name || parameter->dataType->dataTypeType != DataTypeType::OBJECT)
+			if (parameter->name != name)
 			{
 				continue;
 			}
 
-			Ref<UnitDeclaration> result = std::dynamic_pointer_cast<ObjectType>(parameter->dataType)->objectTypeMeta.unit;
-
-			if (result->declarationType != UnitDeclarationType::TYPE)
+			if (parameter->dataType->dataTypeType == DataTypeType::OBJECT)
 			{
-				continue;
-			}
+				Ref<UnitDeclaration> result = std::dynamic_pointer_cast<ObjectType>(parameter->dataType)->objectTypeMeta.unit;
 
-			return result;
+				if (result->declarationType != UnitDeclarationType::TYPE)
+				{
+					continue;
+				}
+
+				return result;
+			}
+			else if (parameter->dataType->dataTypeType == DataTypeType::TYPE)
+			{
+				return nullptr;
+			}
 		}
 	}
 
