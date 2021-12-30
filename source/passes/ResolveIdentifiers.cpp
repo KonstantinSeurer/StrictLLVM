@@ -9,10 +9,19 @@ Ref<UnitDeclaration> ResolveContext::ResolveType(const String& name)
 	{
 		for (auto parameter : declaration->typeTemplate->parameters)
 		{
-			if (parameter->name == name)
+			if (parameter->name != name || parameter->dataType->dataTypeType != DataTypeType::OBJECT)
 			{
-				// TODO: how to handle template parameters?
+				continue;
 			}
+
+			Ref<UnitDeclaration> result = std::dynamic_pointer_cast<ObjectType>(parameter->dataType)->objectTypeMeta.unit;
+
+			if (result->declarationType != UnitDeclarationType::TYPE)
+			{
+				continue;
+			}
+
+			return result;
 		}
 	}
 
