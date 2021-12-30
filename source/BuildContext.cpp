@@ -6,6 +6,7 @@
 #include "passes/GatherPreresolveMeta.h"
 #include "passes/InlineTemplates.h"
 #include "passes/LowerImpliedDeclarationFlags.h"
+#include "passes/ResolveIdentifiers.h"
 #include "passes/ValidateStructure.h"
 
 #include <filesystem>
@@ -54,6 +55,7 @@ BuildContext::BuildContext(const Array<String>& modulePath, const String& output
 	AddPass(LowerImpliedDeclarationFlags);
 	AddPass(ValidateStructure);
 	AddPass(GatherPreresolveMeta);
+	AddPass(ResolveIdentifiers);
 	AddPass(InlineTemplates);
 }
 
