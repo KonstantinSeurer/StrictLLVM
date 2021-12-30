@@ -3,6 +3,11 @@
 
 Ref<UnitDeclaration> ResolveContext::ResolveType(const String& name)
 {
+	if (name == unit->name)
+	{
+		return unit->declaredType;
+	}
+
 	Ref<TypeDeclaration> declaration = std::dynamic_pointer_cast<TypeDeclaration>(unit->declaredType);
 
 	if (declaration->typeTemplate)
