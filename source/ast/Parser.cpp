@@ -1554,7 +1554,8 @@ static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream& err, Lexer& 
 	{
 		lexer.Next();
 
-		// TODO: parse default assignment
+		result->value = ParseExpression(err, lexer);
+		IFERR_RETURN(err, nullptr)
 	}
 
 	ASSERT_TOKEN(err, lexer, TokenType::SEMICOLON, nullptr)
