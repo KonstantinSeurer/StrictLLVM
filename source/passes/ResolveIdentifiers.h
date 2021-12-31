@@ -27,6 +27,16 @@ private:
 
 	PassResultFlags ResolveSuperTypes();
 
+	PassResultFlags ResolveExpression(Ref<Expression> expression);
+
+	PassResultFlags ResolveStatement(Ref<Statement> statement);
+
+	PassResultFlags ResolveMethodDeclaration(Ref<MethodDeclaration> method);
+
+	PassResultFlags ResolveMemberVariableDeclaration(Ref<MemberVariableDeclaration> variable);
+
+	PassResultFlags ResolveVariableDeclaration(Ref<VariableDeclaration> variable);
+
 	PassResultFlags ResolveMembers();
 
 public:
