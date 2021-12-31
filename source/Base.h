@@ -3,6 +3,7 @@
 
 #include <any>
 #include <functional>
+#include <iostream>
 #include <memory>
 #include <optional>
 #include <string>
@@ -13,6 +14,14 @@
 
 #ifndef NDEBUG
 #define DEBUG
+#endif
+
+#ifdef DEBUG
+#define STRICT_UNREACHABLE                                                                                                                                     \
+	std::cerr << "Hit unreachable at " << __FILE__ << "::" << __FUNCTION__ << " line " << __LINE__ << std::endl;                                               \
+	exit(1)
+#else
+#define STRICT_UNREACHABLE
 #endif
 
 using Int8 = char;
