@@ -164,7 +164,10 @@ PassResultFlags ResolveContext::ResolveStatement(Ref<Statement> statement)
 	}
 	case StatementType::RETURN: {
 		Ref<ReturnStatement> returnStatement = std::dynamic_pointer_cast<ReturnStatement>(statement);
-		result = result | ResolveExpression(returnStatement->expression);
+		if (returnStatement->expression)
+		{
+			result = result | ResolveExpression(returnStatement->expression);
+		}
 		break;
 	}
 	case StatementType::VARIABLE_DECLARATION: {
