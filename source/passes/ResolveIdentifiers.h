@@ -27,6 +27,10 @@ private:
 
 	PassResultFlags ResolveSuperTypes();
 
+	PassResultFlags ResolveOperatorExpression(Ref<OperatorExpression> expression);
+
+	PassResultFlags ResolveIdentifierExpression(Ref<IdentifierExpression> expression);
+
 	PassResultFlags ResolveExpression(Ref<Expression> expression);
 
 	PassResultFlags ResolveStatement(Ref<Statement> statement);

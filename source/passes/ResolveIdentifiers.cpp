@@ -83,7 +83,12 @@ PassResultFlags ResolveContext::ResolveDataType(Ref<DataType> type)
 	if (type->dataTypeType == DataTypeType::ARRAY || type->dataTypeType == DataTypeType::REFERENCE || type->dataTypeType == DataTypeType::POINTER)
 	{
 		Ref<PointerType> pointerType = std::dynamic_pointer_cast<PointerType>(type);
-		return ResolveDataType(pointerType->value);
+		PassResultFlags result = ResolveDataType(pointerType->value);
+		if (pointerType->arrayLength)
+		{
+			result = result | ResolveExpression(pointerType->arrayLength);
+		}
+		return result;
 	}
 
 	return PassResultFlags::SUCCESS;
@@ -113,11 +118,60 @@ PassResultFlags ResolveContext::ResolveSuperTypes()
 	return result;
 }
 
+PassResultFlags ResolveContext::ResolveOperatorExpression(Ref<OperatorExpression> expression)
+{
+	return PassResultFlags::SUCCESS;
+}
+
+PassResultFlags ResolveContext::ResolveIdentifierExpression(Ref<IdentifierExpression> expression)
+{
+	return PassResultFlags::SUCCESS;
+}
+
 PassResultFlags ResolveContext::ResolveExpression(Ref<Expression> expression)
 {
-	PassResultFlags result = PassResultFlags::SUCCESS;
+	switch (expression->expressionType)
+	{
+	case ExpressionType::BRACKET: {
+		Ref<BracketExpression> bracketExpression = std::dynamic_pointer_cast<BracketExpression>(expression);
+		return ResolveExpression(bracketExpression->expression);
+	}
+	case ExpressionType::CALL: {
+		Ref<CallExpression> callExpression = std::dynamic_pointer_cast<CallExpression>(expression);
+		PassResultFlags result = ResolveExpression(callExpression->method);
+		for (auto argument : callExpression->arguments)
+		{
+			result = result | ResolveExpression(argument);
+		}
+		return result;
+	}
+	case ExpressionType::NEW: {
+		Ref<NewExpression> newExpression = std::dynamic_pointer_cast<NewExpression>(expression);
+		PassResultFlags result = ResolveDataType(newExpression->dataType);
+		for (auto argument : newExpression->arguments)
+		{
+			result = result | ResolveExpression(argument);
+		}
+		return result;
+	}
+	case ExpressionType::OPERATOR: {
+		Ref<OperatorExpression> operatorExpression = std::dynamic_pointer_cast<OperatorExpression>(expression);
+		return ResolveOperatorExpression(operatorExpression);
+	}
+	case ExpressionType::TERNARY: {
+		Ref<TernaryExpression> ternaryExpression = std::dynamic_pointer_cast<TernaryExpression>(expression);
+		PassResultFlags result = ResolveExpression(ternaryExpression->condition);
+		result = result | ResolveExpression(ternaryExpression->thenExpression);
+		result = result | ResolveExpression(ternaryExpression->elseExpression);
+		return result;
+	}
+	case ExpressionType::IDENTIFIER: {
+		Ref<IdentifierExpression> identifierExpression = std::dynamic_pointer_cast<IdentifierExpression>(expression);
+		return ResolveIdentifierExpression(identifierExpression);
+	}
+	}
 
-	return result;
+	return PassResultFlags::SUCCESS;
 }
 
 PassResultFlags ResolveContext::ResolveStatement(Ref<Statement> statement)
