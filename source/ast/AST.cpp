@@ -243,20 +243,20 @@ void BracketExpression::CloneImplementation(Ref<BracketExpression> target) const
 
 DEFINE_HASH_WITH_SUPER(BracketExpression, Expression, HASH_REF(Expression, expression))
 
-String VariableExpression::ToStringImplementation(UInt32 indentation) const
+String IdentifierExpression::ToStringImplementation(UInt32 indentation) const
 {
 	return Expression::ToStringImplementation(indentation) + STRING_VAR(indentation, name);
 }
 
-CLONE_METHOD(VariableExpression)
+CLONE_METHOD(IdentifierExpression)
 
-void VariableExpression::CloneImplementation(Ref<VariableExpression> target) const
+void IdentifierExpression::CloneImplementation(Ref<IdentifierExpression> target) const
 {
 	Expression::CloneImplementation(target);
 	target->name = name;
 }
 
-DEFINE_HASH_WITH_SUPER(VariableExpression, Expression, HASH_VALUE(String, name))
+DEFINE_HASH_WITH_SUPER(IdentifierExpression, Expression, HASH_VALUE(String, name))
 
 String OperatorExpression::ToStringImplementation(UInt32 indentation) const
 {

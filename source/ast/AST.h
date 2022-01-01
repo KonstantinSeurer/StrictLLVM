@@ -688,7 +688,7 @@ protected:
 
 DECLARE_HASH(Module)
 
-STRICT_ENUM(ExpressionType, LITERAL, VARIABLE, OPERATOR, CALL, TERNARY, BRACKET, NEW)
+STRICT_ENUM(ExpressionType, LITERAL, IDENTIFIER, OPERATOR, CALL, TERNARY, BRACKET, NEW)
 
 class ExpressionMeta
 {
@@ -781,34 +781,34 @@ protected:
 
 DECLARE_HASH(BracketExpression)
 
-class VariableExpressionMeta
+class IdentifierExpressionMeta
 {
 public:
 };
 
-class VariableExpression : public Expression
+class IdentifierExpression : public Expression
 {
 public:
-	VariableExpressionMeta variableExpressionMeta;
+	IdentifierExpressionMeta variableExpressionMeta;
 	String name;
 
 public:
-	VariableExpression() : Expression(ExpressionType::VARIABLE)
+	IdentifierExpression() : Expression(ExpressionType::IDENTIFIER)
 	{
 	}
 
 public:
 	virtual Ref<ASTItem> Clone() const;
 
-	bool operator==(const VariableExpression& other) const;
+	bool operator==(const IdentifierExpression& other) const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
-	void CloneImplementation(Ref<VariableExpression> target) const;
+	void CloneImplementation(Ref<IdentifierExpression> target) const;
 };
 
-DECLARE_HASH(VariableExpression)
+DECLARE_HASH(IdentifierExpression)
 
 class SecondOperandMeta
 {

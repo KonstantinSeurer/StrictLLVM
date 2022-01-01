@@ -402,9 +402,9 @@ static Ref<LiteralExpression> ParseLiteralExpression(Lexer& lexer)
 	return result;
 }
 
-static Ref<VariableExpression> ParseVariableExpression(Lexer& lexer)
+static Ref<IdentifierExpression> ParseIdentifierExpression(Lexer& lexer)
 {
-	Ref<VariableExpression> result = Allocate<VariableExpression>();
+	Ref<IdentifierExpression> result = Allocate<IdentifierExpression>();
 
 	result->name = lexer.Next().data.stringData;
 
