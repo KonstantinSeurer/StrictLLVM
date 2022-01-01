@@ -582,7 +582,7 @@ static Ref<Expression> ParsePrimaryExpression(ErrorStream& err, Lexer& lexer)
 	case TokenType::STRING_LITERAL:
 		return ParseLiteralExpression(lexer);
 	case TokenType::IDENTIFIER:
-		return ParseVariableExpression(lexer);
+		return ParseIdentifierExpression(lexer);
 	case TokenType::ROUND_OB:
 		return ParseBracketExpression(err, lexer);
 	case TokenType::MINUS:
