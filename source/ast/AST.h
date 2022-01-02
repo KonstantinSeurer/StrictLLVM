@@ -789,7 +789,7 @@ public:
 class IdentifierExpression : public Expression
 {
 public:
-	IdentifierExpressionMeta variableExpressionMeta;
+	IdentifierExpressionMeta identifierExpressionMeta;
 	String name;
 
 public:
