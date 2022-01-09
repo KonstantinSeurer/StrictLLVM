@@ -30,6 +30,8 @@ STRICT_ENUM(TokenType,
 
 const String& ToString(TokenType type);
 
+#define CHARACTER_INDEX_NONE 0xFFFFFFFF
+
 struct Token
 {
 public:

@@ -13,19 +13,20 @@ class ErrorStream
 private:
 	String fileName;
 	PrintFunction print;
-	Ref<const Lexer> lexer;
+	const Lexer* lexer;
 	bool errorOccured;
 	UInt32 tryCatchLexel;
 	UInt32 errorCount;
 
 public:
-	ErrorStream(const String& fileName, PrintFunction print, Ref<const Lexer> lexer)
+	ErrorStream(const String& fileName, PrintFunction print, const Lexer* lexer)
 		: fileName(fileName), print(print), lexer(lexer), errorOccured(false), tryCatchLexel(0), errorCount(0)
 	{
 	}
 
 public:
 	void PrintError(const String& message);
+	void PrintError(const UInt32& location, const String& message);
 	void PrintError(const Token& location, const String& message);
 
 	void Try();

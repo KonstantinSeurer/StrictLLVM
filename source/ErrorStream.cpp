@@ -11,9 +11,7 @@ void ErrorStream::PrintError(const String& message)
 	errorOccured = true;
 }
 
-#include <iostream>
-
-void ErrorStream::PrintError(const Token& location, const String& message)
+void ErrorStream::PrintError(const UInt32& location, const String& message)
 {
 	errorOccured = true;
 
@@ -24,49 +22,57 @@ void ErrorStream::PrintError(const Token& location, const String& message)
 
 	errorCount++;
 
-	const String& source = lexer->GetSource();
-
-	Int64 lineStart = location.characterIndex;
-	for (; lineStart >= 0 && source[lineStart] != '\n'; lineStart--)
-		;
-	lineStart++;
-
-	Int64 lineEnd = location.characterIndex;
-	for (; lineEnd < source.length() && source[lineEnd] != '\n'; lineEnd++)
-		;
-
-	Int64 lineCount = 1;
-	for (Int64 characterIndex = 0; characterIndex <= location.characterIndex; characterIndex++)
+	if (location != CHARACTER_INDEX_NONE)
 	{
-		if (source[characterIndex] == '\n')
+		const String& source = lexer->GetSource();
+
+		Int64 lineStart = location;
+		for (; lineStart >= 0 && source[lineStart] != '\n'; lineStart--)
+			;
+		lineStart++;
+
+		Int64 lineEnd = location;
+		for (; lineEnd < source.length() && source[lineEnd] != '\n'; lineEnd++)
+			;
+
+		Int64 lineCount = 1;
+		for (Int64 characterIndex = 0; characterIndex <= location; characterIndex++)
 		{
-			lineCount++;
+			if (source[characterIndex] == '\n')
+			{
+				lineCount++;
+			}
 		}
+
+		print(fileName);
+		print("(line ");
+		print(std::to_string(lineCount));
+		print("):\n\t");
+
+		print(source.substr(lineStart, lineEnd - lineStart));
+		print("\n\t");
+
+		for (Int64 index = lineStart; index < location; index++)
+		{
+			if (source[index] == '\t')
+			{
+				print("\t");
+			}
+			else
+			{
+				print(" ");
+			}
+		}
+		print("^\n\t");
 	}
-
-	print(fileName);
-	print("(line ");
-	print(std::to_string(lineCount));
-	print("):\n\t");
-
-	print(source.substr(lineStart, lineEnd - lineStart));
-	print("\n\t");
-
-	for (Int64 index = lineStart; index < location.characterIndex; index++)
-	{
-		if (source[index] == '\t')
-		{
-			print("\t");
-		}
-		else
-		{
-			print(" ");
-		}
-	}
-	print("^\n\t");
 
 	print(message);
 	print("\n");
+}
+
+void ErrorStream::PrintError(const Token& location, const String& message)
+{
+	PrintError(location.characterIndex, message);
 }
 
 void ErrorStream::Try()
