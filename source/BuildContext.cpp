@@ -3,7 +3,7 @@
 #include "Time.h"
 #include "ast/Parser.h"
 
-#include "passes/GatherPreresolveMeta.h"
+#include "passes/GatherInformation.h"
 #include "passes/InlineTemplates.h"
 #include "passes/LowerImpliedDeclarationFlags.h"
 #include "passes/ResolveIdentifiers.h"
@@ -54,7 +54,7 @@ BuildContext::BuildContext(const Array<String>& modulePath, const String& output
 	// Add required passes
 	AddPass(LowerImpliedDeclarationFlags);
 	AddPass(ValidateStructure);
-	AddPass(GatherPreresolveMeta);
+	AddPass(GatherInformation);
 	AddPass(ResolveIdentifiers);
 	AddPass(InlineTemplates);
 }

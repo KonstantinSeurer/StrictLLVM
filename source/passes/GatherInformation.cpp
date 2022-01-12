@@ -1,5 +1,5 @@
 
-#include "GatherPreresolveMeta.h"
+#include "GatherInformation.h"
 
 #include <iostream>
 
@@ -23,26 +23,28 @@ static void TryToInsertTemplatedObjectType(HashSet<ObjectType>& target, const Da
 	}
 }
 
-static void GatherPreresolveMeta(Ref<TypeDeclaration> type, Ref<Expression> expression)
+static void GatherInformation(Ref<TypeDeclaration> type, Ref<Expression> expression, Statement* parentStatement)
 {
 	if (!expression)
 	{
 		return;
 	}
 
+	expression->expressionMeta.parentStatement = parentStatement;
+
 	switch (expression->expressionType)
 	{
 	case ExpressionType::BRACKET: {
 		Ref<BracketExpression> bracketExpression = std::dynamic_pointer_cast<BracketExpression>(expression);
-		GatherPreresolveMeta(type, bracketExpression->expression);
+		GatherInformation(type, bracketExpression->expression, parentStatement);
 		break;
 	}
 	case ExpressionType::CALL: {
 		Ref<CallExpression> callExpression = std::dynamic_pointer_cast<CallExpression>(expression);
-		GatherPreresolveMeta(type, callExpression->method);
+		GatherInformation(type, callExpression->method, parentStatement);
 		for (auto argument : callExpression->arguments)
 		{
-			GatherPreresolveMeta(type, argument);
+			GatherInformation(type, argument, parentStatement);
 		}
 		break;
 	}
@@ -51,13 +53,13 @@ static void GatherPreresolveMeta(Ref<TypeDeclaration> type, Ref<Expression> expr
 		TryToInsertTemplatedObjectType(type->typeDeclarationMeta.usedTemplateTypes, *newExpression->dataType);
 		for (auto argument : newExpression->arguments)
 		{
-			GatherPreresolveMeta(type, argument);
+			GatherInformation(type, argument, parentStatement);
 		}
 		break;
 	}
 	case ExpressionType::OPERATOR: {
 		Ref<OperatorExpression> operatorExpression = std::dynamic_pointer_cast<OperatorExpression>(expression);
-		GatherPreresolveMeta(type, operatorExpression->a);
+		GatherInformation(type, operatorExpression->a, parentStatement);
 		if (operatorExpression->b)
 		{
 			if (operatorExpression->b->dataType)
@@ -66,16 +68,16 @@ static void GatherPreresolveMeta(Ref<TypeDeclaration> type, Ref<Expression> expr
 			}
 			else
 			{
-				GatherPreresolveMeta(type, operatorExpression->b->expression);
+				GatherInformation(type, operatorExpression->b->expression, parentStatement);
 			}
 		}
 		break;
 	}
 	case ExpressionType::TERNARY: {
 		Ref<TernaryExpression> ternaryExpression = std::dynamic_pointer_cast<TernaryExpression>(expression);
-		GatherPreresolveMeta(type, ternaryExpression->condition);
-		GatherPreresolveMeta(type, ternaryExpression->thenExpression);
-		GatherPreresolveMeta(type, ternaryExpression->elseExpression);
+		GatherInformation(type, ternaryExpression->condition, parentStatement);
+		GatherInformation(type, ternaryExpression->thenExpression, parentStatement);
+		GatherInformation(type, ternaryExpression->elseExpression, parentStatement);
 		break;
 	}
 	default:
@@ -83,12 +85,14 @@ static void GatherPreresolveMeta(Ref<TypeDeclaration> type, Ref<Expression> expr
 	}
 }
 
-static void GatherPreresolveMeta(Ref<TypeDeclaration> type, Ref<Statement> statement)
+static void GatherInformation(Ref<TypeDeclaration> type, Ref<Statement> statement, Statement* parent)
 {
 	if (!statement)
 	{
 		return;
 	}
+
+	statement->statementMeta.parent = parent;
 
 	switch (statement->statementType)
 	{
@@ -96,49 +100,49 @@ static void GatherPreresolveMeta(Ref<TypeDeclaration> type, Ref<Statement> state
 		Ref<BlockStatement> block = std::dynamic_pointer_cast<BlockStatement>(statement);
 		for (auto subStatement : block->statements)
 		{
-			GatherPreresolveMeta(type, subStatement);
+			GatherInformation(type, subStatement, block.get());
 		}
 		break;
 	}
 	case StatementType::DELETE: {
 		Ref<DeleteStatement> deleteStatement = std::dynamic_pointer_cast<DeleteStatement>(statement);
-		GatherPreresolveMeta(type, deleteStatement->expression);
+		GatherInformation(type, deleteStatement->expression, statement.get());
 		break;
 	}
 	case StatementType::EXPRESSION: {
 		Ref<ExpressionStatement> deleteStatement = std::dynamic_pointer_cast<ExpressionStatement>(statement);
-		GatherPreresolveMeta(type, deleteStatement->expression);
+		GatherInformation(type, deleteStatement->expression, statement.get());
 		break;
 	}
 	case StatementType::FOR: {
 		Ref<ForStatement> forStatement = std::dynamic_pointer_cast<ForStatement>(statement);
-		GatherPreresolveMeta(type, forStatement->startStatement);
-		GatherPreresolveMeta(type, forStatement->condition);
-		GatherPreresolveMeta(type, forStatement->incrementExpression);
-		GatherPreresolveMeta(type, forStatement->bodyStatement);
+		GatherInformation(type, forStatement->startStatement, parent);
+		GatherInformation(type, forStatement->condition, statement.get());
+		GatherInformation(type, forStatement->incrementExpression, statement.get());
+		GatherInformation(type, forStatement->bodyStatement, forStatement.get());
 		break;
 	}
 	case StatementType::IF: {
 		Ref<IfStatement> ifStatement = std::dynamic_pointer_cast<IfStatement>(statement);
-		GatherPreresolveMeta(type, ifStatement->condition);
-		GatherPreresolveMeta(type, ifStatement->thenStatement);
-		GatherPreresolveMeta(type, ifStatement->elseStatement);
+		GatherInformation(type, ifStatement->condition, statement.get());
+		GatherInformation(type, ifStatement->thenStatement, parent);
+		GatherInformation(type, ifStatement->elseStatement, parent);
 		break;
 	}
 	case StatementType::WHILE: {
 		Ref<WhileStatement> whileStatement = std::dynamic_pointer_cast<WhileStatement>(statement);
-		GatherPreresolveMeta(type, whileStatement->condition);
-		GatherPreresolveMeta(type, whileStatement->bodyStatement);
+		GatherInformation(type, whileStatement->condition, statement.get());
+		GatherInformation(type, whileStatement->bodyStatement, parent);
 		break;
 	}
 	case StatementType::RETURN: {
 		Ref<ReturnStatement> returnStatement = std::dynamic_pointer_cast<ReturnStatement>(statement);
-		GatherPreresolveMeta(type, returnStatement->expression);
+		GatherInformation(type, returnStatement->expression, statement.get());
 		break;
 	}
 	case StatementType::VARIABLE_DECLARATION: {
 		Ref<VariableDeclarationStatement> variableDeclarationStatement = std::dynamic_pointer_cast<VariableDeclarationStatement>(statement);
-		GatherPreresolveMeta(type, variableDeclarationStatement->value);
+		GatherInformation(type, variableDeclarationStatement->value, statement.get());
 		TryToInsertTemplatedObjectType(type->typeDeclarationMeta.usedTemplateTypes, *variableDeclarationStatement->declaration->dataType);
 		break;
 	}
@@ -147,23 +151,23 @@ static void GatherPreresolveMeta(Ref<TypeDeclaration> type, Ref<Statement> state
 	}
 }
 
-static void GatherPreresolveMeta(Ref<TypeDeclaration> type, Ref<MethodDeclaration> method)
+static void GatherInformation(Ref<TypeDeclaration> type, Ref<MethodDeclaration> method)
 {
 	if (method->body)
 	{
-		GatherPreresolveMeta(type, method->body);
+		GatherInformation(type, method->body, nullptr);
 	}
 }
 
-static void GatherPreresolveMeta(Ref<TypeDeclaration> type, Ref<MemberVariableDeclaration> variable)
+static void GatherInformation(Ref<TypeDeclaration> type, Ref<MemberVariableDeclaration> variable)
 {
 	for (auto accessor : variable->accessors)
 	{
-		GatherPreresolveMeta(type, accessor);
+		GatherInformation(type, accessor);
 	}
 }
 
-static void GatherPreresolveMeta(Ref<TypeDeclaration> type)
+static void GatherInformation(Ref<TypeDeclaration> type)
 {
 	for (auto member : type->members)
 	{
@@ -171,11 +175,11 @@ static void GatherPreresolveMeta(Ref<TypeDeclaration> type)
 
 		if (member->variableType == VariableDeclarationType::MEMBER_VARIABLE)
 		{
-			GatherPreresolveMeta(type, std::dynamic_pointer_cast<MemberVariableDeclaration>(member));
+			GatherInformation(type, std::dynamic_pointer_cast<MemberVariableDeclaration>(member));
 		}
 		else if (member->variableType == VariableDeclarationType::METHOD)
 		{
-			GatherPreresolveMeta(type, std::dynamic_pointer_cast<MethodDeclaration>(member));
+			GatherInformation(type, std::dynamic_pointer_cast<MethodDeclaration>(member));
 		}
 	}
 
@@ -183,13 +187,27 @@ static void GatherPreresolveMeta(Ref<TypeDeclaration> type)
 	{
 		TryToInsertTemplatedObjectType(type->typeDeclarationMeta.usedTemplateTypes, *superType);
 	}
+
+	if (type->declarationType == UnitDeclarationType::CLASS)
+	{
+		Ref<ClassDeclaration> classDeclaration = std::dynamic_pointer_cast<ClassDeclaration>(type);
+
+		classDeclaration->classDeclarationMeta.thisDeclaration = Allocate<VariableDeclaration>();
+		classDeclaration->classDeclarationMeta.thisDeclaration->dataType = type->unitDeclarationMeta.thisType;
+		classDeclaration->classDeclarationMeta.thisDeclaration->name = "this";
+	}
 }
 
-static void GatherPreresolveMeta(BuildContext& context, Ref<Unit> unit)
+static void GatherInformation(BuildContext& context, Ref<Unit> unit)
 {
+	unit->declaredType->unitDeclarationMeta.thisType = Allocate<ObjectType>();
+	unit->declaredType->unitDeclarationMeta.thisType->name = unit->name;
+	unit->declaredType->unitDeclarationMeta.thisType->flags = DeclarationFlags::PRIVATE;
+	unit->declaredType->unitDeclarationMeta.thisType->objectTypeMeta.unit = unit->declaredType;
+
 	if (unit->declaredType->IsType())
 	{
-		GatherPreresolveMeta(std::dynamic_pointer_cast<TypeDeclaration>(unit->declaredType));
+		GatherInformation(std::dynamic_pointer_cast<TypeDeclaration>(unit->declaredType));
 	}
 
 	for (const String& dependencyName : unit->dependencyNames)
@@ -198,13 +216,13 @@ static void GatherPreresolveMeta(BuildContext& context, Ref<Unit> unit)
 	}
 }
 
-PassResultFlags GatherPreresolveMeta(PrintFunction print, BuildContext& context)
+PassResultFlags GatherInformation(PrintFunction print, BuildContext& context)
 {
 	for (auto module : context.GetModules())
 	{
 		for (auto unit : module->units)
 		{
-			GatherPreresolveMeta(context, unit);
+			GatherInformation(context, unit);
 		}
 	}
 
