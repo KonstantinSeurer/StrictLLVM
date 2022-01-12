@@ -5,6 +5,10 @@
 #include "../JSON.h"
 #include "../Lexer.h"
 
+#include "llvm/IR/Function.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Value.h"
+
 class Template;
 class Unit;
 class UnitDeclaration;
@@ -12,7 +16,6 @@ class Expression;
 class Statement;
 
 STRICT_ENUM(ASTItemType, NONE, MODULE, UNIT, UNIT_DECLARATION, TEMPLATE_DECLARATION, TEMPLATE, VARIABLE_DECLARATION, DATA_TYPE, EXPRESSION, STATEMENT)
-            STATEMENT)
 
 class ASTItemMeta
 {
@@ -575,6 +578,7 @@ class ClassDeclarationMeta
 public:
 	Ref<VariableDeclaration> thisDeclaration;
 
+	Ref<llvm::Module> module;
 };
 
 class ClassDeclaration : public TypeDeclaration

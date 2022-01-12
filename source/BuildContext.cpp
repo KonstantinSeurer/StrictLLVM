@@ -6,6 +6,7 @@
 #include "passes/GatherInformation.h"
 #include "passes/InlineTemplates.h"
 #include "passes/LowerImpliedDeclarationFlags.h"
+#include "passes/LowerToIR.h"
 #include "passes/ResolveIdentifiers.h"
 #include "passes/ValidateStructure.h"
 
@@ -58,6 +59,7 @@ BuildContext::BuildContext(const Array<String>& modulePath, const String& output
 	AddPass(GatherInformation);
 	AddPass(ResolveIdentifiers);
 	AddPass(InlineTemplates);
+	AddPass(LowerToIR);
 }
 
 void BuildContext::Print(const String& string, bool console)
