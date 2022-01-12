@@ -344,7 +344,7 @@ void BuildContext::PropagateBuildFlagAndParse()
 				Ref<Lexer> lexer = Lexer::Create(unitSource);
 				lexerCache[unitSourcePath] = lexer;
 
-				ErrorStream err(unit.fileName, PRINT_FUNCTION, lexer);
+				ErrorStream err(unit.fileName, PRINT_FUNCTION, lexer.get());
 
 				unit.unit = ParseUnit(err, *lexer, unit.name);
 
@@ -385,7 +385,7 @@ void BuildContext::PropagateBuildFlagAndParse()
 					Ref<Lexer> lexer = Lexer::Create(unitSource);
 					lexerCache[unitSourcePath] = lexer;
 
-					ErrorStream err(unit.fileName, PRINT_FUNCTION, lexer);
+					ErrorStream err(unit.fileName, PRINT_FUNCTION, lexer.get());
 
 					unit.unit = ParseUnit(err, *lexer, unit.name);
 
