@@ -350,7 +350,7 @@ String NewExpression::ToStringImplementation(UInt32 indentation) const
 	{
 		result += Indentation(indentation + 1) + argument->ToString(indentation + 1);
 	}
-	return result + Indentation(indentation) + "]\n";
+	return result + Indentation(indentation) + "]\n" + ENUM_VAR(indentation, allocationType);
 }
 
 CLONE_METHOD(NewExpression)
@@ -364,11 +364,12 @@ void NewExpression::CloneImplementation(Ref<NewExpression> target) const
 	{
 		target->arguments[argumentIndex] = std::dynamic_pointer_cast<Expression>(arguments[argumentIndex]->Clone());
 	}
+	target->allocationType = allocationType;
 }
 
 DEFINE_HASH_WITH_SUPER(NewExpression, Expression,
-                       HASH_REF(DataType, dataType) for (UInt64 argumentIndex = 0; argumentIndex < HASH_ACCESS(arguments).size();
-                                                         argumentIndex++){HASH_REF(Expression, arguments[argumentIndex])})
+                       HASH_REF(DataType, dataType) for (UInt64 argumentIndex = 0; argumentIndex < HASH_ACCESS(arguments).size(); argumentIndex++){
+						   HASH_REF(Expression, arguments[argumentIndex])} HASH_VALUE(AllocationType, allocationType))
 
 String Statement::ToStringImplementation(UInt32 indentation) const
 {
