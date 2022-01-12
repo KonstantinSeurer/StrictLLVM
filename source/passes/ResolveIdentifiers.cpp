@@ -1,7 +1,24 @@
 
 #include "ResolveIdentifiers.h"
 
-Ref<UnitDeclaration> ResolveContext::ResolveType(const String& name)
+bool ResolveContext::IsTraversalRequired(TraversalLevel level) const
+{
+	return (level & requiredTraversalLevel) == level;
+}
+
+static bool HasEnding(const String& fullString, const String& ending)
+{
+	if (fullString.length() >= ending.length())
+	{
+		return (0 == fullString.compare(fullString.length() - ending.length(), ending.length(), ending));
+	}
+	else
+	{
+		return false;
+	}
+}
+
+Ref<UnitDeclaration> ResolveContext::ResolveType(const String& name, bool optional)
 {
 	if (name == unit->name)
 	{
@@ -39,42 +56,60 @@ Ref<UnitDeclaration> ResolveContext::ResolveType(const String& name)
 
 	for (const auto& dependency : unit->dependencyNames)
 	{
-		if (dependency.find_last_of(name) == dependency.length() - 1 && dependency[dependency.length() - name.length() - 1] == '.')
+		if (HasEnding(dependency, "." + name))
 		{
 			return context->ResolveUnit(dependency)->declaredType;
 		}
 	}
 
-	err.PrintError("Unable to resolve type '" + name + "'!");
+	if (!optional)
+	{
+		err.PrintError("Unable to resolve type '" + name + "'!");
+	}
+
 	return nullptr;
 }
 
-PassResultFlags ResolveContext::ResolveTemplate(Ref<Template> typeTemplate)
+PassResultFlags ResolveContext::ResolveTemplate(Ref<MethodDeclaration> method, Ref<Template> typeTemplate)
 {
 	PassResultFlags result = PassResultFlags::SUCCESS;
 
-	for (auto argument : typeTemplate->arguments)
+	for (auto& argument : typeTemplate->arguments)
 	{
 		if (argument.dataType)
 		{
-			result = result | ResolveDataType(argument.dataType);
+			result = result | ResolveDataType(method, argument.dataType);
+		}
+		if (argument.expression)
+		{
+			result = result | ResolveExpression(method, &argument.expression);
+
+			if (pass == ResolvePass::DATA_TYPES)
+			{
+				Ref<DataType> dataType = ConvertExpressionToDataType(argument.expression);
+				if (dataType)
+				{
+					argument.dataType = dataType;
+					argument.expression = nullptr;
+				}
+			}
 		}
 	}
 
 	return result;
 }
 
-PassResultFlags ResolveContext::ResolveDataType(Ref<DataType> type)
+PassResultFlags ResolveContext::ResolveDataType(Ref<MethodDeclaration> method, Ref<DataType> type)
 {
 	if (type->dataTypeType == DataTypeType::OBJECT)
 	{
 		Ref<ObjectType> objectType = std::dynamic_pointer_cast<ObjectType>(type);
-		objectType->objectTypeMeta.unit = ResolveType(objectType->name);
+		objectType->objectTypeMeta.unit = ResolveType(objectType->name, false);
 		PassResultFlags result = (objectType->objectTypeMeta.unit == nullptr) ? PassResultFlags::CRITICAL_ERROR : PassResultFlags::SUCCESS;
 
 		if (objectType->typeTemplate)
 		{
-			result = result | ResolveTemplate(objectType->typeTemplate);
+			result = result | ResolveTemplate(method, objectType->typeTemplate);
 		}
 
 		return result;
@@ -83,10 +118,10 @@ PassResultFlags ResolveContext::ResolveDataType(Ref<DataType> type)
 	if (type->dataTypeType == DataTypeType::ARRAY || type->dataTypeType == DataTypeType::REFERENCE || type->dataTypeType == DataTypeType::POINTER)
 	{
 		Ref<PointerType> pointerType = std::dynamic_pointer_cast<PointerType>(type);
-		PassResultFlags result = ResolveDataType(pointerType->value);
+		PassResultFlags result = ResolveDataType(method, pointerType->value);
 		if (pointerType->arrayLength)
 		{
-			result = result | ResolveExpression(pointerType->arrayLength);
+			result = result | ResolveExpression(method, &pointerType->arrayLength);
 		}
 		return result;
 	}
@@ -100,7 +135,7 @@ PassResultFlags ResolveContext::ResolveTemplateDeclaration(Ref<TemplateDeclarati
 
 	for (auto parameter : declaration->parameters)
 	{
-		result = result | ResolveDataType(parameter->dataType);
+		result = result | ResolveDataType(nullptr, parameter->dataType);
 	}
 
 	return result;
@@ -112,70 +147,441 @@ PassResultFlags ResolveContext::ResolveSuperTypes()
 
 	for (auto superType : type->superTypes)
 	{
-		result = result | ResolveDataType(superType);
+		result = result | ResolveDataType(nullptr, superType);
 	}
 
 	return result;
 }
 
-PassResultFlags ResolveContext::ResolveOperatorExpression(Ref<OperatorExpression> expression)
+static Ref<DataType> GetReferencedType(Ref<DataType> dataType)
 {
-	return PassResultFlags::SUCCESS;
-}
-
-PassResultFlags ResolveContext::ResolveIdentifierExpression(Ref<IdentifierExpression> expression)
-{
-	return PassResultFlags::SUCCESS;
-}
-
-PassResultFlags ResolveContext::ResolveExpression(Ref<Expression> expression)
-{
-	switch (expression->expressionType)
+	if (dataType->dataTypeType != DataTypeType::REFERENCE)
 	{
-	case ExpressionType::BRACKET: {
-		Ref<BracketExpression> bracketExpression = std::dynamic_pointer_cast<BracketExpression>(expression);
-		return ResolveExpression(bracketExpression->expression);
+		return dataType;
 	}
-	case ExpressionType::CALL: {
-		Ref<CallExpression> callExpression = std::dynamic_pointer_cast<CallExpression>(expression);
-		PassResultFlags result = ResolveExpression(callExpression->method);
-		for (auto argument : callExpression->arguments)
+	Ref<PointerType> referenceType = std::dynamic_pointer_cast<PointerType>(dataType);
+	return GetReferencedType(referenceType->value);
+}
+
+PassResultFlags ResolveContext::ResolveOperatorExpression(Ref<MethodDeclaration> method, Ref<OperatorExpression> expression)
+{
+	PassResultFlags result = ResolveExpression(method, &expression->a);
+	if (expression->b)
+	{
+		if (expression->b->expression)
 		{
-			result = result | ResolveExpression(argument);
+			if (expression->operatorType == OperatorType::ACCESS && expression->b->expression->expressionType == ExpressionType::IDENTIFIER)
+			{
+				if (pass != ResolvePass::EXPRESSION)
+				{
+					return result;
+				}
+
+				Ref<IdentifierExpression> identifierExpression = std::dynamic_pointer_cast<IdentifierExpression>(expression->b->expression);
+				Ref<ObjectType> leftType = std::dynamic_pointer_cast<ObjectType>(GetReferencedType(expression->a->expressionMeta.dataType));
+				result = result | ResolveIdentifierExpression(leftType, method, identifierExpression, true);
+			}
+			else
+			{
+				result = result | ResolveExpression(method, &expression->b->expression);
+			}
 		}
+		if (expression->b->dataType)
+		{
+			result = result | ResolveDataType(method, expression->b->dataType);
+		}
+		if (expression->b->typeTemplate)
+		{
+			result = result | ResolveTemplate(method, expression->b->typeTemplate);
+		}
+	}
+	return result;
+}
+
+static Ref<VariableDeclaration> SearchVariableDeclaration(const Statement* statement, const String& name)
+{
+	if (statement->statementType == StatementType::BLOCK)
+	{
+		const BlockStatement* blockStatement = (const BlockStatement*)statement;
+		for (auto subStatement : blockStatement->statements)
+		{
+			if (subStatement.get() == statement)
+			{
+				// Don't consider statements afther the current statement
+				break;
+			}
+
+			if (subStatement->statementType != StatementType::VARIABLE_DECLARATION)
+			{
+				continue;
+			}
+
+			Ref<VariableDeclarationStatement> variableDeclarationStatement = std::dynamic_pointer_cast<VariableDeclarationStatement>(subStatement);
+			if (variableDeclarationStatement->declaration->name == name)
+			{
+				return variableDeclarationStatement->declaration;
+			}
+		}
+	}
+	else if (statement->statementType == StatementType::FOR)
+	{
+		const ForStatement* forStatement = (const ForStatement*)statement;
+		if (forStatement->startStatement->statementType == StatementType::VARIABLE_DECLARATION)
+		{
+			Ref<VariableDeclarationStatement> variableDeclarationStatement =
+				std::dynamic_pointer_cast<VariableDeclarationStatement>(forStatement->startStatement);
+			if (variableDeclarationStatement->declaration->name == name)
+			{
+				return variableDeclarationStatement->declaration;
+			}
+		}
+	}
+
+	if (statement->statementMeta.parent)
+	{
+		return SearchVariableDeclaration(statement->statementMeta.parent, name);
+	}
+
+	return nullptr;
+}
+
+PassResultFlags ResolveContext::ResolveIdentifierExpression(Ref<ObjectType> context, Ref<MethodDeclaration> method, Ref<IdentifierExpression> expression,
+                                                            bool required)
+{
+	Ref<UnitDeclaration> unitDeclaration = ResolveType(expression->name, true);
+	if (unitDeclaration)
+	{
+		expression->identifierExpressionMeta.destination = unitDeclaration;
+		expression->expressionMeta.dataType = unitDeclaration->unitDeclarationMeta.thisType;
+		return PassResultFlags::SUCCESS;
+	}
+
+	if (method)
+	{
+		for (auto parameter : method->parameters)
+		{
+			if (parameter->name != expression->name)
+			{
+				continue;
+			}
+
+			expression->identifierExpressionMeta.destination = parameter;
+			expression->expressionMeta.dataType = parameter->dataType;
+			return PassResultFlags::SUCCESS;
+		}
+	}
+
+	if (context)
+	{
+		Ref<TypeDeclaration> typeDeclaration = std::dynamic_pointer_cast<TypeDeclaration>(context->objectTypeMeta.unit);
+		for (auto member : typeDeclaration->members)
+		{
+			if (member->name != expression->name)
+			{
+				continue;
+			}
+
+			expression->identifierExpressionMeta.destination = member;
+			expression->expressionMeta.dataType = member->dataType;
+			return PassResultFlags::SUCCESS;
+		}
+
+		for (auto superType : typeDeclaration->superTypes)
+		{
+			if (ResolveIdentifierExpression(superType, nullptr, expression, false) == PassResultFlags::SUCCESS)
+			{
+				return PassResultFlags::SUCCESS;
+			}
+		}
+	}
+
+	if (expression->expressionMeta.parentStatement)
+	{
+		Ref<VariableDeclaration> declaration = SearchVariableDeclaration(expression->expressionMeta.parentStatement, expression->name);
+		if (declaration)
+		{
+			expression->identifierExpressionMeta.destination = declaration;
+			expression->expressionMeta.dataType = declaration->dataType;
+			return PassResultFlags::SUCCESS;
+		}
+	}
+
+	if (required)
+	{
+		err.PrintError(expression->characterIndex, "Unable to resolve identifier '" + expression->name + "'!");
+	}
+	return PassResultFlags::CRITICAL_ERROR;
+}
+
+PassResultFlags ResolveContext::ResolveBracketExpression(Ref<MethodDeclaration> method, Ref<BracketExpression> expression)
+{
+	PassResultFlags result = ResolveExpression(method, &expression->expression);
+
+	if (pass != ResolvePass::EXPRESSION)
+	{
 		return result;
 	}
-	case ExpressionType::NEW: {
-		Ref<NewExpression> newExpression = std::dynamic_pointer_cast<NewExpression>(expression);
-		PassResultFlags result = ResolveDataType(newExpression->dataType);
-		for (auto argument : newExpression->arguments)
-		{
-			result = result | ResolveExpression(argument);
-		}
-		return result;
-	}
-	case ExpressionType::OPERATOR: {
+
+	expression->expressionMeta.dataType = expression->expression->expressionMeta.dataType;
+
+	return result;
+}
+
+static Ref<Expression> GetRightMostExpression(Ref<Expression> expression)
+{
+	if (expression->expressionType == ExpressionType::OPERATOR)
+	{
 		Ref<OperatorExpression> operatorExpression = std::dynamic_pointer_cast<OperatorExpression>(expression);
-		return ResolveOperatorExpression(operatorExpression);
+		if (!operatorExpression->b)
+		{
+			return nullptr;
+		}
+		if (operatorExpression->b->dataType)
+		{
+			return GetRightMostExpression(operatorExpression->a);
+		}
+		return GetRightMostExpression(operatorExpression->b->expression);
 	}
-	case ExpressionType::TERNARY: {
-		Ref<TernaryExpression> ternaryExpression = std::dynamic_pointer_cast<TernaryExpression>(expression);
-		PassResultFlags result = ResolveExpression(ternaryExpression->condition);
-		result = result | ResolveExpression(ternaryExpression->thenExpression);
-		result = result | ResolveExpression(ternaryExpression->elseExpression);
+	return expression;
+}
+
+Ref<DataType> ResolveContext::ConvertExpressionToDataType(Ref<Expression> expression)
+{
+	if (expression->expressionType == ExpressionType::IDENTIFIER)
+	{
+		Ref<IdentifierExpression> identifierExpression = std::dynamic_pointer_cast<IdentifierExpression>(expression);
+
+		if (identifierExpression->identifierExpressionMeta.destination->type != ASTItemType::UNIT_DECLARATION)
+		{
+			return nullptr;
+		}
+
+		Ref<UnitDeclaration> destination = std::dynamic_pointer_cast<UnitDeclaration>(identifierExpression->identifierExpressionMeta.destination);
+
+		Ref<ObjectType> result = Allocate<ObjectType>();
+		result->objectTypeMeta.unit = destination;
+		result->name = destination->name;
 		return result;
 	}
+
+	if (expression->expressionType == ExpressionType::OPERATOR)
+	{
+		Ref<OperatorExpression> operatorExpression = std::dynamic_pointer_cast<OperatorExpression>(expression);
+
+		if (operatorExpression->operatorType == OperatorType::ARRAY_ACCESS || operatorExpression->operatorType == OperatorType::EXPLICIT_CAST ||
+		    operatorExpression->operatorType == OperatorType::TEMPLATE)
+		{
+			Ref<DataType> dataType = ConvertExpressionToDataType(operatorExpression->a);
+			if (!dataType)
+			{
+				return nullptr;
+			}
+
+			if (dataType->dataTypeType != DataTypeType::OBJECT)
+			{
+				err.PrintError(operatorExpression->a->characterIndex, "Expected an object type!");
+				return nullptr;
+			}
+
+			if (operatorExpression->operatorType == OperatorType::ARRAY_ACCESS)
+			{
+				Ref<PointerType> result = Allocate<PointerType>();
+				result->dataTypeType = DataTypeType::ARRAY;
+				result->value = dataType;
+				result->arrayLength = operatorExpression->b->expression;
+				return result;
+			}
+
+			Ref<ObjectType> objectType = std::dynamic_pointer_cast<ObjectType>(dataType);
+
+			if (operatorExpression->operatorType == OperatorType::EXPLICIT_CAST)
+			{
+				objectType->typeTemplate = Allocate<Template>();
+				TemplateArgument argument;
+				argument.dataType = operatorExpression->b->dataType;
+				objectType->typeTemplate->arguments.push_back(argument);
+			}
+			else
+			{
+				objectType->typeTemplate = operatorExpression->b->typeTemplate;
+			}
+
+			return objectType;
+		}
+		else if (operatorExpression->operatorType == OperatorType::POST_AND || operatorExpression->operatorType == OperatorType::POST_STAR)
+		{
+			Ref<DataType> dataType = ConvertExpressionToDataType(operatorExpression->a);
+			if (!dataType)
+			{
+				return nullptr;
+			}
+
+			Ref<PointerType> result = Allocate<PointerType>();
+			result->dataTypeType = (operatorExpression->operatorType == OperatorType::POST_AND) ? DataTypeType::REFERENCE : DataTypeType::POINTER;
+			result->value = dataType;
+			return result;
+		}
+	}
+
+	return nullptr;
+}
+
+PassResultFlags ResolveContext::ResolveCallExpression(Ref<MethodDeclaration> method, Ref<Expression>* expression)
+{
+	Ref<CallExpression> callExpression = std::dynamic_pointer_cast<CallExpression>(*expression);
+
+	PassResultFlags result = ResolveExpression(method, &callExpression->method);
+
+	for (auto& argument : callExpression->arguments)
+	{
+		result = result | ResolveExpression(method, &argument);
+	}
+
+	if ((result & PassResultFlags::CRITICAL_ERROR) == PassResultFlags::CRITICAL_ERROR)
+	{
+		return result;
+	}
+
+	if (pass == ResolvePass::NEW)
+	{
+		Ref<DataType> dataType = ConvertExpressionToDataType(callExpression->method);
+		if (dataType)
+		{
+			Ref<NewExpression> newExpression = Allocate<NewExpression>();
+			newExpression->expressionMeta.parentStatement = callExpression->expressionMeta.parentStatement;
+			newExpression->expressionMeta.dataType = dataType;
+			newExpression->allocationType = AllocationType::STACK;
+			newExpression->dataType = dataType;
+			newExpression->arguments = callExpression->arguments;
+
+			*expression = newExpression;
+
+			return result;
+		}
+	}
+
+	if (pass != ResolvePass::EXPRESSION)
+	{
+		return result;
+	}
+
+	Ref<Expression> actualMethod = GetRightMostExpression(callExpression->method);
+	if (!actualMethod || actualMethod->expressionType != ExpressionType::IDENTIFIER)
+	{
+		err.PrintError(callExpression->characterIndex, "Cannot call method expression:\n" + callExpression->method->ToString(1));
+		result = result | PassResultFlags::CRITICAL_ERROR;
+	}
+	else
+	{
+		Ref<IdentifierExpression> methodIdentifier = std::dynamic_pointer_cast<IdentifierExpression>(actualMethod);
+		Ref<ASTItem> destinationItem = methodIdentifier->identifierExpressionMeta.destination;
+		if (destinationItem->type == ASTItemType::VARIABLE_DECLARATION)
+		{
+			Ref<VariableDeclaration> destination = std::dynamic_pointer_cast<VariableDeclaration>(destinationItem);
+			if (destination->variableType == VariableDeclarationType::METHOD)
+			{
+				callExpression->expressionMeta.dataType = destination->dataType;
+			}
+		}
+	}
+
+	return result;
+}
+
+PassResultFlags ResolveContext::ResolveNewExpression(Ref<MethodDeclaration> method, Ref<NewExpression> expression)
+{
+	PassResultFlags result = ResolveDataType(method, expression->dataType);
+
+	for (auto& argument : expression->arguments)
+	{
+		result = result | ResolveExpression(method, &argument);
+	}
+
+	if (pass != ResolvePass::EXPRESSION)
+	{
+		return result;
+	}
+
+	if (expression->dataType->dataTypeType == DataTypeType::ARRAY)
+	{
+		expression->expressionMeta.dataType = expression->dataType;
+	}
+	else
+	{
+		Ref<PointerType> pointer = Allocate<PointerType>();
+		pointer->value = expression->dataType;
+		expression->expressionMeta.dataType = pointer;
+	}
+
+	return result;
+}
+
+PassResultFlags ResolveContext::ResolveTernaryExpression(Ref<MethodDeclaration> method, Ref<TernaryExpression> expression)
+{
+	PassResultFlags result = ResolveExpression(method, &expression->condition);
+	result = result | ResolveExpression(method, &expression->thenExpression);
+	result = result | ResolveExpression(method, &expression->elseExpression);
+
+	if (pass != ResolvePass::EXPRESSION)
+	{
+		return result;
+	}
+
+	assert(expression->thenExpression->expressionMeta.dataType && expression->elseExpression->expressionMeta.dataType);
+	// TODO: check for the possibility to perform an implicit cast
+	if (*expression->thenExpression->expressionMeta.dataType == *expression->elseExpression->expressionMeta.dataType)
+	{
+		expression->expressionMeta.dataType = expression->thenExpression->expressionMeta.dataType;
+	}
+	else
+	{
+		err.PrintError(expression->thenExpression->characterIndex, "Cannot match the types of the two ternary operator cases!");
+		result = result | PassResultFlags::CRITICAL_ERROR;
+	}
+	return result;
+}
+
+PassResultFlags ResolveContext::ResolveExpression(Ref<MethodDeclaration> method, Ref<Expression>* expression)
+{
+	if (!IsTraversalRequired(TraversalLevel::EXPRESSION))
+	{
+		return PassResultFlags::SUCCESS;
+	}
+
+	switch ((*expression)->expressionType)
+	{
+	case ExpressionType::BRACKET:
+		return ResolveBracketExpression(method, std::dynamic_pointer_cast<BracketExpression>(*expression));
+	case ExpressionType::CALL:
+		return ResolveCallExpression(method, expression);
+	case ExpressionType::NEW:
+		return ResolveNewExpression(method, std::dynamic_pointer_cast<NewExpression>(*expression));
+	case ExpressionType::OPERATOR:
+		return ResolveOperatorExpression(method, std::dynamic_pointer_cast<OperatorExpression>(*expression));
+	case ExpressionType::TERNARY:
+		return ResolveTernaryExpression(method, std::dynamic_pointer_cast<TernaryExpression>(*expression));
 	case ExpressionType::IDENTIFIER: {
-		Ref<IdentifierExpression> identifierExpression = std::dynamic_pointer_cast<IdentifierExpression>(expression);
-		return ResolveIdentifierExpression(identifierExpression);
+		if (pass != ResolvePass::EXPRESSION)
+		{
+			return PassResultFlags::SUCCESS;
+		}
+		Ref<IdentifierExpression> identifierExpression = std::dynamic_pointer_cast<IdentifierExpression>(*expression);
+		Ref<ClassDeclaration> classDeclaration = std::dynamic_pointer_cast<ClassDeclaration>(unit->declaredType);
+		Ref<ObjectType> thisType = std::dynamic_pointer_cast<ObjectType>(classDeclaration->classDeclarationMeta.thisDeclaration->dataType);
+		return ResolveIdentifierExpression(thisType, method, identifierExpression, true);
 	}
 	}
 
 	return PassResultFlags::SUCCESS;
 }
 
-PassResultFlags ResolveContext::ResolveStatement(Ref<Statement> statement)
+PassResultFlags ResolveContext::ResolveStatement(Ref<MethodDeclaration> method, Ref<Statement> statement)
 {
+	if (!IsTraversalRequired(TraversalLevel::STATEMENT))
+	{
+		return PassResultFlags::SUCCESS;
+	}
+
 	PassResultFlags result = PassResultFlags::SUCCESS;
 
 	switch (statement->statementType)
@@ -184,35 +590,35 @@ PassResultFlags ResolveContext::ResolveStatement(Ref<Statement> statement)
 		Ref<BlockStatement> blockStatement = std::dynamic_pointer_cast<BlockStatement>(statement);
 		for (auto subStatement : blockStatement->statements)
 		{
-			result = result | ResolveStatement(subStatement);
+			result = result | ResolveStatement(method, subStatement);
 		}
 		break;
 	}
 	case StatementType::DELETE: {
 		Ref<DeleteStatement> deleteStatement = std::dynamic_pointer_cast<DeleteStatement>(statement);
-		result = result | ResolveExpression(deleteStatement->expression);
+		result = result | ResolveExpression(method, &deleteStatement->expression);
 		break;
 	}
 	case StatementType::EXPRESSION: {
 		Ref<ExpressionStatement> expressionStatement = std::dynamic_pointer_cast<ExpressionStatement>(statement);
-		result = result | ResolveExpression(expressionStatement->expression);
+		result = result | ResolveExpression(method, &expressionStatement->expression);
 		break;
 	}
 	case StatementType::FOR: {
 		Ref<ForStatement> forStatement = std::dynamic_pointer_cast<ForStatement>(statement);
-		result = result | ResolveStatement(forStatement->startStatement);
-		result = result | ResolveExpression(forStatement->condition);
-		result = result | ResolveExpression(forStatement->incrementExpression);
-		result = result | ResolveStatement(forStatement->bodyStatement);
+		result = result | ResolveStatement(method, forStatement->startStatement);
+		result = result | ResolveExpression(method, &forStatement->condition);
+		result = result | ResolveExpression(method, &forStatement->incrementExpression);
+		result = result | ResolveStatement(method, forStatement->bodyStatement);
 		break;
 	}
 	case StatementType::IF: {
 		Ref<IfStatement> ifStatement = std::dynamic_pointer_cast<IfStatement>(statement);
-		result = result | ResolveExpression(ifStatement->condition);
-		result = result | ResolveStatement(ifStatement->thenStatement);
+		result = result | ResolveExpression(method, &ifStatement->condition);
+		result = result | ResolveStatement(method, ifStatement->thenStatement);
 		if (ifStatement->elseStatement)
 		{
-			result = result | ResolveStatement(ifStatement->elseStatement);
+			result = result | ResolveStatement(method, ifStatement->elseStatement);
 		}
 		break;
 	}
@@ -220,23 +626,23 @@ PassResultFlags ResolveContext::ResolveStatement(Ref<Statement> statement)
 		Ref<ReturnStatement> returnStatement = std::dynamic_pointer_cast<ReturnStatement>(statement);
 		if (returnStatement->expression)
 		{
-			result = result | ResolveExpression(returnStatement->expression);
+			result = result | ResolveExpression(method, &returnStatement->expression);
 		}
 		break;
 	}
 	case StatementType::VARIABLE_DECLARATION: {
 		Ref<VariableDeclarationStatement> variableDeclarationStatement = std::dynamic_pointer_cast<VariableDeclarationStatement>(statement);
-		result = result | ResolveDataType(variableDeclarationStatement->declaration->dataType);
+		result = result | ResolveDataType(method, variableDeclarationStatement->declaration->dataType);
 		if (variableDeclarationStatement->value)
 		{
-			result = result | ResolveExpression(variableDeclarationStatement->value);
+			result = result | ResolveExpression(method, &variableDeclarationStatement->value);
 		}
 		break;
 	}
 	case StatementType::WHILE: {
 		Ref<WhileStatement> whileStatement = std::dynamic_pointer_cast<WhileStatement>(statement);
-		result = result | ResolveExpression(whileStatement->condition);
-		result = result | ResolveStatement(whileStatement->bodyStatement);
+		result = result | ResolveExpression(method, &whileStatement->condition);
+		result = result | ResolveStatement(method, whileStatement->bodyStatement);
 		break;
 	}
 	}
@@ -250,12 +656,21 @@ PassResultFlags ResolveContext::ResolveMethodDeclaration(Ref<MethodDeclaration> 
 
 	for (auto parameter : method->parameters)
 	{
-		result = result | ResolveDataType(parameter->dataType);
+		result = result | ResolveDataType(method, parameter->dataType);
 	}
 
 	if (method->body)
 	{
-		result = result | ResolveStatement(method->body);
+		result = result | ResolveStatement(method, method->body);
+	}
+
+	if (method->methodType == MethodType::CONSTRUCTOR)
+	{
+		Ref<ConstructorDeclaration> constructor = std::dynamic_pointer_cast<ConstructorDeclaration>(method);
+		for (auto& initializer : constructor->initializers)
+		{
+			result = result | ResolveExpression(method, &initializer.value);
+		}
 	}
 
 	return result;
@@ -272,7 +687,7 @@ PassResultFlags ResolveContext::ResolveMemberVariableDeclaration(Ref<MemberVaria
 
 	if (variable->value)
 	{
-		result = result | ResolveExpression(variable->value);
+		result = result | ResolveExpression(nullptr, &variable->value);
 	}
 
 	return result;
@@ -282,7 +697,7 @@ PassResultFlags ResolveContext::ResolveVariableDeclaration(Ref<VariableDeclarati
 {
 	PassResultFlags result = PassResultFlags::SUCCESS;
 
-	result = result | ResolveDataType(variable->dataType);
+	result = result | ResolveDataType(nullptr, variable->dataType);
 
 	if (variable->variableType == VariableDeclarationType::METHOD)
 	{
@@ -308,16 +723,44 @@ PassResultFlags ResolveContext::ResolveMembers()
 	return result;
 }
 
+void ResolveContext::SetPass(ResolvePass pass)
+{
+	this->pass = pass;
+
+	switch (pass)
+	{
+	case ResolvePass::NONE:
+		requiredTraversalLevel = TraversalLevel::NONE;
+		break;
+	case ResolvePass::DATA_TYPES:
+	case ResolvePass::EXPRESSION:
+	case ResolvePass::NEW:
+		requiredTraversalLevel = TraversalLevel::EXPRESSION;
+		break;
+	default:
+		STRICT_UNREACHABLE;
+	}
+}
+
 PassResultFlags ResolveContext::ResolveIdentifiers()
 {
-	PassResultFlags result = PassResultFlags::SUCCESS;
-
-	if (type->typeTemplate)
+	if (!IsTraversalRequired(TraversalLevel::DECLARATION))
 	{
-		result = result | ResolveTemplateDeclaration(type->typeTemplate);
+		return PassResultFlags::SUCCESS;
 	}
 
-	result = result | ResolveSuperTypes();
+	PassResultFlags result = PassResultFlags::SUCCESS;
+
+	if (pass == ResolvePass::DATA_TYPES)
+	{
+		if (type->typeTemplate)
+		{
+			result = result | ResolveTemplateDeclaration(type->typeTemplate);
+		}
+
+		result = result | ResolveSuperTypes();
+	}
+
 	result = result | ResolveMembers();
 
 	return result;
@@ -333,9 +776,17 @@ PassResultFlags ResolveIdentifiers(PrintFunction print, BuildContext& context)
 		{
 			if (unit->declaredType->IsType())
 			{
-				ResolveContext resolve(&context, unit->name, print, nullptr);
+				ResolveContext resolve(&context, unit->name, print, &unit->unitMeta.lexer);
 				resolve.unit = unit;
 				resolve.type = std::dynamic_pointer_cast<TypeDeclaration>(unit->declaredType);
+
+				resolve.SetPass(ResolvePass::DATA_TYPES);
+				resolve.ResolveIdentifiers();
+
+				resolve.SetPass(ResolvePass::EXPRESSION);
+				resolve.ResolveIdentifiers();
+
+				resolve.SetPass(ResolvePass::NEW);
 				resolve.ResolveIdentifiers();
 			}
 		}

@@ -52,6 +52,7 @@ BuildContext::BuildContext(const Array<String>& modulePath, const String& output
 	}
 
 	// Add required passes
+	// TODO: Run GatherInformation multiple times with different flags.
 	AddPass(LowerImpliedDeclarationFlags);
 	AddPass(ValidateStructure);
 	AddPass(GatherInformation);

@@ -242,11 +242,13 @@ STRICT_ENUM(UnitDeclarationType, ERROR, TYPE, CLASS)
 class UnitDeclarationMeta
 {
 public:
+	Ref<ObjectType> thisType;
 };
 
 class UnitDeclaration : public ASTItem
 {
 public:
+	String name;
 	UnitDeclarationMeta unitDeclarationMeta;
 	DeclarationFlags flags;
 	UnitDeclarationType declarationType;
@@ -441,7 +443,7 @@ STRICT_ENUM(OperatorType, NONE,
             // Mutating unary operators
             INCREMENT, DECREMENT,
             // Internal operators
-            ACCESS, CALL)
+            ACCESS, CALL, POST_STAR, POST_AND, TEMPLATE)
 
 class OperatorDeclarationMeta
 {
@@ -571,6 +573,8 @@ DECLARE_HASH(TypeDeclaration)
 class ClassDeclarationMeta
 {
 public:
+	Ref<VariableDeclaration> thisDeclaration;
+
 };
 
 class ClassDeclaration : public TypeDeclaration
@@ -605,6 +609,7 @@ class UnitMeta
 {
 public:
 	Array<Ref<Unit>> dependencies;
+	Lexer lexer;
 };
 
 class Unit : public ASTItem
@@ -694,6 +699,8 @@ STRICT_ENUM(ExpressionType, LITERAL, IDENTIFIER, OPERATOR, CALL, TERNARY, BRACKE
 class ExpressionMeta
 {
 public:
+	Ref<DataType> dataType;
+	Statement* parentStatement;
 };
 
 class Expression : public ASTItem
@@ -785,6 +792,7 @@ DECLARE_HASH(BracketExpression)
 class IdentifierExpressionMeta
 {
 public:
+	Ref<ASTItem> destination;
 };
 
 class IdentifierExpression : public Expression
@@ -822,6 +830,7 @@ public:
 	SecondOperandMeta secondOperandMeta;
 	Ref<Expression> expression;
 	Ref<DataType> dataType;
+	Ref<Template> typeTemplate;
 
 public:
 	bool operator==(const SecondOperand& other) const;
@@ -922,6 +931,7 @@ protected:
 
 DECLARE_HASH(TernaryExpression)
 
+STRICT_ENUM(AllocationType, STACK, HEAP)
 class NewExpressionMeta
 {
 public:
@@ -933,6 +943,7 @@ public:
 	NewExpressionMeta newExpressionMeta;
 	Ref<DataType> dataType;
 	Array<Ref<Expression>> arguments;
+	AllocationType allocationType;
 
 public:
 	NewExpression() : Expression(ExpressionType::NEW)
@@ -957,6 +968,7 @@ STRICT_ENUM(StatementType, NOP, BLOCK, EXPRESSION, IF, FOR, WHILE, RETURN, BREAK
 class StatementMeta
 {
 public:
+	Statement* parent = nullptr;
 };
 
 class Statement : public ASTItem

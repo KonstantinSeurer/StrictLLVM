@@ -102,47 +102,14 @@ static DeclarationFlags ParseVisibilityFlags(Lexer& lexer)
 	return flags;
 }
 
-static Lexer ScanAndSkipNested(ErrorStream& err, Lexer& lexer, TokenType openToken, TokenType closeToken)
-{
-	const Int64 startPosition = lexer.GetPosition();
-
-	UInt32 level = 0;
-	while (lexer.HasNext())
-	{
-		const TokenType token = lexer.Next().type;
-
-		if (token == openToken)
-		{
-			level++;
-		}
-
-		if (token == closeToken)
-		{
-			if (level == 0)
-			{
-				err.PrintError(String("Unexpected token ") + ToString(closeToken) + "!");
-				return Lexer();
-			}
-
-			level--;
-
-			if (level == 0)
-			{
-				return Lexer(lexer, startPosition, lexer.GetPosition() - startPosition);
-			}
-		}
-	}
-
-	err.PrintError(String("Expected token ") + ToString(closeToken) + " before end of file!");
-	return Lexer();
-}
-
 static Ref<UnitDeclaration> ParseErrorDeclaration(ErrorStream& err, Lexer& lexer, const String& unitName)
 {
 	Ref<ErrorDeclaration> result = Allocate<ErrorDeclaration>();
+	result->characterIndex = lexer.Get().characterIndex;
 
 	ASSERT_TOKEN(err, lexer, TokenType::IDENTIFIER, nullptr)
-	if (lexer.Get().data.stringData != unitName)
+	result->name = lexer.Get().data.stringData;
+	if (result->name != unitName)
 	{
 		err.PrintError(lexer.Get(), "The declared name must match the unit name!");
 		return nullptr;
@@ -197,6 +164,7 @@ static Ref<Expression> ParseExpression(ErrorStream& err, Lexer& lexer, UInt32 ba
 static Ref<Template> ParseTemplate(ErrorStream& err, Lexer& lexer)
 {
 	Ref<Template> result = Allocate<Template>();
+	result->characterIndex = lexer.Get().characterIndex;
 
 	while (lexer.HasNext())
 	{
@@ -211,7 +179,7 @@ static Ref<Template> ParseTemplate(ErrorStream& err, Lexer& lexer)
 
 		TemplateArgument argument;
 
-		argument.dataType = ParseDataType(err, lexer);
+		argument.expression = ParseExpression(err, lexer);
 
 		if (err.Catch())
 		{
@@ -219,12 +187,12 @@ static Ref<Template> ParseTemplate(ErrorStream& err, Lexer& lexer)
 			lexer.Push();
 			err.Try();
 
-			argument.expression = ParseExpression(err, lexer);
+			argument.dataType = ParseDataType(err, lexer);
 
 			if (err.Catch())
 			{
 				lexer.Revert();
-				err.PrintError("Expected data type or expression!");
+				err.PrintError("Expected either a data type or an expression!");
 				return nullptr;
 			}
 		}
@@ -262,6 +230,8 @@ static Ref<DataType> ParseDataType(ErrorStream& err, Lexer& lexer)
 		result = ParseDataType(err, lexer);
 		IFERR_RETURN(err, nullptr)
 
+		result->characterIndex = lexer.Get().characterIndex;
+
 		result->flags = result->flags | flags;
 	}
 	else
@@ -271,6 +241,7 @@ static Ref<DataType> ParseDataType(ErrorStream& err, Lexer& lexer)
 			lexer.Next();
 
 			result = Allocate<DataType>();
+			result->characterIndex = lexer.Get().characterIndex;
 			result->flags = flags;
 			result->dataTypeType = DataTypeType::TYPE;
 		}
@@ -289,6 +260,7 @@ static Ref<DataType> ParseDataType(ErrorStream& err, Lexer& lexer)
 			}
 
 			result = objectResult;
+			result->characterIndex = lexer.Get().characterIndex;
 		}
 		else
 		{
@@ -301,6 +273,7 @@ static Ref<DataType> ParseDataType(ErrorStream& err, Lexer& lexer)
 			}
 
 			result = Allocate<PrimitiveType>(primitiveType);
+			result->characterIndex = lexer.Get().characterIndex;
 			result->flags = flags;
 			lexer.Next();
 		}
@@ -347,6 +320,7 @@ static Ref<DataType> ParseDataType(ErrorStream& err, Lexer& lexer)
 		lexer.Next();
 
 		result = pointerResult;
+		result->characterIndex = lexer.Get().characterIndex;
 	}
 
 	return result;
@@ -363,6 +337,7 @@ static void ParseParameterList(ErrorStream& err, Lexer& lexer, Array<Ref<Variabl
 		}
 
 		Ref<VariableDeclaration> argument = Allocate<VariableDeclaration>();
+		argument->characterIndex = lexer.Get().characterIndex;
 
 		argument->dataType = ParseDataType(err, lexer);
 		IFERR_RETURN(err, )
@@ -386,6 +361,7 @@ static void ParseParameterList(ErrorStream& err, Lexer& lexer, Array<Ref<Variabl
 static Ref<TemplateDeclaration> ParseTemplateDeclaration(ErrorStream& err, Lexer& lexer)
 {
 	Ref<TemplateDeclaration> result = Allocate<TemplateDeclaration>();
+	result->characterIndex = lexer.Get().characterIndex;
 
 	ParseParameterList(err, lexer, result->parameters, TokenType::GREATER);
 	IFERR_RETURN(err, nullptr)
@@ -396,6 +372,7 @@ static Ref<TemplateDeclaration> ParseTemplateDeclaration(ErrorStream& err, Lexer
 static Ref<LiteralExpression> ParseLiteralExpression(Lexer& lexer)
 {
 	Ref<LiteralExpression> result = Allocate<LiteralExpression>();
+	result->characterIndex = lexer.Get().characterIndex;
 
 	result->data = lexer.Next();
 
@@ -405,6 +382,7 @@ static Ref<LiteralExpression> ParseLiteralExpression(Lexer& lexer)
 static Ref<IdentifierExpression> ParseIdentifierExpression(Lexer& lexer)
 {
 	Ref<IdentifierExpression> result = Allocate<IdentifierExpression>();
+	result->characterIndex = lexer.Get().characterIndex;
 
 	result->name = lexer.Next().data.stringData;
 
@@ -417,6 +395,7 @@ static Ref<Expression> ParseBracketExpression(ErrorStream& err, Lexer& lexer)
 	lexer.Next();
 
 	Ref<BracketExpression> result = Allocate<BracketExpression>();
+	result->characterIndex = lexer.Get().characterIndex;
 
 	result->expression = ParseExpression(err, lexer);
 	IFERR_RETURN(err, nullptr)
@@ -480,8 +459,11 @@ static HashMap<OperatorType, UInt32> operatorPrecedences = { //
 	{OperatorType::INCREMENT, UNARY_PRECEDENCE + 2},
 	{OperatorType::DECREMENT, UNARY_PRECEDENCE + 2},
 	// Internal operators
-	{OperatorType::ACCESS, ACCESS_PRECEDENCE + 1},
-	{OperatorType::CALL, CAST_PRECEDENCE - 1}};
+	{OperatorType::ACCESS, ACCESS_PRECEDENCE + 2},
+	{OperatorType::CALL, CAST_PRECEDENCE - 1},
+	{OperatorType::POST_STAR, ACCESS_PRECEDENCE + 1},
+	{OperatorType::POST_AND, ACCESS_PRECEDENCE + 1},
+	{OperatorType::TEMPLATE, CAST_PRECEDENCE}};
 
 static UInt32 GetOperatorPrecedence(OperatorType type)
 {
@@ -509,6 +491,7 @@ static bool IsBinaryOperator(OperatorType type)
 static Ref<OperatorExpression> ParsePrimaryUnaryExpression(ErrorStream& err, Lexer& lexer)
 {
 	Ref<OperatorExpression> result = Allocate<OperatorExpression>();
+	result->characterIndex = lexer.Get().characterIndex;
 
 	switch (lexer.Get().type)
 	{
@@ -535,10 +518,12 @@ static Ref<OperatorExpression> ParsePrimaryUnaryExpression(ErrorStream& err, Lex
 
 static Ref<NewExpression> ParseNewExpression(ErrorStream& err, Lexer& lexer)
 {
+	Ref<NewExpression> result = Allocate<NewExpression>();
+	result->characterIndex = lexer.Get().characterIndex;
+	result->allocationType = AllocationType::HEAP;
+
 	ASSERT_TOKEN(err, lexer, TokenType::NEW, nullptr)
 	lexer.Next();
-
-	Ref<NewExpression> result = Allocate<NewExpression>();
 
 	result->dataType = ParseDataType(err, lexer);
 	IFERR_RETURN(err, nullptr)
@@ -774,6 +759,7 @@ static Ref<Expression> ParseBinaryOperatorExpression(ErrorStream& err, Lexer& le
 		IFERR_RETURN(err, nullptr)
 
 		Ref<DataType> dataType;
+		Ref<Template> typeTemplate;
 		if (operatorType == OperatorType::LESS)
 		{
 			if (lexer.Get().type == TokenType::GREATER)
@@ -792,6 +778,21 @@ static Ref<Expression> ParseBinaryOperatorExpression(ErrorStream& err, Lexer& le
 				if (err.Catch() || lexer.Get().type != TokenType::GREATER)
 				{
 					lexer.Revert();
+					lexer.Push();
+					err.Try();
+
+					typeTemplate = ParseTemplate(err, lexer);
+
+					if (err.Catch())
+					{
+						lexer.Revert();
+					}
+					else
+					{
+						lexer.Pop();
+
+						operatorType = OperatorType::TEMPLATE;
+					}
 				}
 				else
 				{
@@ -813,6 +814,7 @@ static Ref<Expression> ParseBinaryOperatorExpression(ErrorStream& err, Lexer& le
 		if (operatorType == OperatorType::CALL)
 		{
 			Ref<CallExpression> call = Allocate<CallExpression>();
+			call->characterIndex = lexer.Get().characterIndex;
 			call->method = left;
 
 			while (lexer.HasNext())
@@ -846,6 +848,7 @@ static Ref<Expression> ParseBinaryOperatorExpression(ErrorStream& err, Lexer& le
 		else
 		{
 			Ref<OperatorExpression> op = Allocate<OperatorExpression>();
+			op->characterIndex = lexer.Get().characterIndex;
 			op->a = left;
 			op->operatorType = operatorType;
 			op->b = SecondOperand();
@@ -853,6 +856,10 @@ static Ref<Expression> ParseBinaryOperatorExpression(ErrorStream& err, Lexer& le
 			if (operatorType == OperatorType::EXPLICIT_CAST)
 			{
 				op->b->dataType = dataType;
+			}
+			else if (operatorType == OperatorType::TEMPLATE)
+			{
+				op->b->typeTemplate = typeTemplate;
 			}
 			else if (IsBinaryOperator(operatorType))
 			{
@@ -863,6 +870,33 @@ static Ref<Expression> ParseBinaryOperatorExpression(ErrorStream& err, Lexer& le
 
 					ASSERT_TOKEN(err, lexer, TokenType::SQUARE_CB, nullptr)
 					lexer.Next();
+				}
+				else if (operatorType == OperatorType::MULTIPLY || operatorType == OperatorType::AND)
+				{
+					err.Try();
+					lexer.Push();
+
+					op->b->expression = ParsePrimaryExpression(err, lexer);
+
+					if (err.Catch())
+					{
+						lexer.Revert();
+						// This is part os a data type instead of an operator since data types are valid expressions.
+						// This expression will be converted into a data type by ResolveIdentifiers.
+						if (operatorType == OperatorType::MULTIPLY)
+						{
+							operatorType = OperatorType::POST_STAR;
+						}
+						else
+						{
+							operatorType = OperatorType::POST_AND;
+						}
+						op->operatorType = operatorType;
+					}
+					else
+					{
+						lexer.Pop();
+					}
 				}
 				else
 				{
@@ -909,6 +943,7 @@ static Ref<Expression> ParseExpression(ErrorStream& err, Lexer& lexer, UInt32 ba
 		lexer.Next();
 
 		Ref<TernaryExpression> result = Allocate<TernaryExpression>();
+		result->characterIndex = lexer.Get().characterIndex;
 		result->condition = expression;
 
 		result->thenExpression = ParseExpression(err, lexer);
@@ -934,6 +969,7 @@ static Ref<BlockStatement> ParseBlockStatement(ErrorStream& err, Lexer& lexer)
 	lexer.Next();
 
 	Ref<BlockStatement> result = Allocate<BlockStatement>();
+	result->characterIndex = lexer.Get().characterIndex;
 
 	while (lexer.HasNext())
 	{
@@ -959,6 +995,7 @@ static Ref<IfStatement> ParseIfStatement(ErrorStream& err, Lexer& lexer)
 	lexer.Next();
 
 	Ref<IfStatement> result = Allocate<IfStatement>();
+	result->characterIndex = lexer.Get().characterIndex;
 
 	result->condition = ParseExpression(err, lexer);
 	IFERR_RETURN(err, nullptr)
@@ -986,6 +1023,7 @@ static Ref<ForStatement> ParseForStatement(ErrorStream& err, Lexer& lexer)
 	lexer.Next();
 
 	Ref<ForStatement> result = Allocate<ForStatement>();
+	result->characterIndex = lexer.Get().characterIndex;
 
 	ASSERT_TOKEN(err, lexer, TokenType::ROUND_OB, nullptr)
 	lexer.Next();
@@ -1014,6 +1052,7 @@ static Ref<ForStatement> ParseForStatement(ErrorStream& err, Lexer& lexer)
 static Ref<WhileStatement> ParseWhileStatement(ErrorStream& err, Lexer& lexer)
 {
 	Ref<WhileStatement> result = Allocate<WhileStatement>();
+	result->characterIndex = lexer.Get().characterIndex;
 
 	if (lexer.Get().type == TokenType::DO)
 	{
@@ -1060,6 +1099,7 @@ static Ref<ReturnStatement> ParseReturnStatement(ErrorStream& err, Lexer& lexer)
 	lexer.Next();
 
 	Ref<ReturnStatement> result = Allocate<ReturnStatement>();
+	result->characterIndex = lexer.Get().characterIndex;
 
 	if (lexer.Get().type == TokenType::SEMICOLON)
 	{
@@ -1082,6 +1122,7 @@ static Ref<Statement> ParseTokenStatement(ErrorStream& err, Lexer& lexer, Statem
 	lexer.Next();
 
 	Ref<Statement> result = Allocate<Statement>(type);
+	result->characterIndex = lexer.Get().characterIndex;
 
 	ASSERT_TOKEN(err, lexer, TokenType::SEMICOLON, nullptr)
 	lexer.Next();
@@ -1092,6 +1133,7 @@ static Ref<Statement> ParseTokenStatement(ErrorStream& err, Lexer& lexer, Statem
 static Ref<ExpressionStatement> ParseExpressionStatement(ErrorStream& err, Lexer& lexer)
 {
 	Ref<ExpressionStatement> result = Allocate<ExpressionStatement>();
+	result->characterIndex = lexer.Get().characterIndex;
 
 	result->expression = ParseExpression(err, lexer);
 	IFERR_RETURN(err, nullptr)
@@ -1105,7 +1147,9 @@ static Ref<ExpressionStatement> ParseExpressionStatement(ErrorStream& err, Lexer
 static Ref<VariableDeclarationStatement> ParseVariableDeclarationStatement(ErrorStream& err, Lexer& lexer)
 {
 	Ref<VariableDeclarationStatement> result = Allocate<VariableDeclarationStatement>();
+	result->characterIndex = lexer.Get().characterIndex;
 	result->declaration = Allocate<VariableDeclaration>();
+	result->declaration->characterIndex = lexer.Get().characterIndex;
 
 	result->declaration->dataType = ParseDataType(err, lexer);
 	IFERR_RETURN(err, nullptr)
@@ -1133,6 +1177,7 @@ static Ref<DeleteStatement> ParseDeleteStatement(ErrorStream& err, Lexer& lexer)
 	lexer.Next();
 
 	Ref<DeleteStatement> result = Allocate<DeleteStatement>();
+	result->characterIndex = lexer.Get().characterIndex;
 
 	result->expression = ParseExpression(err, lexer);
 	IFERR_RETURN(err, nullptr)
@@ -1185,6 +1230,8 @@ static Ref<Statement> ParseStatement(ErrorStream& err, Lexer& lexer)
 			lexer.Pop();
 		}
 
+		result->characterIndex = lexer.Get().characterIndex;
+
 		return result;
 	}
 	}
@@ -1194,6 +1241,7 @@ static Ref<Statement> ParseStatement(ErrorStream& err, Lexer& lexer)
 static Ref<MethodDeclaration> ParseAccessor(ErrorStream& err, Lexer& lexer)
 {
 	Ref<MethodDeclaration> result = Allocate<MethodDeclaration>(MethodType::METHOD);
+	result->characterIndex = lexer.Get().characterIndex;
 	result->flags = ParseDeclarationFlags(lexer);
 
 	result->dataType = ParseDataType(err, lexer);
@@ -1433,6 +1481,7 @@ static Ref<VariableDeclaration> ParseMemberDeclaration(ErrorStream& err, Lexer& 
 		{
 			result = Allocate<MethodDeclaration>(MethodType::METHOD);
 		}
+		result->characterIndex = lexer.Get().characterIndex;
 
 		result->flags = flags;
 		result->name = name;
@@ -1571,6 +1620,7 @@ static void ParseSuperTypeList(ErrorStream& err, Lexer& lexer, Array<Ref<ObjectT
 		const Token& startToken = lexer.Get();
 
 		Ref<DataType> superType = ParseDataType(err, lexer);
+		superType->characterIndex = lexer.Get().characterIndex;
 
 		if (superType->dataTypeType != DataTypeType::OBJECT)
 		{
@@ -1593,9 +1643,11 @@ static void ParseSuperTypeList(ErrorStream& err, Lexer& lexer, Array<Ref<ObjectT
 static Ref<UnitDeclaration> ParseTypeDeclaration(ErrorStream& err, Lexer& lexer, const String& unitName, bool isClass, bool singleton)
 {
 	Ref<TypeDeclaration> result = isClass ? Allocate<ClassDeclaration>(singleton) : Allocate<TypeDeclaration>();
+	result->characterIndex = lexer.Get().characterIndex;
 
 	ASSERT_TOKEN(err, lexer, TokenType::IDENTIFIER, nullptr)
-	if (lexer.Get().data.stringData != unitName)
+	result->name = lexer.Get().data.stringData;
+	if (result->name != unitName)
 	{
 		err.PrintError(lexer.Get(), "The declared name must match the unit name!");
 	}
@@ -1680,7 +1732,9 @@ static Ref<UnitDeclaration> ParseUnitDeclaration(ErrorStream& err, Lexer& lexer,
 Ref<Unit> ParseUnit(ErrorStream& err, Lexer lexer, const String& name)
 {
 	Ref<Unit> unit = Allocate<Unit>();
+	unit->characterIndex = lexer.Get().characterIndex;
 	unit->name = name;
+	unit->unitMeta.lexer = lexer;
 
 	while (lexer.HasNext())
 	{
