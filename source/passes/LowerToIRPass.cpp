@@ -1,13 +1,13 @@
 
-#include "LowerToIR.h"
+#include "LowerToIRPass.h"
 
-IRContext::IRContext()
+LowerToIRPass::LowerToIRPass()
 {
 	context = Allocate<llvm::LLVMContext>();
 	builder = Allocate<llvm::IRBuilder<>>(*context);
 }
 
-PassResultFlags IRContext::LowerToIR(Ref<ClassDeclaration> classDeclaration, const String& name)
+PassResultFlags LowerToIRPass::LowerToIR(Ref<ClassDeclaration> classDeclaration, const String& name)
 {
 	if (classDeclaration->typeTemplate)
 	{
@@ -21,9 +21,7 @@ PassResultFlags IRContext::LowerToIR(Ref<ClassDeclaration> classDeclaration, con
 	return PassResultFlags::SUCCESS;
 }
 
-static IRContext irContext;
-
-PassResultFlags LowerToIR(PrintFunction print, BuildContext& context)
+PassResultFlags LowerToIRPass::Run(PrintFunction print, BuildContext& context)
 {
 	PassResultFlags result = PassResultFlags::SUCCESS;
 
@@ -36,7 +34,7 @@ PassResultFlags LowerToIR(PrintFunction print, BuildContext& context)
 				continue;
 			}
 
-			result = result | irContext.LowerToIR(std::dynamic_pointer_cast<ClassDeclaration>(unit->declaredType), unit->name);
+			result = result | LowerToIR(std::dynamic_pointer_cast<ClassDeclaration>(unit->declaredType), unit->name);
 		}
 	}
 

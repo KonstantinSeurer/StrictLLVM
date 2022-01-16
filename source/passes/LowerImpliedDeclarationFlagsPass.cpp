@@ -1,5 +1,5 @@
 
-#include "LowerImpliedDeclarationFlags.h"
+#include "LowerImpliedDeclarationFlagsPass.h"
 
 static HashSet<OperatorType> mutatingOperatorSet = {
 	// Mutating binary operators
@@ -57,7 +57,7 @@ void LowerImpliedDeclarationFlags(Ref<TypeDeclaration> type)
 	}
 }
 
-PassResultFlags LowerImpliedDeclarationFlags(PrintFunction print, BuildContext& context)
+PassResultFlags LowerImpliedDeclarationFlagsPass::Run(PrintFunction print, BuildContext& context)
 {
 	for (auto module : context.GetModules())
 	{

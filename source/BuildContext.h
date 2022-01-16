@@ -95,7 +95,7 @@ private:
 
 	Array<Ref<Module>> modules;
 
-	Array<BuildPass> passes;
+	Array<Ref<Pass>> passes;
 
 	UInt32 errorCount;
 
@@ -112,7 +112,7 @@ public:
 	void AddModule(const String& moduleName);
 	void Build();
 
-	void AddPass(const BuildPass& pass)
+	void AddPass(Ref<Pass> pass)
 	{
 		passes.push_back(pass);
 	}

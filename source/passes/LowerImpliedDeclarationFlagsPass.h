@@ -3,6 +3,10 @@
 
 #include "../BuildContext.h"
 
-PassResultFlags LowerImpliedDeclarationFlags(PrintFunction print, BuildContext& context);
+class LowerImpliedDeclarationFlagsPass : public Pass
+{
+public:
+	virtual PassResultFlags Run(PrintFunction print, BuildContext& context);
+};
 
 #endif /* SOURCE_PASSES_LOWERIMPLIEDDECLARATIONFLAGS */

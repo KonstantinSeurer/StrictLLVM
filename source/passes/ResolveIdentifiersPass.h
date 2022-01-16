@@ -70,6 +70,10 @@ public:
 	PassResultFlags ResolveIdentifiers();
 };
 
-PassResultFlags ResolveIdentifiers(PrintFunction print, BuildContext& context);
+class ResolveIdentifiersPass : public Pass
+{
+public:
+	virtual PassResultFlags Run(PrintFunction print, BuildContext& context);
+};
 
 #endif /* SOURCE_PASSES_RESOLVEIDENTIFIERS */

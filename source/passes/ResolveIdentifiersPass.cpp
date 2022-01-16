@@ -1,5 +1,5 @@
 
-#include "ResolveIdentifiers.h"
+#include "ResolveIdentifiersPass.h"
 
 bool ResolveContext::IsTraversalRequired(TraversalLevel level) const
 {
@@ -766,7 +766,7 @@ PassResultFlags ResolveContext::ResolveIdentifiers()
 	return result;
 }
 
-PassResultFlags ResolveIdentifiers(PrintFunction print, BuildContext& context)
+PassResultFlags ResolveIdentifiersPass::Run(PrintFunction print, BuildContext& context)
 {
 	PassResultFlags result = PassResultFlags::SUCCESS;
 

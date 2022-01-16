@@ -1,7 +1,7 @@
 
-#include "ValidateStructure.h"
+#include "ValidateStructurePass.h"
 
-PassResultFlags ValidateStructure(PrintFunction print, BuildContext& context)
+PassResultFlags ValidateStructurePass::Run(PrintFunction print, BuildContext& context)
 {
 	PassResultFlags result = PassResultFlags::SUCCESS;
 

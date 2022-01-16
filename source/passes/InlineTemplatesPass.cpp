@@ -1,11 +1,11 @@
 
-#include "InlineTemplates.h"
+#include "InlineTemplatesPass.h"
 
-void GenerateTemplateSpecializations(Ref<Module> module)
+static void GenerateTemplateSpecializations(Ref<Module> module)
 {
 }
 
-PassResultFlags InlineTemplates(PrintFunction print, BuildContext& context)
+PassResultFlags InlineTemplatesPass::Run(PrintFunction print, BuildContext& context)
 {
 	for (auto module : context.GetModules())
 	{

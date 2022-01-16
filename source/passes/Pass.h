@@ -7,6 +7,15 @@ STRICT_FLAGS(PassResultFlags, SUCCESS = 0, WARNING = 1, ERROR = 2, CRITICAL_ERRO
 
 class BuildContext;
 
-using BuildPass = Function<PassResultFlags(PrintFunction, BuildContext&)>;
+class Pass
+{
+public:
+	virtual ~Pass()
+	{
+	}
+
+public:
+	virtual PassResultFlags Run(PrintFunction print, BuildContext& context) = 0;
+};
 
 #endif /* SOURCE_PASSES_PASS */

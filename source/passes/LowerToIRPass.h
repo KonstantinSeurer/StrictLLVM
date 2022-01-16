@@ -6,18 +6,20 @@
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LLVMContext.h"
 
-class IRContext
+class LowerToIRPass : public Pass
 {
 private:
 	Ref<llvm::IRBuilder<>> builder;
 	Ref<llvm::LLVMContext> context;
 
 public:
-	IRContext();
+	LowerToIRPass();
 
+public:
+	virtual PassResultFlags Run(PrintFunction print, BuildContext& context);
+
+private:
 	PassResultFlags LowerToIR(Ref<ClassDeclaration> classDeclaration, const String& namet);
 };
-
-PassResultFlags LowerToIR(PrintFunction print, BuildContext& context);
 
 #endif /* SOURCE_PASSES_LOWERTOIR */

@@ -1,5 +1,5 @@
 
-#include "GatherInformation.h"
+#include "GatherInformationPass.h"
 
 #include <iostream>
 
@@ -216,7 +216,7 @@ static void GatherInformation(BuildContext& context, Ref<Unit> unit)
 	}
 }
 
-PassResultFlags GatherInformation(PrintFunction print, BuildContext& context)
+PassResultFlags GatherInformationPass::Run(PrintFunction print, BuildContext& context)
 {
 	for (auto module : context.GetModules())
 	{

@@ -3,12 +3,12 @@
 #include "Time.h"
 #include "ast/Parser.h"
 
-#include "passes/GatherInformation.h"
-#include "passes/InlineTemplates.h"
-#include "passes/LowerImpliedDeclarationFlags.h"
-#include "passes/LowerToIR.h"
-#include "passes/ResolveIdentifiers.h"
-#include "passes/ValidateStructure.h"
+#include "passes/GatherInformationPass.h"
+#include "passes/InlineTemplatesPass.h"
+#include "passes/LowerImpliedDeclarationFlagsPass.h"
+#include "passes/LowerToIRPass.h"
+#include "passes/ResolveIdentifiersPass.h"
+#include "passes/ValidateStructurePass.h"
 
 #include <filesystem>
 #include <iostream>
@@ -54,12 +54,12 @@ BuildContext::BuildContext(const Array<String>& modulePath, const String& output
 
 	// Add required passes
 	// TODO: Run GatherInformation multiple times with different flags.
-	AddPass(LowerImpliedDeclarationFlags);
-	AddPass(ValidateStructure);
-	AddPass(GatherInformation);
-	AddPass(ResolveIdentifiers);
-	AddPass(InlineTemplates);
-	AddPass(LowerToIR);
+	AddPass(Allocate<LowerImpliedDeclarationFlagsPass>());
+	AddPass(Allocate<ValidateStructurePass>());
+	AddPass(Allocate<GatherInformationPass>());
+	AddPass(Allocate<ResolveIdentifiersPass>());
+	AddPass(Allocate<InlineTemplatesPass>());
+	AddPass(Allocate<LowerToIRPass>());
 }
 
 void BuildContext::Print(const String& string, bool console)
@@ -187,7 +187,7 @@ void BuildContext::Build()
 
 	for (const auto& pass : passes)
 	{
-		if ((pass(PRINT_FUNCTION, *this) & PassResultFlags::CRITICAL_ERROR) == PassResultFlags::CRITICAL_ERROR)
+		if ((pass->Run(PRINT_FUNCTION, *this) & PassResultFlags::CRITICAL_ERROR) == PassResultFlags::CRITICAL_ERROR)
 		{
 			break;
 		}

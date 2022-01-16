@@ -3,6 +3,10 @@
 
 #include "../BuildContext.h"
 
-PassResultFlags GatherInformation(PrintFunction print, BuildContext& context);
+class GatherInformationPass : public Pass
+{
+public:
+	virtual PassResultFlags Run(PrintFunction print, BuildContext& context);
+};
 
 #endif /* SOURCE_PASSES_GATHERPRERESOLVEMETA */

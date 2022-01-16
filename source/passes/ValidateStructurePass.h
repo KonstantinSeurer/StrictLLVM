@@ -3,6 +3,10 @@
 
 #include "../BuildContext.h"
 
-PassResultFlags ValidateStructure(PrintFunction print, BuildContext& context);
+class ValidateStructurePass : public Pass
+{
+public:
+	virtual PassResultFlags Run(PrintFunction print, BuildContext& context);
+};
 
 #endif /* SOURCE_PASSES_VALIDATESTRUCTURE */
