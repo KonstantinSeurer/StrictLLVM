@@ -56,8 +56,9 @@ BuildContext::BuildContext(const Array<String>& modulePath, const String& output
 	// TODO: Run GatherInformation multiple times with different flags.
 	AddPass(Allocate<LowerImpliedDeclarationFlagsPass>());
 	AddPass(Allocate<ValidateStructurePass>());
-	AddPass(Allocate<GatherInformationPass>());
+	AddPass(Allocate<GatherInformationPass>(GatherInformationFlags::PARENT | GatherInformationFlags::THIS));
 	AddPass(Allocate<ResolveIdentifiersPass>());
+	AddPass(Allocate<GatherInformationPass>(GatherInformationFlags::USED_TEMPLATES));
 	AddPass(Allocate<InlineTemplatesPass>());
 	AddPass(Allocate<LowerToIRPass>());
 }

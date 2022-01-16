@@ -4,6 +4,7 @@
 
 #include "Lexer.h"
 #include "ast/AST.h"
+#include "passes/GatherInformationPass.h"
 #include "passes/Pass.h"
 #include "passes/ResolveIdentifiersPass.h"
 

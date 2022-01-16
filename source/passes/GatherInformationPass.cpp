@@ -3,8 +3,13 @@
 
 #include <iostream>
 
-static void TryToInsertTemplatedObjectType(HashSet<ObjectType>& target, const DataType& dataType)
+void GatherInformationPass::TryToInsertTemplatedObjectType(HashSet<ObjectType>& target, const DataType& dataType)
 {
+	if ((flags & GatherInformationFlags::USED_TEMPLATES) != GatherInformationFlags::USED_TEMPLATES)
+	{
+		return;
+	}
+
 	if (dataType.dataTypeType == DataTypeType::OBJECT)
 	{
 		const ObjectType& objectType = (const ObjectType&)dataType;
@@ -23,14 +28,17 @@ static void TryToInsertTemplatedObjectType(HashSet<ObjectType>& target, const Da
 	}
 }
 
-static void GatherInformation(Ref<TypeDeclaration> type, Ref<Expression> expression, Statement* parentStatement)
+void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type, Ref<Expression> expression, Statement* parentStatement)
 {
 	if (!expression)
 	{
 		return;
 	}
 
-	expression->expressionMeta.parentStatement = parentStatement;
+	if ((flags & GatherInformationFlags::PARENT) == GatherInformationFlags::PARENT)
+	{
+		expression->expressionMeta.parentStatement = parentStatement;
+	}
 
 	switch (expression->expressionType)
 	{
@@ -85,14 +93,17 @@ static void GatherInformation(Ref<TypeDeclaration> type, Ref<Expression> express
 	}
 }
 
-static void GatherInformation(Ref<TypeDeclaration> type, Ref<Statement> statement, Statement* parent)
+void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type, Ref<Statement> statement, Statement* parent)
 {
 	if (!statement)
 	{
 		return;
 	}
 
-	statement->statementMeta.parent = parent;
+	if ((flags & GatherInformationFlags::PARENT) == GatherInformationFlags::PARENT)
+	{
+		statement->statementMeta.parent = parent;
+	}
 
 	switch (statement->statementType)
 	{
@@ -151,7 +162,7 @@ static void GatherInformation(Ref<TypeDeclaration> type, Ref<Statement> statemen
 	}
 }
 
-static void GatherInformation(Ref<TypeDeclaration> type, Ref<MethodDeclaration> method)
+void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type, Ref<MethodDeclaration> method)
 {
 	if (method->body)
 	{
@@ -159,7 +170,7 @@ static void GatherInformation(Ref<TypeDeclaration> type, Ref<MethodDeclaration> 
 	}
 }
 
-static void GatherInformation(Ref<TypeDeclaration> type, Ref<MemberVariableDeclaration> variable)
+void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type, Ref<MemberVariableDeclaration> variable)
 {
 	for (auto accessor : variable->accessors)
 	{
@@ -167,7 +178,7 @@ static void GatherInformation(Ref<TypeDeclaration> type, Ref<MemberVariableDecla
 	}
 }
 
-static void GatherInformation(Ref<TypeDeclaration> type)
+void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type)
 {
 	for (auto member : type->members)
 	{
@@ -188,7 +199,7 @@ static void GatherInformation(Ref<TypeDeclaration> type)
 		TryToInsertTemplatedObjectType(type->typeDeclarationMeta.usedTemplateTypes, *superType);
 	}
 
-	if (type->declarationType == UnitDeclarationType::CLASS)
+	if (type->declarationType == UnitDeclarationType::CLASS && (flags & GatherInformationFlags::THIS) == GatherInformationFlags::THIS)
 	{
 		Ref<ClassDeclaration> classDeclaration = std::dynamic_pointer_cast<ClassDeclaration>(type);
 
@@ -198,12 +209,15 @@ static void GatherInformation(Ref<TypeDeclaration> type)
 	}
 }
 
-static void GatherInformation(BuildContext& context, Ref<Unit> unit)
+void GatherInformationPass::GatherInformation(BuildContext& context, Ref<Unit> unit)
 {
-	unit->declaredType->unitDeclarationMeta.thisType = Allocate<ObjectType>();
-	unit->declaredType->unitDeclarationMeta.thisType->name = unit->name;
-	unit->declaredType->unitDeclarationMeta.thisType->flags = DeclarationFlags::PRIVATE;
-	unit->declaredType->unitDeclarationMeta.thisType->objectTypeMeta.unit = unit->declaredType;
+	if ((flags & GatherInformationFlags::THIS) == GatherInformationFlags::THIS)
+	{
+		unit->declaredType->unitDeclarationMeta.thisType = Allocate<ObjectType>();
+		unit->declaredType->unitDeclarationMeta.thisType->name = unit->name;
+		unit->declaredType->unitDeclarationMeta.thisType->flags = DeclarationFlags::PRIVATE;
+		unit->declaredType->unitDeclarationMeta.thisType->objectTypeMeta.unit = unit->declaredType;
+	}
 
 	if (unit->declaredType->IsType())
 	{
