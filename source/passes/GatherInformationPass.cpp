@@ -180,6 +180,11 @@ void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type, Ref<Mem
 
 void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type)
 {
+	if ((flags & GatherInformationFlags::USED_TEMPLATES) != GatherInformationFlags::USED_TEMPLATES)
+	{
+		type->typeDeclarationMeta.usedTemplateTypes.clear();
+	}
+
 	for (auto member : type->members)
 	{
 		TryToInsertTemplatedObjectType(type->typeDeclarationMeta.usedTemplateTypes, *member->dataType);

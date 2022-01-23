@@ -658,6 +658,7 @@ TargetFlags JSONToTargetFlags(const JSON& json);
 class ModuleMeta
 {
 public:
+	HashMap<Template, Ref<ClassDeclaration>> templateSpecializations;
 };
 
 class Module : public ASTItem

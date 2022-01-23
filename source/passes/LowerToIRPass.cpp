@@ -27,6 +27,11 @@ PassResultFlags LowerToIRPass::Run(PrintFunction print, BuildContext& context)
 
 	for (auto module : context.GetModules())
 	{
+		for (auto& specialization : module->moduleMeta.templateSpecializations)
+		{
+			result = result | LowerToIR(specialization.second, specialization.second->name);
+		}
+
 		for (auto unit : module->units)
 		{
 			if (unit->declaredType->declarationType != UnitDeclarationType::CLASS)

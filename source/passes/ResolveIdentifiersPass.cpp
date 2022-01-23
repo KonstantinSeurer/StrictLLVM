@@ -293,6 +293,20 @@ PassResultFlags ResolveContext::ResolveIdentifierExpression(Ref<ObjectType> cont
 				return PassResultFlags::SUCCESS;
 			}
 		}
+
+		if (typeDeclaration->typeTemplate)
+		{
+			for (auto parameter : typeDeclaration->typeTemplate->parameters)
+			{
+				if (parameter->name != expression->name)
+				{
+					continue;
+				}
+				expression->identifierExpressionMeta.destination = parameter;
+				expression->expressionMeta.dataType = parameter->dataType;
+				return PassResultFlags::SUCCESS;
+			}
+		}
 	}
 
 	if (expression->expressionMeta.parentStatement)
