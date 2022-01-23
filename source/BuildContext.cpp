@@ -58,7 +58,6 @@ BuildContext::BuildContext(const Array<String>& modulePath, const String& output
 	AddPass(Allocate<ValidateStructurePass>());
 	AddPass(Allocate<GatherInformationPass>(GatherInformationFlags::PARENT | GatherInformationFlags::THIS));
 	AddPass(Allocate<ResolveIdentifiersPass>());
-	AddPass(Allocate<GatherInformationPass>(GatherInformationFlags::USED_TEMPLATES));
 	AddPass(Allocate<InlineTemplatesPass>());
 	AddPass(Allocate<LowerToIRPass>());
 }
