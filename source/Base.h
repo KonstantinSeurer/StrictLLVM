@@ -43,6 +43,9 @@ using Bool = bool;
 
 using String = std::string;
 
+String ReplaceChar(const String& string, char character, char replacement);
+String RemoveChar(const String& string, char character);
+
 template <typename T> using Ref = std::shared_ptr<T>;
 
 template <typename T, typename... Args> inline Ref<T> Allocate(Args&&... args)
