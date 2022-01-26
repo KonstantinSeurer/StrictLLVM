@@ -249,6 +249,7 @@ Ref<ClassDeclaration> InlineTemplatesPass::GenerateSpecialization(const ObjectTy
 
 	Ref<ClassDeclaration> sourceClass = std::dynamic_pointer_cast<ClassDeclaration>(type.objectTypeMeta.unit);
 	Ref<ClassDeclaration> result = std::dynamic_pointer_cast<ClassDeclaration>(sourceClass->Clone());
+	result->name = ReplaceChar(type.ToStrict(), ' ', '-');
 
 	result->typeTemplate = nullptr;
 
