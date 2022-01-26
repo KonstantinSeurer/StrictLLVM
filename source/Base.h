@@ -54,6 +54,13 @@ template <typename T> using Array = std::vector<T>;
 
 template <typename K, typename V, typename... MiscArgs> using HashMap = std::unordered_map<K, V, MiscArgs...>;
 
+template <typename K, typename V> HashMap<V, K> InverseMap(const HashMap<K, V>& map)
+{
+	HashMap<V, K> result;
+	std::for_each(map.begin(), map.end(), [&result](const std::pair<K, V>& p) { result.insert(std::make_pair(p.second, p.first)); });
+	return result;
+}
+
 template <typename T> using HashSet = std::unordered_set<T>;
 
 template <typename K, typename V> using Pair = std::pair<K, V>;
