@@ -18,6 +18,12 @@ String ASTItem::ToString(UInt32 indentation) const
 	return ::ToString(type) + ":\n" + ToStringImplementation(indentation + 1);
 }
 
+String ASTItem::ToStrict() const
+{
+	abort();
+	return "";
+}
+
 String ASTItem::ToStringImplementation(UInt32 indentation) const
 {
 	return "\n";
@@ -75,6 +81,44 @@ static String ToString(const Token& token)
 		return result;                                                                                                                                         \
 	}
 
+static String ToStrict(DeclarationFlags flags)
+{
+	String result;
+	if ((flags & DeclarationFlags::PUBLIC) == DeclarationFlags::PUBLIC)
+	{
+		result += "public ";
+	}
+	else
+	{
+		if ((flags & DeclarationFlags::INTERNAL) == DeclarationFlags::INTERNAL)
+		{
+			result += "internal ";
+		}
+		if ((flags & DeclarationFlags::PROTECTED) == DeclarationFlags::PROTECTED)
+		{
+			result += "protected ";
+		}
+	}
+	if ((flags & DeclarationFlags::MUT) == DeclarationFlags::MUT)
+	{
+		result += "mut ";
+	}
+	if ((flags & DeclarationFlags::IMPURE) == DeclarationFlags::IMPURE)
+	{
+		result += "impure ";
+	}
+	if ((flags & DeclarationFlags::VIRTUAL) == DeclarationFlags::VIRTUAL)
+	{
+		result += "virtual ";
+	}
+	return result;
+}
+
+String DataType::ToStrict() const
+{
+	return ::ToStrict(flags);
+}
+
 String DataType::ToStringImplementation(UInt32 indentation) const
 {
 	return ENUM_VAR(indentation, dataTypeType) + ENUM_VAR(indentation, flags);
@@ -94,6 +138,11 @@ DEFINE_HASH_WITH_SUPER(DataType, ASTItem, HASH_VALUE(DataTypeType, dataTypeType)
 bool DataType::operator==(const DataType& other) const
 {
 	return dataTypeType == other.dataTypeType && flags == other.flags;
+}
+
+String PrimitiveType::ToStrict() const
+{
+	return DataType::ToStrict() + ::ToStrict(primitiveType);
 }
 
 String PrimitiveType::ToStringImplementation(UInt32 indentation) const
@@ -119,6 +168,11 @@ bool PrimitiveType::operator==(const PrimitiveType& other) const
 	}
 
 	return primitiveType == other.primitiveType;
+}
+
+String ObjectType::ToStrict() const
+{
+	return DataType::ToStrict() + name + (typeTemplate ? typeTemplate->ToStrict() : " ");
 }
 
 String ObjectType::ToStringImplementation(UInt32 indentation) const
@@ -150,6 +204,11 @@ bool ObjectType::operator==(const ObjectType& other) const
 	EQUALS_REF(other, typeTemplate)
 
 	return name == other.name;
+}
+
+String PointerType::ToStrict() const
+{
+	return DataType::ToStrict() + "(" + value->ToStrict() + (arrayLength ? "[" + arrayLength->ToStrict() + "]" : "") + ")";
 }
 
 String PointerType::ToStringImplementation(UInt32 indentation) const
@@ -540,6 +599,29 @@ bool TemplateArgument::operator==(const TemplateArgument& other) const
 	EQUALS_REF(other, dataType)
 
 	return true;
+}
+
+String Template::ToStrict() const
+{
+	String result;
+	for (UInt32 argumentIndex = 0; argumentIndex < arguments.size(); argumentIndex++)
+	{
+		if (argumentIndex > 0)
+		{
+			result += ",";
+		}
+
+		const auto& argument = arguments[argumentIndex];
+		if (argument.dataType)
+		{
+			result += argument.dataType->ToStrict();
+		}
+		if (argument.expression)
+		{
+			result += argument.expression->ToStrict();
+		}
+	}
+	return "<" + result + ">";
 }
 
 String Template::ToStringImplementation(UInt32 indentation) const

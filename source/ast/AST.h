@@ -45,6 +45,8 @@ public:
 
 	bool operator==(const ASTItem& other) const;
 
+	virtual String ToStrict() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
@@ -88,6 +90,8 @@ public:
 		return dataTypeType == DataTypeType::POINTER || dataTypeType == DataTypeType::REFERENCE || dataTypeType == DataTypeType::ARRAY;
 	}
 
+	virtual String ToStrict() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
@@ -123,6 +127,8 @@ public:
 
 	bool operator==(const PrimitiveType& other) const;
 
+	virtual String ToStrict() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
@@ -155,6 +161,8 @@ public:
 
 	bool operator==(const ObjectType& other) const;
 
+	virtual String ToStrict() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
@@ -184,6 +192,8 @@ public:
 	virtual Ref<ASTItem> Clone() const;
 
 	bool operator==(const PointerType& other) const;
+
+	virtual String ToStrict() const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -231,6 +241,8 @@ public:
 	virtual Ref<ASTItem> Clone() const;
 
 	bool operator==(const Template& other) const;
+
+	virtual String ToStrict() const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;

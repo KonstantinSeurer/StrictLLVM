@@ -101,6 +101,20 @@ static HashMap<char, TokenType> singleCharacterTokenTable = {
 	{'|', TokenType::OR},        {'!', TokenType::NOT},      {'?', TokenType::QUESTIONMARK}, {'=', TokenType::EQUALS},   {'<', TokenType::LESS},
 	{'>', TokenType::GREATER},   {'~', TokenType::TILDE},    {'^', TokenType::POWER}};
 
+static HashMap<TokenType, String> keyWordToStrictTable = InverseMap(keyWordTable);
+
+static String space = " ";
+
+const String& ToStrict(TokenType token)
+{
+	if (keyWordToStrictTable.find(token) != keyWordToStrictTable.end())
+	{
+		return keyWordToStrictTable.at(token);
+	}
+
+	return space;
+}
+
 static HashMap<char, char> escapeSequenceTable = {{'\\', '\\'}, {'a', '\a'}, {'b', '\b'}, {'f', '\f'}, {'n', '\n'}, {'r', '\r'}, {'t', '\t'}, {'v', '\v'}};
 
 static char convertEscapeSequence(char character, char quote)

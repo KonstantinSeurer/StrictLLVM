@@ -43,6 +43,8 @@ public:
 	bool operator==(const Token& other) const;
 };
 
+const String& ToStrict(TokenType token);
+
 class Lexer
 {
 private:
