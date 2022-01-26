@@ -613,6 +613,7 @@ void UnitDeclaration::CloneImplementation(Ref<UnitDeclaration> target) const
 	ASTItem::CloneImplementation(target);
 	target->flags = flags;
 	target->declarationType = declarationType;
+	target->name = name;
 }
 
 DEFINE_HASH_WITH_SUPER(UnitDeclaration, ASTItem, HASH_VALUE(DeclarationFlags, flags) HASH_VALUE(UnitDeclarationType, declarationType))
