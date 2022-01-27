@@ -19,7 +19,11 @@ public:
 	virtual PassResultFlags Run(PrintFunction print, BuildContext& context);
 
 private:
-	PassResultFlags LowerToIR(Ref<ClassDeclaration> classDeclaration, const String& namet);
+	void LowerDataType(Ref<llvm::Module> module, Ref<DataType> type);
+
+	void LowerMethod(Ref<llvm::Module> module, Ref<MethodDeclaration> method);
+
+	void LowerClass(Ref<ClassDeclaration> classDeclaration);
 };
 
 #endif /* SOURCE_PASSES_LOWERTOIR */

@@ -62,6 +62,7 @@ STRICT_ENUM(DataTypeType, TYPE, PRIMITIVE, OBJECT, REFERENCE, POINTER, ARRAY)
 class DataTypeMeta
 {
 public:
+	llvm::Type* ir;
 };
 
 class DataType : public ASTItem
@@ -369,6 +370,7 @@ STRICT_ENUM(MethodType, METHOD, CONSTRUCTOR, DESTRUCTOR, OPERATOR, GETTER, SETTE
 class MethodDeclarationMeta
 {
 public:
+	llvm::Function* ir;
 };
 
 class MethodDeclaration : public VariableDeclaration
