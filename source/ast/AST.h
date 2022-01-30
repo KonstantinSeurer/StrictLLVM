@@ -720,6 +720,7 @@ class ExpressionMeta
 public:
 	Ref<DataType> dataType;
 	Statement* parentStatement;
+	llvm::Value* ir;
 };
 
 class Expression : public ASTItem
