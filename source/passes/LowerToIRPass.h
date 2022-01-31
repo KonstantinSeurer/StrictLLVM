@@ -30,6 +30,18 @@ public:
 private:
 	void LowerDataType(Ref<llvm::Module> module, Ref<DataType> type);
 
+	void LowerCallExpression(Ref<llvm::Module> module, Ref<CallExpression> expression);
+
+	void LowerIdentifierExpression(Ref<llvm::Module> module, Ref<IdentifierExpression> expression);
+
+	void LowerLiteralExpression(Ref<llvm::Module> module, Ref<LiteralExpression> expression);
+
+	void LowerNewExpression(Ref<llvm::Module> module, Ref<NewExpression> expression);
+
+	void LowerOperatorExpression(Ref<llvm::Module> module, Ref<OperatorExpression> expression);
+
+	void LowerTernaryExpression(Ref<llvm::Module> module, Ref<TernaryExpression> expression);
+
 	void LowerExpression(Ref<llvm::Module> module, Ref<Expression> expression);
 
 	void LowerDeleteStatement(Ref<llvm::Module> module, Ref<DeleteStatement> statement, LowerFunctionToIRState* state);

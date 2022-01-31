@@ -332,6 +332,7 @@ STRICT_ENUM(VariableDeclarationType, VARIABLE, MEMBER_VARIABLE, METHOD)
 class VariableDeclarationMeta
 {
 public:
+	llvm::Argument* irArgument;
 };
 
 class VariableDeclaration : public ASTItem
