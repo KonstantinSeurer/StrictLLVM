@@ -52,11 +52,11 @@ void LowerToIRPass::LowerDataType(Ref<llvm::Module> module, Ref<DataType> type)
 	}
 }
 
-void LowerToIRPass::LowerCallExpression(Ref<llvm::Module> module, Ref<CallExpression> expression)
+void LowerToIRPass::LowerCallExpression(Ref<llvm::Module> module, Ref<CallExpression> expression, LowerFunctionToIRState* state)
 {
 }
 
-void LowerToIRPass::LowerIdentifierExpression(Ref<llvm::Module> module, Ref<IdentifierExpression> expression)
+void LowerToIRPass::LowerIdentifierExpression(Ref<llvm::Module> module, Ref<IdentifierExpression> expression, LowerFunctionToIRState* state)
 {
 	if (expression->identifierExpressionMeta.destination->type == ASTItemType::VARIABLE_DECLARATION)
 	{
@@ -72,47 +72,92 @@ void LowerToIRPass::LowerIdentifierExpression(Ref<llvm::Module> module, Ref<Iden
 	STRICT_UNREACHABLE;
 }
 
-void LowerToIRPass::LowerLiteralExpression(Ref<llvm::Module> module, Ref<LiteralExpression> expression)
+void LowerToIRPass::LowerLiteralExpression(Ref<llvm::Module> module, Ref<LiteralExpression> expression, LowerFunctionToIRState* state)
 {
 }
 
-void LowerToIRPass::LowerNewExpression(Ref<llvm::Module> module, Ref<NewExpression> expression)
+void LowerToIRPass::LowerNewExpression(Ref<llvm::Module> module, Ref<NewExpression> expression, LowerFunctionToIRState* state)
 {
 }
 
-void LowerToIRPass::LowerOperatorExpression(Ref<llvm::Module> module, Ref<OperatorExpression> expression)
+void LowerToIRPass::LowerOperatorExpression(Ref<llvm::Module> module, Ref<OperatorExpression> expression, LowerFunctionToIRState* state)
 {
 }
 
-void LowerToIRPass::LowerTernaryExpression(Ref<llvm::Module> module, Ref<TernaryExpression> expression)
+void LowerToIRPass::LowerTernaryExpression(Ref<llvm::Module> module, Ref<TernaryExpression> expression, LowerFunctionToIRState* state)
 {
+	LowerExpression(module, expression->condition, state);
+
+	llvm::BasicBlock* entryBlock = state->currentBlock;
+
+	llvm::BasicBlock* thenBlock = llvm::BasicBlock::Create(*context, "then", state->method->methodDeclarationMeta.ir);
+	state->currentBlock = thenBlock;
+	builder->SetInsertPoint(thenBlock);
+	LowerExpression(module, expression->thenExpression, state);
+
+	llvm::BasicBlock* elseBlock = llvm::BasicBlock::Create(*context, "else", state->method->methodDeclarationMeta.ir);
+	state->currentBlock = elseBlock;
+	builder->SetInsertPoint(elseBlock);
+	LowerExpression(module, expression->elseExpression, state);
+
+	llvm::BasicBlock* mergeBlock = llvm::BasicBlock::Create(*context, "merge", state->method->methodDeclarationMeta.ir);
+
+	builder->SetInsertPoint(entryBlock);
+	builder->CreateCondBr(expression->condition->expressionMeta.ir, thenBlock, elseBlock ? elseBlock : mergeBlock);
+
+	builder->SetInsertPoint(thenBlock);
+	builder->CreateBr(mergeBlock);
+
+	builder->SetInsertPoint(elseBlock);
+	builder->CreateBr(mergeBlock);
+
+	state->currentBlock = mergeBlock;
+	builder->SetInsertPoint(mergeBlock);
+
+	LowerDataType(module, expression->expressionMeta.dataType);
+	auto phi = builder->CreatePHI(expression->expressionMeta.dataType->dataTypeMeta.ir, 2);
+	phi->addIncoming(expression->thenExpression->expressionMeta.ir, thenBlock);
+	phi->addIncoming(expression->elseExpression->expressionMeta.ir, elseBlock);
+	expression->expressionMeta.ir = phi;
 }
 
-void LowerToIRPass::LowerExpression(Ref<llvm::Module> module, Ref<Expression> expression)
+void LowerToIRPass::LowerExpression(Ref<llvm::Module> module, Ref<Expression> expression, LowerFunctionToIRState* state)
 {
 	switch (expression->expressionType)
 	{
 	case ExpressionType::BRACKET: {
 		Ref<BracketExpression> bracketExpression = std::dynamic_pointer_cast<BracketExpression>(expression);
-		LowerExpression(module, bracketExpression->expression);
+		LowerExpression(module, bracketExpression->expression, state);
 		break;
 	}
 	case ExpressionType::CALL: {
+		Ref<CallExpression> callExpression = std::dynamic_pointer_cast<CallExpression>(expression);
+		LowerCallExpression(module, callExpression, state);
 		break;
 	}
 	case ExpressionType::IDENTIFIER: {
+		Ref<IdentifierExpression> identifierExpression = std::dynamic_pointer_cast<IdentifierExpression>(expression);
+		LowerIdentifierExpression(module, identifierExpression, state);
 		break;
 	}
 	case ExpressionType::LITERAL: {
+		Ref<LiteralExpression> literalExpression = std::dynamic_pointer_cast<LiteralExpression>(expression);
+		LowerLiteralExpression(module, literalExpression, state);
 		break;
 	}
 	case ExpressionType::NEW: {
+		Ref<NewExpression> newExpression = std::dynamic_pointer_cast<NewExpression>(expression);
+		LowerNewExpression(module, newExpression, state);
 		break;
 	}
 	case ExpressionType::OPERATOR: {
+		Ref<OperatorExpression> operatorExpression = std::dynamic_pointer_cast<OperatorExpression>(expression);
+		LowerOperatorExpression(module, operatorExpression, state);
 		break;
 	}
 	case ExpressionType::TERNARY: {
+		Ref<TernaryExpression> ternaryExpression = std::dynamic_pointer_cast<TernaryExpression>(expression);
+		LowerTernaryExpression(module, ternaryExpression, state);
 		break;
 	}
 	}
@@ -120,7 +165,7 @@ void LowerToIRPass::LowerExpression(Ref<llvm::Module> module, Ref<Expression> ex
 
 void LowerToIRPass::LowerDeleteStatement(Ref<llvm::Module> module, Ref<DeleteStatement> statement, LowerFunctionToIRState* state)
 {
-	LowerExpression(module, statement->expression);
+	LowerExpression(module, statement->expression, state);
 }
 
 void LowerToIRPass::LowerForStatement(Ref<llvm::Module> module, Ref<ForStatement> statement, LowerFunctionToIRState* state)
@@ -150,7 +195,7 @@ bool EndsWithJump(Ref<Statement> statement)
 
 void LowerToIRPass::LowerIfStatement(Ref<llvm::Module> module, Ref<IfStatement> statement, LowerFunctionToIRState* state)
 {
-	LowerExpression(module, statement->condition);
+	LowerExpression(module, statement->condition, state);
 
 	llvm::BasicBlock* entryBlock = state->currentBlock;
 
@@ -224,7 +269,7 @@ void LowerToIRPass::LowerStatement(Ref<llvm::Module> module, Ref<Statement> stat
 	}
 	case StatementType::EXPRESSION: {
 		Ref<ExpressionStatement> expressionStatement = std::dynamic_pointer_cast<ExpressionStatement>(statement);
-		LowerExpression(module, expressionStatement->expression);
+		LowerExpression(module, expressionStatement->expression, state);
 		break;
 	}
 	case StatementType::FOR: {
@@ -239,7 +284,7 @@ void LowerToIRPass::LowerStatement(Ref<llvm::Module> module, Ref<Statement> stat
 	}
 	case StatementType::RETURN: {
 		Ref<ReturnStatement> returnStatement = std::dynamic_pointer_cast<ReturnStatement>(statement);
-		LowerExpression(module, returnStatement->expression);
+		LowerExpression(module, returnStatement->expression, state);
 		builder->CreateRet(returnStatement->expression->expressionMeta.ir);
 		break;
 	}

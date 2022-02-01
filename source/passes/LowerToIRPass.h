@@ -30,19 +30,19 @@ public:
 private:
 	void LowerDataType(Ref<llvm::Module> module, Ref<DataType> type);
 
-	void LowerCallExpression(Ref<llvm::Module> module, Ref<CallExpression> expression);
+	void LowerCallExpression(Ref<llvm::Module> module, Ref<CallExpression> expression, LowerFunctionToIRState* state);
 
-	void LowerIdentifierExpression(Ref<llvm::Module> module, Ref<IdentifierExpression> expression);
+	void LowerIdentifierExpression(Ref<llvm::Module> module, Ref<IdentifierExpression> expression, LowerFunctionToIRState* state);
 
-	void LowerLiteralExpression(Ref<llvm::Module> module, Ref<LiteralExpression> expression);
+	void LowerLiteralExpression(Ref<llvm::Module> module, Ref<LiteralExpression> expression, LowerFunctionToIRState* state);
 
-	void LowerNewExpression(Ref<llvm::Module> module, Ref<NewExpression> expression);
+	void LowerNewExpression(Ref<llvm::Module> module, Ref<NewExpression> expression, LowerFunctionToIRState* state);
 
-	void LowerOperatorExpression(Ref<llvm::Module> module, Ref<OperatorExpression> expression);
+	void LowerOperatorExpression(Ref<llvm::Module> module, Ref<OperatorExpression> expression, LowerFunctionToIRState* state);
 
-	void LowerTernaryExpression(Ref<llvm::Module> module, Ref<TernaryExpression> expression);
+	void LowerTernaryExpression(Ref<llvm::Module> module, Ref<TernaryExpression> expression, LowerFunctionToIRState* state);
 
-	void LowerExpression(Ref<llvm::Module> module, Ref<Expression> expression);
+	void LowerExpression(Ref<llvm::Module> module, Ref<Expression> expression, LowerFunctionToIRState* state);
 
 	void LowerDeleteStatement(Ref<llvm::Module> module, Ref<DeleteStatement> statement, LowerFunctionToIRState* state);
 
