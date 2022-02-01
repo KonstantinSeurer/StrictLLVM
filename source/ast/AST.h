@@ -141,7 +141,7 @@ DECLARE_HASH(PrimitiveType)
 class ObjectTypeMeta
 {
 public:
-	Ref<UnitDeclaration> unit;
+	Ref<Unit> unit;
 };
 
 class ObjectType : public DataType

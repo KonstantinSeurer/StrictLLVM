@@ -28,7 +28,7 @@ public:
 private:
 	bool IsTraversalRequired(TraversalLevel level) const;
 
-	Ref<UnitDeclaration> ResolveType(const String& name, bool optional);
+	Ref<Unit> ResolveType(const String& name, bool optional);
 
 	PassResultFlags ResolveDataType(Ref<MethodDeclaration> method, Ref<DataType> type);
 
@@ -69,6 +69,8 @@ public:
 
 	PassResultFlags ResolveIdentifiers();
 };
+
+PassResultFlags ResolveUnitIdentifiers(PrintFunction print, BuildContext& context, Ref<Unit> unit);
 
 class ResolveIdentifiersPass : public Pass
 {

@@ -221,7 +221,7 @@ void GatherInformationPass::GatherInformation(BuildContext& context, Ref<Unit> u
 		unit->declaredType->unitDeclarationMeta.thisType = Allocate<ObjectType>();
 		unit->declaredType->unitDeclarationMeta.thisType->name = unit->name;
 		unit->declaredType->unitDeclarationMeta.thisType->flags = DeclarationFlags::PRIVATE;
-		unit->declaredType->unitDeclarationMeta.thisType->objectTypeMeta.unit = unit->declaredType;
+		unit->declaredType->unitDeclarationMeta.thisType->objectTypeMeta.unit = unit;
 	}
 
 	if (unit->declaredType->IsType())

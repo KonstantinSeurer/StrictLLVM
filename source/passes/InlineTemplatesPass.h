@@ -29,9 +29,9 @@ private:
 
 	void InlineTemplateArgument(Ref<ClassDeclaration> target, const String& name, const TemplateArgument& argument);
 
-	bool GenerateSpecializations(Ref<Module> module, const HashSet<ObjectType>& types);
+	bool GenerateSpecializations(PrintFunction print, BuildContext& context, Ref<Module> module, const HashSet<ObjectType>& types);
 
-	Ref<ClassDeclaration> GenerateSpecialization(const ObjectType& type);
+	Ref<Unit> GenerateSpecialization(const ObjectType& type);
 };
 
 #endif /* SOURCE_PASSES_INLINETEMPLATES */

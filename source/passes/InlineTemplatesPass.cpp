@@ -1,5 +1,6 @@
 
 #include "InlineTemplatesPass.h"
+#include "ResolveIdentifiersPass.h"
 
 static void GenerateTemplateSpecializations(Ref<Module> module)
 {
@@ -195,6 +196,7 @@ void InlineTemplatesPass::InlineDataType(Ref<DataType>* target, const String& na
 				}
 				if (templateArgument.expression)
 				{
+					InlineExpression(&templateArgument.expression, name, argument);
 				}
 			}
 		}
@@ -225,9 +227,9 @@ void InlineTemplatesPass::InlineTemplateArgument(Ref<ClassDeclaration> target, c
 	}
 }
 
-Ref<ClassDeclaration> InlineTemplatesPass::GenerateSpecialization(const ObjectType& type)
+Ref<Unit> InlineTemplatesPass::GenerateSpecialization(const ObjectType& type)
 {
-	if (type.objectTypeMeta.unit->declarationType != UnitDeclarationType::CLASS)
+	if (type.objectTypeMeta.unit->declaredType->declarationType != UnitDeclarationType::CLASS)
 	{
 		return nullptr;
 	}
@@ -241,27 +243,30 @@ Ref<ClassDeclaration> InlineTemplatesPass::GenerateSpecialization(const ObjectTy
 
 		Ref<ObjectType> argumentObject = std::dynamic_pointer_cast<ObjectType>(argument.dataType);
 
-		if (argumentObject->objectTypeMeta.unit->declarationType == UnitDeclarationType::TYPE)
+		if (argumentObject->objectTypeMeta.unit->declaredType->declarationType == UnitDeclarationType::TYPE)
 		{
 			return nullptr;
 		}
 	}
 
-	Ref<ClassDeclaration> sourceClass = std::dynamic_pointer_cast<ClassDeclaration>(type.objectTypeMeta.unit);
-	Ref<ClassDeclaration> result = std::dynamic_pointer_cast<ClassDeclaration>(sourceClass->Clone());
-	result->name = ReplaceChar(type.ToStrict(), ' ', '-');
+	Ref<Unit> sourceUnit = std::dynamic_pointer_cast<Unit>(type.objectTypeMeta.unit);
+	Ref<ClassDeclaration> sourceClass = std::dynamic_pointer_cast<ClassDeclaration>(sourceUnit->declaredType);
 
-	result->typeTemplate = nullptr;
+	Ref<Unit> resultUnit = std::dynamic_pointer_cast<Unit>(sourceUnit->Clone());
+	Ref<ClassDeclaration> resultClass = std::dynamic_pointer_cast<ClassDeclaration>(resultUnit->declaredType);
+
+	resultClass->name = ReplaceChar(type.ToStrict(), ' ', '-');
+	resultClass->typeTemplate = nullptr;
 
 	for (UInt32 argumentIndex = 0; argumentIndex < sourceClass->typeTemplate->parameters.size(); argumentIndex++)
 	{
-		InlineTemplateArgument(result, sourceClass->typeTemplate->parameters[argumentIndex]->name, type.typeTemplate->arguments[argumentIndex]);
+		InlineTemplateArgument(resultClass, sourceClass->typeTemplate->parameters[argumentIndex]->name, type.typeTemplate->arguments[argumentIndex]);
 	}
 
-	return result;
+	return resultUnit;
 }
 
-bool InlineTemplatesPass::GenerateSpecializations(Ref<Module> module, const HashSet<ObjectType>& types)
+bool InlineTemplatesPass::GenerateSpecializations(PrintFunction print, BuildContext& context, Ref<Module> module, const HashSet<ObjectType>& types)
 {
 	bool progress = false;
 
@@ -272,12 +277,15 @@ bool InlineTemplatesPass::GenerateSpecializations(Ref<Module> module, const Hash
 			continue;
 		}
 
-		Ref<ClassDeclaration> specialization = GenerateSpecialization(type);
+		Ref<Unit> specialization = GenerateSpecialization(type);
 
 		if (specialization)
 		{
+			ResolveUnitIdentifiers(print, context, specialization);
+
 			progress = true;
-			module->moduleMeta.templateSpecializations[*type.typeTemplate] = specialization;
+			Ref<ClassDeclaration> specializedClass = std::dynamic_pointer_cast<ClassDeclaration>(specialization->declaredType);
+			module->moduleMeta.templateSpecializations[*type.typeTemplate] = specializedClass;
 		}
 	}
 
@@ -303,7 +311,7 @@ PassResultFlags InlineTemplatesPass::Run(PrintFunction print, BuildContext& cont
 				}
 
 				const auto& types = std::dynamic_pointer_cast<TypeDeclaration>(unit->declaredType)->typeDeclarationMeta.usedTemplateTypes;
-				GenerateSpecializations(module, types);
+				GenerateSpecializations(print, context, module, types);
 			}
 
 			// TODO: Replace references to the templated types with references to the inlined versions

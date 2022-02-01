@@ -18,11 +18,11 @@ static bool HasEnding(const String& fullString, const String& ending)
 	}
 }
 
-Ref<UnitDeclaration> ResolveContext::ResolveType(const String& name, bool optional)
+Ref<Unit> ResolveContext::ResolveType(const String& name, bool optional)
 {
 	if (name == unit->name)
 	{
-		return unit->declaredType;
+		return unit;
 	}
 
 	Ref<TypeDeclaration> declaration = std::dynamic_pointer_cast<TypeDeclaration>(unit->declaredType);
@@ -38,9 +38,9 @@ Ref<UnitDeclaration> ResolveContext::ResolveType(const String& name, bool option
 
 			if (parameter->dataType->dataTypeType == DataTypeType::OBJECT)
 			{
-				Ref<UnitDeclaration> result = std::dynamic_pointer_cast<ObjectType>(parameter->dataType)->objectTypeMeta.unit;
+				Ref<Unit> result = std::dynamic_pointer_cast<ObjectType>(parameter->dataType)->objectTypeMeta.unit;
 
-				if (result->declarationType != UnitDeclarationType::TYPE)
+				if (result->declaredType->declarationType != UnitDeclarationType::TYPE)
 				{
 					continue;
 				}
@@ -58,7 +58,7 @@ Ref<UnitDeclaration> ResolveContext::ResolveType(const String& name, bool option
 	{
 		if (HasEnding(dependency, "." + name))
 		{
-			return context->ResolveUnit(dependency)->declaredType;
+			return context->ResolveUnit(dependency);
 		}
 	}
 
@@ -105,7 +105,7 @@ PassResultFlags ResolveContext::ResolveDataType(Ref<MethodDeclaration> method, R
 	{
 		Ref<ObjectType> objectType = std::dynamic_pointer_cast<ObjectType>(type);
 		objectType->objectTypeMeta.unit = ResolveType(objectType->name, false);
-		PassResultFlags result = (objectType->objectTypeMeta.unit == nullptr) ? PassResultFlags::CRITICAL_ERROR : PassResultFlags::SUCCESS;
+		PassResultFlags result = err.HasErrorOccured() ? PassResultFlags::CRITICAL_ERROR : PassResultFlags::SUCCESS;
 
 		if (objectType->typeTemplate)
 		{
@@ -248,11 +248,11 @@ static Ref<VariableDeclaration> SearchVariableDeclaration(const Statement* state
 PassResultFlags ResolveContext::ResolveIdentifierExpression(Ref<ObjectType> context, Ref<MethodDeclaration> method, Ref<IdentifierExpression> expression,
                                                             bool required)
 {
-	Ref<UnitDeclaration> unitDeclaration = ResolveType(expression->name, true);
-	if (unitDeclaration)
+	Ref<Unit> unit = ResolveType(expression->name, true);
+	if (unit)
 	{
-		expression->identifierExpressionMeta.destination = unitDeclaration;
-		expression->expressionMeta.dataType = unitDeclaration->unitDeclarationMeta.thisType;
+		expression->identifierExpressionMeta.destination = unit;
+		expression->expressionMeta.dataType = unit->declaredType->unitDeclarationMeta.thisType;
 		return PassResultFlags::SUCCESS;
 	}
 
@@ -273,7 +273,7 @@ PassResultFlags ResolveContext::ResolveIdentifierExpression(Ref<ObjectType> cont
 
 	if (context)
 	{
-		Ref<TypeDeclaration> typeDeclaration = std::dynamic_pointer_cast<TypeDeclaration>(context->objectTypeMeta.unit);
+		Ref<TypeDeclaration> typeDeclaration = std::dynamic_pointer_cast<TypeDeclaration>(context->objectTypeMeta.unit->declaredType);
 		for (auto member : typeDeclaration->members)
 		{
 			if (member->name != expression->name)
@@ -370,7 +370,7 @@ Ref<DataType> ResolveContext::ConvertExpressionToDataType(Ref<Expression> expres
 			return nullptr;
 		}
 
-		Ref<UnitDeclaration> destination = std::dynamic_pointer_cast<UnitDeclaration>(identifierExpression->identifierExpressionMeta.destination);
+		Ref<Unit> destination = std::dynamic_pointer_cast<Unit>(identifierExpression->identifierExpressionMeta.destination);
 
 		Ref<ObjectType> result = Allocate<ObjectType>();
 		result->objectTypeMeta.unit = destination;
@@ -780,6 +780,29 @@ PassResultFlags ResolveContext::ResolveIdentifiers()
 	return result;
 }
 
+PassResultFlags ResolveUnitIdentifiers(PrintFunction print, BuildContext& context, Ref<Unit> unit)
+{
+	if (!unit->declaredType->IsType())
+	{
+		return PassResultFlags::SUCCESS;
+	}
+
+	ResolveContext resolve(&context, unit->name, print, &unit->unitMeta.lexer);
+	resolve.unit = unit;
+	resolve.type = std::dynamic_pointer_cast<TypeDeclaration>(unit->declaredType);
+
+	resolve.SetPass(ResolvePass::DATA_TYPES);
+	PassResultFlags result = resolve.ResolveIdentifiers();
+
+	resolve.SetPass(ResolvePass::EXPRESSION);
+	result = result | resolve.ResolveIdentifiers();
+
+	resolve.SetPass(ResolvePass::NEW);
+	result = result | resolve.ResolveIdentifiers();
+
+	return result;
+}
+
 PassResultFlags ResolveIdentifiersPass::Run(PrintFunction print, BuildContext& context)
 {
 	PassResultFlags result = PassResultFlags::SUCCESS;
@@ -788,21 +811,7 @@ PassResultFlags ResolveIdentifiersPass::Run(PrintFunction print, BuildContext& c
 	{
 		for (auto unit : module->units)
 		{
-			if (unit->declaredType->IsType())
-			{
-				ResolveContext resolve(&context, unit->name, print, &unit->unitMeta.lexer);
-				resolve.unit = unit;
-				resolve.type = std::dynamic_pointer_cast<TypeDeclaration>(unit->declaredType);
-
-				resolve.SetPass(ResolvePass::DATA_TYPES);
-				resolve.ResolveIdentifiers();
-
-				resolve.SetPass(ResolvePass::EXPRESSION);
-				resolve.ResolveIdentifiers();
-
-				resolve.SetPass(ResolvePass::NEW);
-				resolve.ResolveIdentifiers();
-			}
+			result = result | ResolveUnitIdentifiers(print, context, unit);
 		}
 	}
 
