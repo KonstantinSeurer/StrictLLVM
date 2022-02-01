@@ -32,6 +32,7 @@ String ASTItem::ToStringImplementation(UInt32 indentation) const
 void ASTItem::CloneImplementation(Ref<ASTItem> target) const
 {
 	target->type = type;
+	target->itemMeta = itemMeta;
 }
 
 DEFINE_HASH(ASTItem, HASH_VALUE(ASTItemType, type))
@@ -129,6 +130,7 @@ CLONE_METHOD(DataType)
 void DataType::CloneImplementation(Ref<DataType> target) const
 {
 	ASTItem::CloneImplementation(target);
+	target->dataTypeMeta = dataTypeMeta;
 	target->dataTypeType = dataTypeType;
 	target->flags = flags;
 }
@@ -155,6 +157,7 @@ CLONE_METHOD(PrimitiveType)
 void PrimitiveType::CloneImplementation(Ref<PrimitiveType> target) const
 {
 	DataType::CloneImplementation(target);
+	target->primitiveTypeMeta = primitiveTypeMeta;
 	target->primitiveType = primitiveType;
 }
 
@@ -185,6 +188,7 @@ CLONE_METHOD(ObjectType)
 void ObjectType::CloneImplementation(Ref<ObjectType> target) const
 {
 	DataType::CloneImplementation(target);
+	target->objectTypeMeta = objectTypeMeta;
 	target->name = name;
 	if (typeTemplate)
 	{
@@ -226,6 +230,7 @@ CLONE_METHOD(PointerType)
 void PointerType::CloneImplementation(Ref<PointerType> target) const
 {
 	DataType::CloneImplementation(target);
+	target->pointerTypeMeta = pointerTypeMeta;
 	target->value = std::dynamic_pointer_cast<DataType>(value->Clone());
 	if (arrayLength)
 	{
@@ -258,6 +263,7 @@ CLONE_METHOD(Expression, expressionType)
 void Expression::CloneImplementation(Ref<Expression> target) const
 {
 	ASTItem::CloneImplementation(target);
+	target->expressionMeta = expressionMeta;
 }
 
 DEFINE_HASH_WITH_SUPER(Expression, ASTItem, HASH_VALUE(ExpressionType, expressionType))
@@ -277,6 +283,7 @@ CLONE_METHOD(LiteralExpression)
 void LiteralExpression::CloneImplementation(Ref<LiteralExpression> target) const
 {
 	Expression::CloneImplementation(target);
+	target->literalExpressionMeta = literalExpressionMeta;
 	target->data = data;
 }
 
@@ -297,6 +304,7 @@ CLONE_METHOD(BracketExpression)
 void BracketExpression::CloneImplementation(Ref<BracketExpression> target) const
 {
 	Expression::CloneImplementation(target);
+	target->bracketExpressionMeta = bracketExpressionMeta;
 	target->expression = std::dynamic_pointer_cast<Expression>(expression->Clone());
 }
 
@@ -312,6 +320,7 @@ CLONE_METHOD(IdentifierExpression)
 void IdentifierExpression::CloneImplementation(Ref<IdentifierExpression> target) const
 {
 	Expression::CloneImplementation(target);
+	target->identifierExpressionMeta = identifierExpressionMeta;
 	target->name = name;
 }
 
@@ -337,6 +346,7 @@ CLONE_METHOD(OperatorExpression)
 void OperatorExpression::CloneImplementation(Ref<OperatorExpression> target) const
 {
 	Expression::CloneImplementation(target);
+	target->operatorExpressionMeta = operatorExpressionMeta;
 	target->operatorType = operatorType;
 	target->a = std::dynamic_pointer_cast<Expression>(a->Clone());
 	if (b)
@@ -372,6 +382,7 @@ CLONE_METHOD(CallExpression)
 void CallExpression::CloneImplementation(Ref<CallExpression> target) const
 {
 	Expression::CloneImplementation(target);
+	target->callExpressionMeta = callExpressionMeta;
 	target->method = std::dynamic_pointer_cast<Expression>(method->Clone());
 	target->arguments.resize(arguments.size());
 	for (UInt64 argumentIndex = 0; argumentIndex < arguments.size(); argumentIndex++)
@@ -395,6 +406,7 @@ CLONE_METHOD(TernaryExpression)
 void TernaryExpression::CloneImplementation(Ref<TernaryExpression> target) const
 {
 	Expression::CloneImplementation(target);
+	target->ternaryExpressionMeta = ternaryExpressionMeta;
 	target->condition = std::dynamic_pointer_cast<Expression>(condition->Clone());
 	target->thenExpression = std::dynamic_pointer_cast<Expression>(thenExpression->Clone());
 	target->elseExpression = std::dynamic_pointer_cast<Expression>(elseExpression->Clone());
@@ -417,6 +429,7 @@ CLONE_METHOD(NewExpression)
 void NewExpression::CloneImplementation(Ref<NewExpression> target) const
 {
 	Expression::CloneImplementation(target);
+	target->newExpressionMeta = newExpressionMeta;
 	target->dataType = std::dynamic_pointer_cast<DataType>(dataType->Clone());
 	target->arguments.resize(arguments.size());
 	for (UInt64 argumentIndex = 0; argumentIndex < arguments.size(); argumentIndex++)
@@ -440,6 +453,7 @@ CLONE_METHOD(Statement, statementType)
 void Statement::CloneImplementation(Ref<Statement> target) const
 {
 	ASTItem::CloneImplementation(target);
+	target->statementMeta = statementMeta;
 }
 
 DEFINE_HASH_WITH_SUPER(Statement, ASTItem, HASH_VALUE(StatementType, statementType))
@@ -459,6 +473,7 @@ CLONE_METHOD(BlockStatement)
 void BlockStatement::CloneImplementation(Ref<BlockStatement> target) const
 {
 	Statement::CloneImplementation(target);
+	target->blockStatementMeta = blockStatementMeta;
 	target->statements.resize(statements.size());
 	for (UInt64 statementIndex = 0; statementIndex < statements.size(); statementIndex++)
 	{
@@ -480,6 +495,7 @@ CLONE_METHOD(ExpressionStatement)
 void ExpressionStatement::CloneImplementation(Ref<ExpressionStatement> target) const
 {
 	Statement::CloneImplementation(target);
+	target->expressionStatementMeta = expressionStatementMeta;
 	target->expression = std::dynamic_pointer_cast<Expression>(expression->Clone());
 }
 
@@ -496,6 +512,7 @@ CLONE_METHOD(IfStatement)
 void IfStatement::CloneImplementation(Ref<IfStatement> target) const
 {
 	Statement::CloneImplementation(target);
+	target->ifStatementMeta = ifStatementMeta;
 	target->condition = std::dynamic_pointer_cast<Expression>(condition->Clone());
 	target->thenStatement = std::dynamic_pointer_cast<Statement>(thenStatement->Clone());
 	if (elseStatement)
@@ -517,6 +534,7 @@ CLONE_METHOD(ForStatement)
 void ForStatement::CloneImplementation(Ref<ForStatement> target) const
 {
 	Statement::CloneImplementation(target);
+	target->forStatementMeta = forStatementMeta;
 	target->startStatement = std::dynamic_pointer_cast<Statement>(startStatement->Clone());
 	target->condition = std::dynamic_pointer_cast<Expression>(condition->Clone());
 	target->incrementExpression = std::dynamic_pointer_cast<Expression>(incrementExpression->Clone());
@@ -538,6 +556,7 @@ CLONE_METHOD(WhileStatement)
 void WhileStatement::CloneImplementation(Ref<WhileStatement> target) const
 {
 	Statement::CloneImplementation(target);
+	target->whileStatementMeta = whileStatementMeta;
 	target->condition = std::dynamic_pointer_cast<Expression>(condition->Clone());
 	target->bodyStatement = std::dynamic_pointer_cast<Statement>(bodyStatement->Clone());
 	target->checkAfterBody = checkAfterBody;
@@ -555,6 +574,7 @@ CLONE_METHOD(ReturnStatement)
 void ReturnStatement::CloneImplementation(Ref<ReturnStatement> target) const
 {
 	Statement::CloneImplementation(target);
+	target->returnStatementMeta = returnStatementMeta;
 	target->expression = std::dynamic_pointer_cast<Expression>(expression->Clone());
 }
 
@@ -570,6 +590,7 @@ CLONE_METHOD(VariableDeclarationStatement)
 void VariableDeclarationStatement::CloneImplementation(Ref<VariableDeclarationStatement> target) const
 {
 	Statement::CloneImplementation(target);
+	target->variableDeclarationStatementMeta = variableDeclarationStatementMeta;
 	target->declaration = std::dynamic_pointer_cast<VariableDeclaration>(declaration->Clone());
 	target->value = std::dynamic_pointer_cast<Expression>(value->Clone());
 }
@@ -586,6 +607,7 @@ CLONE_METHOD(DeleteStatement)
 void DeleteStatement::CloneImplementation(Ref<DeleteStatement> target) const
 {
 	Statement::CloneImplementation(target);
+	target->deleteStatementMeta = deleteStatementMeta;
 	target->expression = std::dynamic_pointer_cast<Expression>(expression->Clone());
 }
 
@@ -647,6 +669,7 @@ CLONE_METHOD(Template)
 void Template::CloneImplementation(Ref<Template> target) const
 {
 	ASTItem::CloneImplementation(target);
+	target->templateMeta = templateMeta;
 	target->arguments.resize(arguments.size());
 	for (UInt64 argumentIndex = 0; argumentIndex < arguments.size(); argumentIndex++)
 	{
@@ -693,6 +716,7 @@ CLONE_METHOD(UnitDeclaration, declarationType)
 void UnitDeclaration::CloneImplementation(Ref<UnitDeclaration> target) const
 {
 	ASTItem::CloneImplementation(target);
+	target->unitDeclarationMeta = unitDeclarationMeta;
 	target->flags = flags;
 	target->declarationType = declarationType;
 	target->name = name;
@@ -710,6 +734,7 @@ CLONE_METHOD(ErrorDeclaration)
 void ErrorDeclaration::CloneImplementation(Ref<ErrorDeclaration> target) const
 {
 	UnitDeclaration::CloneImplementation(target);
+	target->errorDeclarationMeta = errorDeclarationMeta;
 	target->value = value;
 	target->hasValue = hasValue;
 }
@@ -726,6 +751,7 @@ CLONE_METHOD(VariableDeclaration)
 void VariableDeclaration::CloneImplementation(Ref<VariableDeclaration> target) const
 {
 	ASTItem::CloneImplementation(target);
+	target->variableDeclarationMeta = variableDeclarationMeta;
 	target->flags = flags;
 	target->variableType = variableType;
 	target->name = name;
@@ -752,6 +778,7 @@ CLONE_METHOD(MethodDeclaration, methodType)
 void MethodDeclaration::CloneImplementation(Ref<MethodDeclaration> target) const
 {
 	VariableDeclaration::CloneImplementation(target);
+	target->methodDeclarationMeta = methodDeclarationMeta;
 	target->methodType = methodType;
 	target->parameters.resize(parameters.size());
 	for (UInt64 parameterIndex = 0; parameterIndex < parameters.size(); parameterIndex++)
@@ -786,6 +813,7 @@ CLONE_METHOD(ConstructorDeclaration)
 void ConstructorDeclaration::CloneImplementation(Ref<ConstructorDeclaration> target) const
 {
 	MethodDeclaration::CloneImplementation(target);
+	target->constructorDeclarationMeta = constructorDeclarationMeta;
 	target->initializers.resize(initializers.size());
 	for (UInt64 initializerIndex = 0; initializerIndex < initializers.size(); initializerIndex++)
 	{
@@ -808,6 +836,7 @@ CLONE_METHOD(OperatorDeclaration)
 void OperatorDeclaration::CloneImplementation(Ref<OperatorDeclaration> target) const
 {
 	MethodDeclaration::CloneImplementation(target);
+	target->operatorDeclarationMeta = operatorDeclarationMeta;
 	target->operatorType = operatorType;
 }
 
@@ -828,6 +857,7 @@ CLONE_METHOD(MemberVariableDeclaration)
 void MemberVariableDeclaration::CloneImplementation(Ref<MemberVariableDeclaration> target) const
 {
 	VariableDeclaration::CloneImplementation(target);
+	target->memberVariableDeclarationMeta = memberVariableDeclarationMeta;
 	target->accessors.resize(accessors.size());
 	for (UInt64 accessorIndex = 0; accessorIndex < accessors.size(); accessorIndex++)
 	{
@@ -859,6 +889,7 @@ CLONE_METHOD(TemplateDeclaration)
 void TemplateDeclaration::CloneImplementation(Ref<TemplateDeclaration> target) const
 {
 	ASTItem::CloneImplementation(target);
+	target->templateDeclarationMeta = templateDeclarationMeta;
 	target->parameters.resize(parameters.size());
 	for (UInt64 parameterIndex = 0; parameterIndex < parameters.size(); parameterIndex++)
 	{
@@ -890,6 +921,7 @@ CLONE_METHOD(TypeDeclaration)
 void TypeDeclaration::CloneImplementation(Ref<TypeDeclaration> target) const
 {
 	UnitDeclaration::CloneImplementation(target);
+	target->typeDeclarationMeta = typeDeclarationMeta;
 	target->members.resize(members.size());
 	for (UInt64 memberIndex = 0; memberIndex < members.size(); memberIndex++)
 	{
@@ -923,6 +955,7 @@ CLONE_METHOD(ClassDeclaration)
 void ClassDeclaration::CloneImplementation(Ref<ClassDeclaration> target) const
 {
 	TypeDeclaration::CloneImplementation(target);
+	target->classDeclarationMeta = classDeclarationMeta;
 	target->isSingleton = isSingleton;
 }
 
@@ -969,6 +1002,7 @@ CLONE_METHOD(Unit)
 void Unit::CloneImplementation(Ref<Unit> target) const
 {
 	ASTItem::CloneImplementation(target);
+	target->unitMeta = unitMeta;
 	target->dependencyNames = dependencyNames;
 	target->name = name;
 	target->declaredType = std::dynamic_pointer_cast<UnitDeclaration>(declaredType->Clone());
@@ -1016,6 +1050,7 @@ CLONE_METHOD(Module, name)
 void Module::CloneImplementation(Ref<Module> target) const
 {
 	ASTItem::CloneImplementation(target);
+	target->moduleMeta = moduleMeta;
 	target->name = name;
 	target->units.resize(units.size());
 	for (UInt64 unitIndex = 0; unitIndex < units.size(); unitIndex++)
