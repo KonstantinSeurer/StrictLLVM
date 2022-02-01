@@ -6,6 +6,11 @@
 class ValidateStructurePass : public Pass
 {
 public:
+	ValidateStructurePass() : Pass("ValidateStructurePass")
+	{
+	}
+
+public:
 	virtual PassResultFlags Run(PrintFunction print, BuildContext& context);
 };
 
