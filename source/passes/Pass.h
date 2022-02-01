@@ -10,6 +10,13 @@ class BuildContext;
 class Pass
 {
 public:
+	String name;
+
+public:
+	Pass(const String& name) : name(name)
+	{
+	}
+
 	virtual ~Pass()
 	{
 	}

@@ -53,7 +53,6 @@ BuildContext::BuildContext(const Array<String>& modulePath, const String& output
 	}
 
 	// Add required passes
-	// TODO: Run GatherInformation multiple times with different flags.
 	AddPass(Allocate<LowerImpliedDeclarationFlagsPass>());
 	AddPass(Allocate<ValidateStructurePass>());
 	AddPass(Allocate<GatherInformationPass>(GatherInformationFlags::PARENT | GatherInformationFlags::THIS));
@@ -189,6 +188,7 @@ void BuildContext::Build()
 	{
 		if ((pass->Run(PRINT_FUNCTION, *this) & PassResultFlags::CRITICAL_ERROR) == PassResultFlags::CRITICAL_ERROR)
 		{
+			Print(pass->name + " failed!\n");
 			break;
 		}
 	}

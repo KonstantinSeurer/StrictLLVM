@@ -73,6 +73,11 @@ public:
 class ResolveIdentifiersPass : public Pass
 {
 public:
+	ResolveIdentifiersPass() : Pass("ResolveIdentifiersPass")
+	{
+	}
+
+public:
 	virtual PassResultFlags Run(PrintFunction print, BuildContext& context);
 };
 

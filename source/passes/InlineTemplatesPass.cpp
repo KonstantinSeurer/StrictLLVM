@@ -5,7 +5,7 @@ static void GenerateTemplateSpecializations(Ref<Module> module)
 {
 }
 
-InlineTemplatesPass::InlineTemplatesPass()
+InlineTemplatesPass::InlineTemplatesPass() : Pass("InlineTemplatesPass")
 {
 	gatherInformationPass = Allocate<GatherInformationPass>(GatherInformationFlags::USED_TEMPLATES);
 }

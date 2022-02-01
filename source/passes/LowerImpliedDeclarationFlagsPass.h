@@ -6,6 +6,11 @@
 class LowerImpliedDeclarationFlagsPass : public Pass
 {
 public:
+	LowerImpliedDeclarationFlagsPass() : Pass("LowerImpliedDeclarationFlagsPass")
+	{
+	}
+
+public:
 	virtual PassResultFlags Run(PrintFunction print, BuildContext& context);
 };
 

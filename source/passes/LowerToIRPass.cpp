@@ -2,7 +2,7 @@
 #include "LowerToIRPass.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 
-LowerToIRPass::LowerToIRPass()
+LowerToIRPass::LowerToIRPass() : Pass("LowerToIRPass")
 {
 	context = Allocate<llvm::LLVMContext>();
 	builder = Allocate<llvm::IRBuilder<>>(*context);

@@ -11,7 +11,7 @@ private:
 	GatherInformationFlags flags;
 
 public:
-	GatherInformationPass(GatherInformationFlags flags) : flags(flags)
+	GatherInformationPass(GatherInformationFlags flags) : Pass("GatherInformationPass"), flags(flags)
 	{
 	}
 
