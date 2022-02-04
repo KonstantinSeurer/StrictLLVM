@@ -163,6 +163,64 @@ static Ref<DataType> GetReferencedType(Ref<DataType> dataType)
 	return GetReferencedType(referenceType->value);
 }
 
+static Ref<PrimitiveType> GetPrecedingPrimitiveType(Ref<PrimitiveType> a, Ref<PrimitiveType> b)
+{
+	if (a->primitiveType == b->primitiveType)
+	{
+		return a;
+	}
+
+	const bool aFloat = a->IsFloat();
+	const bool bFloat = b->IsFloat();
+
+	if ((aFloat && !bFloat) || (!aFloat && !bFloat))
+	{
+		return a;
+	}
+
+	if (bFloat && !aFloat)
+	{
+		return b;
+	}
+
+	return (a->GetSize() < b->GetSize()) ? b : a;
+}
+
+static Ref<DataType> ResolveOperatorDataType(Ref<OperatorExpression> expression)
+{
+	if (expression->a->expressionMeta.dataType->dataTypeType == DataTypeType::PRIMITIVE)
+	{
+		if (!expression->b)
+		{
+			return expression->a->expressionMeta.dataType;
+		}
+		if (expression->b->dataType)
+		{
+			return expression->b->dataType;
+		}
+
+		if (expression->b->expression->expressionMeta.dataType->dataTypeType == DataTypeType::PRIMITIVE)
+		{
+			Ref<PrimitiveType> aType = std::dynamic_pointer_cast<PrimitiveType>(expression->a->expressionMeta.dataType);
+			Ref<PrimitiveType> bType = std::dynamic_pointer_cast<PrimitiveType>(expression->b->expression->expressionMeta.dataType);
+
+			return GetPrecedingPrimitiveType(aType, bType);
+		}
+	}
+
+	if (expression->a->expressionMeta.dataType->IsPointer())
+	{
+		Ref<PointerType> aType = std::dynamic_pointer_cast<PointerType>(expression->a->expressionMeta.dataType);
+
+		if (expression->operatorType == OperatorType::DEREFERENCE || expression->operatorType == OperatorType::ARRAY_ACCESS)
+		{
+			return aType->value;
+		}
+	}
+
+	return nullptr;
+}
+
 PassResultFlags ResolveContext::ResolveOperatorExpression(Ref<MethodDeclaration> method, Ref<OperatorExpression> expression)
 {
 	PassResultFlags result = ResolveExpression(method, &expression->a);
@@ -195,6 +253,12 @@ PassResultFlags ResolveContext::ResolveOperatorExpression(Ref<MethodDeclaration>
 			result = result | ResolveTemplate(method, expression->b->typeTemplate);
 		}
 	}
+
+	if (pass == ResolvePass::EXPRESSION && !expression->expressionMeta.dataType)
+	{
+		expression->expressionMeta.dataType = ResolveOperatorDataType(expression);
+	}
+
 	return result;
 }
 
