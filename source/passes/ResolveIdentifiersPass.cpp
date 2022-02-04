@@ -327,6 +327,33 @@ PassResultFlags ResolveContext::ResolveIdentifierExpression(Ref<ObjectType> cont
 	return PassResultFlags::CRITICAL_ERROR;
 }
 
+void ResolveContext::ResolveLiteralExpression(Ref<LiteralExpression> expression)
+{
+	if (expression->data.type == TokenType::INT_LITERAL)
+	{
+		expression->expressionMeta.dataType = Allocate<PrimitiveType>(TokenType::INT64);
+	}
+	else if (expression->data.type == TokenType::UINT_LITERAL)
+	{
+		expression->expressionMeta.dataType = Allocate<PrimitiveType>(TokenType::UINT64);
+	}
+	else if (expression->data.type == TokenType::FLOAT_LITERAL)
+	{
+		expression->expressionMeta.dataType = Allocate<PrimitiveType>(TokenType::FLOAT64);
+	}
+	else if (expression->data.type == TokenType::STRING_LITERAL)
+	{
+		Ref<PointerType> type = Allocate<PointerType>();
+		type->dataTypeType = DataTypeType::ARRAY;
+		type->value = Allocate<PrimitiveType>(TokenType::FLOAT64);
+		expression->expressionMeta.dataType = type;
+	}
+	else
+	{
+		STRICT_UNREACHABLE;
+	}
+}
+
 PassResultFlags ResolveContext::ResolveBracketExpression(Ref<MethodDeclaration> method, Ref<BracketExpression> expression)
 {
 	PassResultFlags result = ResolveExpression(method, &expression->expression);
@@ -564,6 +591,9 @@ PassResultFlags ResolveContext::ResolveExpression(Ref<MethodDeclaration> method,
 
 	switch ((*expression)->expressionType)
 	{
+	case ExpressionType::LITERAL:
+		ResolveLiteralExpression(std::dynamic_pointer_cast<LiteralExpression>(*expression));
+		return PassResultFlags::SUCCESS;
 	case ExpressionType::BRACKET:
 		return ResolveBracketExpression(method, std::dynamic_pointer_cast<BracketExpression>(*expression));
 	case ExpressionType::CALL:

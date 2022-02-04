@@ -42,6 +42,8 @@ private:
 
 	PassResultFlags ResolveIdentifierExpression(Ref<ObjectType> context, Ref<MethodDeclaration> method, Ref<IdentifierExpression> expression, bool required);
 
+	void ResolveLiteralExpression(Ref<LiteralExpression> expression);
+
 	PassResultFlags ResolveBracketExpression(Ref<MethodDeclaration> method, Ref<BracketExpression> expression);
 
 	Ref<DataType> ConvertExpressionToDataType(Ref<Expression> expression);
