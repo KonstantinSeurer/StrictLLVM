@@ -173,6 +173,51 @@ bool PrimitiveType::operator==(const PrimitiveType& other) const
 	return primitiveType == other.primitiveType;
 }
 
+bool PrimitiveType::IsSigned() const
+{
+	switch (primitiveType)
+	{
+	case TokenType::INT8:
+	case TokenType::INT16:
+	case TokenType::INT32:
+	case TokenType::INT64:
+		return true;
+	}
+
+	return false;
+}
+
+UInt8 PrimitiveType::GetSize() const
+{
+	switch (primitiveType)
+	{
+	case TokenType::BOOL:
+	case TokenType::INT8:
+	case TokenType::UINT8:
+		return 1;
+	case TokenType::INT16:
+	case TokenType::UINT16:
+		return 2;
+	case TokenType::INT32:
+	case TokenType::UINT32:
+	case TokenType::FLOAT32:
+		return 4;
+	case TokenType::INT64:
+	case TokenType::UINT64:
+	case TokenType::FLOAT64:
+		return 8;
+	default:
+		STRICT_UNREACHABLE;
+	}
+
+	return 0;
+}
+
+bool PrimitiveType::IsFloat() const
+{
+	return primitiveType == TokenType::FLOAT32 || primitiveType == TokenType::FLOAT64;
+}
+
 String ObjectType::ToStrict() const
 {
 	return DataType::ToStrict() + name + (typeTemplate ? typeTemplate->ToStrict() : " ");

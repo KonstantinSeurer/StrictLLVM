@@ -130,6 +130,11 @@ public:
 
 	virtual String ToStrict() const;
 
+	bool IsSigned() const;
+	bool IsFloat() const;
+
+	UInt8 GetSize() const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
