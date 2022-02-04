@@ -195,6 +195,10 @@ static Ref<Template> ParseTemplate(ErrorStream& err, Lexer& lexer)
 				err.PrintError("Expected either a data type or an expression!");
 				return nullptr;
 			}
+			else
+			{
+				lexer.Pop();
+			}
 		}
 		else
 		{
@@ -916,8 +920,8 @@ static Ref<Expression> ParseBinaryOperatorExpression(ErrorStream& err, Lexer& le
 
 			lexer.Push();
 			const OperatorType nextOperatorType = ParseOperatorType(err, lexer);
-			IFERR_RETURN(err, nullptr)
 			lexer.Revert();
+			IFERR_RETURN(err, nullptr)
 
 			const UInt32 nextPrecedence = GetOperatorPrecedence(nextOperatorType);
 
