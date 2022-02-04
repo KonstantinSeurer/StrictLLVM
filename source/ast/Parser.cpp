@@ -904,6 +904,10 @@ static Ref<Expression> ParseBinaryOperatorExpression(ErrorStream& err, Lexer& le
 					IFERR_RETURN(err, nullptr)
 				}
 			}
+			else
+			{
+				op->b.reset();
+			}
 
 			if (expressionEndTokens.find(lexer.Get().type) != expressionEndTokens.end())
 			{
