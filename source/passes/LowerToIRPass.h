@@ -38,6 +38,10 @@ private:
 
 	void LowerNewExpression(Ref<llvm::Module> module, Ref<NewExpression> expression, LowerFunctionToIRState* state);
 
+	llvm::Value* LowerIntOperator(OperatorType type, llvm::Value* a, llvm::Value* b, bool isSigned);
+
+	llvm::Value* LowerFloatOperator(OperatorType type, llvm::Value* a, llvm::Value* b);
+
 	void LowerOperatorExpression(Ref<llvm::Module> module, Ref<OperatorExpression> expression, LowerFunctionToIRState* state);
 
 	void LowerTernaryExpression(Ref<llvm::Module> module, Ref<TernaryExpression> expression, LowerFunctionToIRState* state);

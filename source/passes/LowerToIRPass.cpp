@@ -80,8 +80,160 @@ void LowerToIRPass::LowerNewExpression(Ref<llvm::Module> module, Ref<NewExpressi
 {
 }
 
+llvm::Value* LowerToIRPass::LowerIntOperator(OperatorType type, llvm::Value* a, llvm::Value* b, bool isSigned)
+{
+	switch (type)
+	{
+	case OperatorType::AND:
+		return builder->CreateAnd(a, b);
+	case OperatorType::DIVIDE: {
+		if (isSigned)
+		{
+			return builder->CreateSDiv(a, b);
+		}
+		else
+		{
+			return builder->CreateUDiv(a, b);
+		}
+	}
+	case OperatorType::EQUAL:
+		return builder->CreateICmpEQ(a, b);
+	case OperatorType::GREATER: {
+		if (isSigned)
+		{
+			return builder->CreateICmpSGT(a, b);
+		}
+		else
+		{
+			return builder->CreateICmpUGT(a, b);
+		}
+	}
+	case OperatorType::GREATER_EQUAL: {
+		if (isSigned)
+		{
+			return builder->CreateICmpSGE(a, b);
+		}
+		else
+		{
+			return builder->CreateICmpUGE(a, b);
+		}
+	}
+	case OperatorType::INVERSE:
+		return builder->CreateNot(a);
+	case OperatorType::LESS: {
+		if (isSigned)
+		{
+			return builder->CreateICmpSLT(a, b);
+		}
+		else
+		{
+			return builder->CreateICmpULT(a, b);
+		}
+	}
+	case OperatorType::LESS_EQUAL: {
+		if (isSigned)
+		{
+			return builder->CreateICmpSLE(a, b);
+		}
+		else
+		{
+			return builder->CreateICmpULE(a, b);
+		}
+	}
+	case OperatorType::MINUS:
+		return builder->CreateSub(a, b);
+	case OperatorType::MULTIPLY:
+		return builder->CreateMul(a, b);
+	case OperatorType::NEGATIVE:
+		return builder->CreateNeg(a);
+	case OperatorType::NOT:
+		return builder->CreateNot(a);
+	case OperatorType::OR:
+		return builder->CreateOr(a, b);
+	case OperatorType::PLUS:
+		return builder->CreateAdd(a, b);
+	case OperatorType::SHIFT_LEFT:
+		return builder->CreateShl(a, b);
+	case OperatorType::SHIFT_RIGHT:
+		return builder->CreateLShr(a, b);
+	case OperatorType::XOR:
+		return builder->CreateXor(a, b);
+	default:
+		STRICT_UNREACHABLE;
+	}
+}
+
+llvm::Value* LowerToIRPass::LowerFloatOperator(OperatorType type, llvm::Value* a, llvm::Value* b)
+{
+	switch (type)
+	{
+	case OperatorType::DIVIDE:
+		return builder->CreateSDiv(a, b);
+	case OperatorType::EQUAL:
+		return builder->CreateICmpEQ(a, b);
+	case OperatorType::GREATER:
+		return builder->CreateICmpSGT(a, b);
+	case OperatorType::GREATER_EQUAL:
+		return builder->CreateICmpSGE(a, b);
+	case OperatorType::LESS:
+		return builder->CreateICmpSLT(a, b);
+	case OperatorType::LESS_EQUAL:
+		return builder->CreateICmpSLE(a, b);
+	case OperatorType::MINUS:
+		return builder->CreateSub(a, b);
+	case OperatorType::MULTIPLY:
+		return builder->CreateMul(a, b);
+	case OperatorType::NEGATIVE:
+		return builder->CreateNeg(a);
+	case OperatorType::PLUS:
+		return builder->CreateAdd(a, b);
+	default:
+		STRICT_UNREACHABLE;
+	}
+}
+
 void LowerToIRPass::LowerOperatorExpression(Ref<llvm::Module> module, Ref<OperatorExpression> expression, LowerFunctionToIRState* state)
 {
+	LowerExpression(module, expression->a, state);
+
+	llvm::Value* a = expression->a->expressionMeta.ir;
+	llvm::Value* b = nullptr;
+
+	if (expression->b && expression->b->expression)
+	{
+		LowerExpression(module, expression->b->expression, state);
+		b = expression->b->expression->expressionMeta.ir;
+	}
+
+	if (expression->expressionMeta.dataType->dataTypeType == DataTypeType::PRIMITIVE)
+	{
+		Ref<PrimitiveType> primitiveType = std::dynamic_pointer_cast<PrimitiveType>(expression->expressionMeta.dataType);
+		switch (primitiveType->primitiveType)
+		{
+		case TokenType::INT8:
+		case TokenType::INT16:
+		case TokenType::INT32:
+		case TokenType::INT64: {
+			expression->expressionMeta.ir = LowerIntOperator(expression->operatorType, a, b, true);
+			break;
+		}
+		case TokenType::BOOL:
+		case TokenType::UINT8:
+		case TokenType::UINT16:
+		case TokenType::UINT32:
+		case TokenType::UINT64: {
+			expression->expressionMeta.ir = LowerIntOperator(expression->operatorType, a, b, false);
+			break;
+		}
+		case TokenType::FLOAT32:
+		case TokenType::FLOAT64: {
+			expression->expressionMeta.ir = LowerFloatOperator(expression->operatorType, a, b);
+			break;
+		}
+		default:
+			STRICT_UNREACHABLE;
+		}
+	}
 }
 
 void LowerToIRPass::LowerTernaryExpression(Ref<llvm::Module> module, Ref<TernaryExpression> expression, LowerFunctionToIRState* state)
