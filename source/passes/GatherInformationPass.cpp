@@ -3,7 +3,7 @@
 
 #include <iostream>
 
-void GatherInformationPass::TryToInsertTemplatedObjectType(HashSet<ObjectType>& target, const DataType& dataType)
+void GatherInformationPass::TryToInsertTemplatedObjectType(HashMap<ObjectType, Array<ObjectType*>>& target, DataType& dataType)
 {
 	if ((flags & GatherInformationFlags::USED_TEMPLATES) != GatherInformationFlags::USED_TEMPLATES)
 	{
@@ -12,11 +12,18 @@ void GatherInformationPass::TryToInsertTemplatedObjectType(HashSet<ObjectType>& 
 
 	if (dataType.dataTypeType == DataTypeType::OBJECT)
 	{
-		const ObjectType& objectType = (const ObjectType&)dataType;
+		ObjectType& objectType = (ObjectType&)dataType;
 
 		if (objectType.typeTemplate)
 		{
-			target.insert(objectType);
+			if (target.find(objectType) == target.end())
+			{
+				target[objectType] = {&objectType};
+			}
+			else
+			{
+				target.at(objectType).push_back(&objectType);
+			}
 		}
 
 		return;
@@ -24,7 +31,7 @@ void GatherInformationPass::TryToInsertTemplatedObjectType(HashSet<ObjectType>& 
 
 	if (dataType.IsPointer())
 	{
-		TryToInsertTemplatedObjectType(target, *((const PointerType&)dataType).value);
+		TryToInsertTemplatedObjectType(target, *((PointerType&)dataType).value);
 	}
 }
 
@@ -170,8 +177,13 @@ void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type, Ref<Met
 	}
 }
 
-void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type, Ref<MemberVariableDeclaration> variable)
+void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type, Ref<MemberVariableDeclaration> variable, UInt32 index)
 {
+	if ((flags & GatherInformationFlags::MEMBER_INDEX) == GatherInformationFlags::MEMBER_INDEX)
+	{
+		variable->memberVariableDeclarationMeta.index = index;
+	}
+
 	for (auto accessor : variable->accessors)
 	{
 		GatherInformation(type, accessor);
@@ -185,13 +197,16 @@ void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type)
 		type->typeDeclarationMeta.usedTemplateTypes.clear();
 	}
 
+	UInt32 memberIndex = 0;
+
 	for (auto member : type->members)
 	{
 		TryToInsertTemplatedObjectType(type->typeDeclarationMeta.usedTemplateTypes, *member->dataType);
 
 		if (member->variableType == VariableDeclarationType::MEMBER_VARIABLE)
 		{
-			GatherInformation(type, std::dynamic_pointer_cast<MemberVariableDeclaration>(member));
+			GatherInformation(type, std::dynamic_pointer_cast<MemberVariableDeclaration>(member), memberIndex);
+			memberIndex++;
 		}
 		else if (member->variableType == VariableDeclarationType::METHOD)
 		{

@@ -56,7 +56,7 @@ BuildContext::BuildContext(const Array<String>& modulePath, const String& output
 	// Add required passes
 	AddPass(Allocate<LowerImpliedDeclarationFlagsPass>());
 	AddPass(Allocate<ValidateStructurePass>());
-	AddPass(Allocate<GatherInformationPass>(GatherInformationFlags::PARENT | GatherInformationFlags::THIS));
+	AddPass(Allocate<GatherInformationPass>(GatherInformationFlags::PARENT | GatherInformationFlags::THIS | GatherInformationFlags::MEMBER_INDEX));
 	AddPass(Allocate<ResolveIdentifiersPass>());
 	AddPass(Allocate<InlineTemplatesPass>());
 	AddPass(Allocate<LowerOperatorsPass>());
