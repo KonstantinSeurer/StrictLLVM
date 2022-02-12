@@ -6,6 +6,7 @@
 #include "../Lexer.h"
 
 #include "llvm/IR/Function.h"
+#include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Value.h"
 
@@ -62,7 +63,7 @@ STRICT_ENUM(DataTypeType, TYPE, PRIMITIVE, OBJECT, REFERENCE, POINTER, ARRAY)
 class DataTypeMeta
 {
 public:
-	llvm::Type* ir;
+	llvm::Type* ir = nullptr;
 };
 
 class DataType : public ASTItem
@@ -146,7 +147,7 @@ DECLARE_HASH(PrimitiveType)
 class ObjectTypeMeta
 {
 public:
-	Ref<Unit> unit;
+	Ref<Unit> unit = nullptr;
 };
 
 class ObjectType : public DataType
@@ -263,7 +264,7 @@ STRICT_ENUM(UnitDeclarationType, ERROR, TYPE, CLASS)
 class UnitDeclarationMeta
 {
 public:
-	Ref<ObjectType> thisType;
+	Ref<ObjectType> thisType = nullptr;
 };
 
 class UnitDeclaration : public ASTItem
@@ -337,7 +338,7 @@ STRICT_ENUM(VariableDeclarationType, VARIABLE, MEMBER_VARIABLE, METHOD)
 class VariableDeclarationMeta
 {
 public:
-	llvm::Argument* irArgument;
+	llvm::Value* ir = nullptr;
 };
 
 class VariableDeclaration : public ASTItem
@@ -376,7 +377,7 @@ STRICT_ENUM(MethodType, METHOD, CONSTRUCTOR, DESTRUCTOR, OPERATOR, GETTER, SETTE
 class MethodDeclarationMeta
 {
 public:
-	llvm::Function* ir;
+	llvm::Function* ir = nullptr;
 };
 
 class MethodDeclaration : public VariableDeclaration
@@ -500,6 +501,7 @@ DECLARE_HASH(OperatorDeclaration)
 class MemberVariableDeclarationMeta
 {
 public:
+	UInt32 index = 0;
 };
 
 class MemberVariableDeclaration : public VariableDeclaration
@@ -560,7 +562,7 @@ DECLARE_HASH(TemplateDeclaration)
 class TypeDeclarationMeta
 {
 public:
-	HashSet<ObjectType> usedTemplateTypes;
+	HashMap<ObjectType, Array<ObjectType*>> usedTemplateTypes;
 };
 
 class TypeDeclaration : public UnitDeclaration
@@ -596,9 +598,9 @@ DECLARE_HASH(TypeDeclaration)
 class ClassDeclarationMeta
 {
 public:
-	Ref<VariableDeclaration> thisDeclaration;
+	Ref<VariableDeclaration> thisDeclaration = nullptr;
 
-	Ref<llvm::Module> module;
+	Ref<llvm::Module> module = nullptr;
 };
 
 class ClassDeclaration : public TypeDeclaration
@@ -668,7 +670,7 @@ protected:
 
 DECLARE_HASH(Unit)
 
-STRICT_ENUM(ModuleType, STATIC, DYNAMIC, INLINE)
+STRICT_ENUM(ModuleType, STATIC, DYNAMIC, INLINE, EXECUTABLE)
 
 STRICT_FLAGS(TargetFlags, NONE = 0, BIT32 = 1, BIT64 = 2, X86 = 4, LINUX = 8)
 
@@ -678,7 +680,7 @@ TargetFlags JSONToTargetFlags(const JSON& json);
 class ModuleMeta
 {
 public:
-	HashMap<Template, Ref<ClassDeclaration>> templateSpecializations;
+	HashMap<ObjectType, Ref<ClassDeclaration>> templateSpecializations;
 };
 
 class Module : public ASTItem
@@ -822,7 +824,7 @@ DECLARE_HASH(BracketExpression)
 class IdentifierExpressionMeta
 {
 public:
-	Ref<ASTItem> destination;
+	Ref<ASTItem> destination = nullptr;
 };
 
 class IdentifierExpression : public Expression
@@ -858,9 +860,9 @@ struct SecondOperand
 {
 public:
 	SecondOperandMeta secondOperandMeta;
-	Ref<Expression> expression;
-	Ref<DataType> dataType;
-	Ref<Template> typeTemplate;
+	Ref<Expression> expression = nullptr;
+	Ref<DataType> dataType = nullptr;
+	Ref<Template> typeTemplate = nullptr;
 
 public:
 	bool operator==(const SecondOperand& other) const;
