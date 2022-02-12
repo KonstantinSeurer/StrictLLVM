@@ -7,6 +7,7 @@ class InlineTemplatesPass : public Pass
 {
 private:
 	Ref<GatherInformationPass> gatherInformationPass;
+	Ref<GatherInformationPass> gatherAllInformationPass;
 
 public:
 	InlineTemplatesPass();
@@ -29,7 +30,7 @@ private:
 
 	void InlineTemplateArgument(Ref<ClassDeclaration> target, const String& name, const TemplateArgument& argument);
 
-	bool GenerateSpecializations(PrintFunction print, BuildContext& context, Ref<Module> module, const HashSet<ObjectType>& types);
+	bool GenerateSpecializations(PrintFunction print, BuildContext& context, Ref<Module> module, HashMap<ObjectType, Array<ObjectType*>>& types);
 
 	Ref<Unit> GenerateSpecialization(const ObjectType& type);
 };

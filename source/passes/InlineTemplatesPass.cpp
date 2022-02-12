@@ -9,6 +9,7 @@ static void GenerateTemplateSpecializations(Ref<Module> module)
 InlineTemplatesPass::InlineTemplatesPass() : Pass("InlineTemplatesPass")
 {
 	gatherInformationPass = Allocate<GatherInformationPass>(GatherInformationFlags::USED_TEMPLATES);
+	gatherAllInformationPass = Allocate<GatherInformationPass>(GatherInformationFlags::ALL);
 }
 
 void InlineTemplatesPass::InlineExpression(Ref<Expression>* target, const String& name, const TemplateArgument& argument)
@@ -121,6 +122,10 @@ void InlineTemplatesPass::InlineStatement(Ref<Statement> target, const String& n
 	case StatementType::VARIABLE_DECLARATION: {
 		Ref<VariableDeclarationStatement> variableDeclarationStatement = std::dynamic_pointer_cast<VariableDeclarationStatement>(target);
 		InlineVariableDeclaration(variableDeclarationStatement->declaration, name, argument);
+		if (variableDeclarationStatement->value)
+		{
+			InlineExpression(&variableDeclarationStatement->value, name, argument);
+		}
 		break;
 	}
 	case StatementType::WHILE: {
@@ -184,9 +189,10 @@ void InlineTemplatesPass::InlineDataType(Ref<DataType>* target, const String& na
 		if (objectType->name == name && argument.dataType)
 		{
 			*target = argument.dataType;
+			objectType = std::dynamic_pointer_cast<ObjectType>(argument.dataType);
 		}
 
-		if (objectType->typeTemplate)
+		if (objectType && objectType->typeTemplate)
 		{
 			for (auto& templateArgument : objectType->typeTemplate->arguments)
 			{
@@ -256,6 +262,7 @@ Ref<Unit> InlineTemplatesPass::GenerateSpecialization(const ObjectType& type)
 	Ref<ClassDeclaration> resultClass = std::dynamic_pointer_cast<ClassDeclaration>(resultUnit->declaredType);
 
 	resultClass->name = ReplaceChar(type.ToStrict(), ' ', '-');
+	resultUnit->name = resultClass->name;
 	resultClass->typeTemplate = nullptr;
 
 	for (UInt32 argumentIndex = 0; argumentIndex < sourceClass->typeTemplate->parameters.size(); argumentIndex++)
@@ -266,27 +273,45 @@ Ref<Unit> InlineTemplatesPass::GenerateSpecialization(const ObjectType& type)
 	return resultUnit;
 }
 
-bool InlineTemplatesPass::GenerateSpecializations(PrintFunction print, BuildContext& context, Ref<Module> module, const HashSet<ObjectType>& types)
+bool InlineTemplatesPass::GenerateSpecializations(PrintFunction print, BuildContext& context, Ref<Module> module,
+                                                  HashMap<ObjectType, Array<ObjectType*>>& types)
 {
 	bool progress = false;
 
+	Array<ObjectType> eraseList;
+
 	for (const auto& type : types)
 	{
-		if (module->moduleMeta.templateSpecializations.find(*type.typeTemplate) != module->moduleMeta.templateSpecializations.end())
+		if (module->moduleMeta.templateSpecializations.find(type.first) != module->moduleMeta.templateSpecializations.end())
 		{
 			continue;
 		}
 
-		Ref<Unit> specialization = GenerateSpecialization(type);
+		Ref<Unit> specialization = GenerateSpecialization(type.first);
 
 		if (specialization)
 		{
+			gatherAllInformationPass->GatherInformation(context, specialization);
 			ResolveUnitIdentifiers(print, context, specialization);
 
 			progress = true;
 			Ref<ClassDeclaration> specializedClass = std::dynamic_pointer_cast<ClassDeclaration>(specialization->declaredType);
-			module->moduleMeta.templateSpecializations[*type.typeTemplate] = specializedClass;
+			module->moduleMeta.templateSpecializations[type.first] = specializedClass;
+
+			for (auto typeRef : type.second)
+			{
+				typeRef->name = specializedClass->name;
+				typeRef->typeTemplate = nullptr;
+				typeRef->objectTypeMeta.unit = specialization;
+			}
+
+			eraseList.push_back(type.first);
 		}
+	}
+
+	for (const auto& dataType : eraseList)
+	{
+		types.erase(dataType);
 	}
 
 	return progress;
@@ -310,11 +335,15 @@ PassResultFlags InlineTemplatesPass::Run(PrintFunction print, BuildContext& cont
 					continue;
 				}
 
-				const auto& types = std::dynamic_pointer_cast<TypeDeclaration>(unit->declaredType)->typeDeclarationMeta.usedTemplateTypes;
+				auto& types = std::dynamic_pointer_cast<TypeDeclaration>(unit->declaredType)->typeDeclarationMeta.usedTemplateTypes;
 				GenerateSpecializations(print, context, module, types);
 			}
 
-			// TODO: Replace references to the templated types with references to the inlined versions
+			for (auto specialization : module->moduleMeta.templateSpecializations)
+			{
+				auto& types = specialization.second->typeDeclarationMeta.usedTemplateTypes;
+				GenerateSpecializations(print, context, module, types);
+			}
 		} while (progress);
 	}
 
