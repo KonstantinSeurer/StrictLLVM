@@ -28,7 +28,7 @@ public:
 private:
 	bool IsTraversalRequired(TraversalLevel level) const;
 
-	Ref<Unit> ResolveType(const String& name, bool optional);
+	Ref<Unit> ResolveType(const String& name, bool optional, UInt32 characterIndex);
 
 	PassResultFlags ResolveDataType(Ref<MethodDeclaration> method, Ref<DataType> type);
 

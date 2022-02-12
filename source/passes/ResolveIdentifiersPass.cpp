@@ -18,7 +18,7 @@ static bool HasEnding(const String& fullString, const String& ending)
 	}
 }
 
-Ref<Unit> ResolveContext::ResolveType(const String& name, bool optional)
+Ref<Unit> ResolveContext::ResolveType(const String& name, bool optional, UInt32 characterIndex)
 {
 	if (name == unit->name)
 	{
@@ -64,7 +64,7 @@ Ref<Unit> ResolveContext::ResolveType(const String& name, bool optional)
 
 	if (!optional)
 	{
-		err.PrintError("Unable to resolve type '" + name + "'!");
+		err.PrintError(characterIndex, "Unable to resolve type '" + name + "'!");
 	}
 
 	return nullptr;
@@ -104,7 +104,7 @@ PassResultFlags ResolveContext::ResolveDataType(Ref<MethodDeclaration> method, R
 	if (type->dataTypeType == DataTypeType::OBJECT)
 	{
 		Ref<ObjectType> objectType = std::dynamic_pointer_cast<ObjectType>(type);
-		objectType->objectTypeMeta.unit = ResolveType(objectType->name, false);
+		objectType->objectTypeMeta.unit = ResolveType(objectType->name, false, type->characterIndex);
 		PassResultFlags result = err.HasErrorOccured() ? PassResultFlags::CRITICAL_ERROR : PassResultFlags::SUCCESS;
 
 		if (objectType->typeTemplate)
@@ -312,7 +312,7 @@ static Ref<VariableDeclaration> SearchVariableDeclaration(const Statement* state
 PassResultFlags ResolveContext::ResolveIdentifierExpression(Ref<ObjectType> context, Ref<MethodDeclaration> method, Ref<IdentifierExpression> expression,
                                                             bool required)
 {
-	Ref<Unit> unit = ResolveType(expression->name, true);
+	Ref<Unit> unit = ResolveType(expression->name, true, expression->characterIndex);
 	if (unit)
 	{
 		expression->identifierExpressionMeta.destination = unit;
