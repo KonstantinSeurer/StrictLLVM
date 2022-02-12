@@ -3,8 +3,8 @@
 #define SOURCE_PASSES_LOWERTOIR
 
 #include "../BuildContext.h"
-#include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/LegacyPassManager.h"
 
 class LowerFunctionToIRState
 {
@@ -13,6 +13,7 @@ public:
 	llvm::BasicBlock* currentBlock;
 	llvm::BasicBlock* breakBlock;
 	llvm::BasicBlock* continueBlock;
+	llvm::Value* thisPointer;
 };
 
 class LowerToIRPass : public Pass
@@ -60,7 +61,7 @@ private:
 
 	void LowerStatement(Ref<llvm::Module> module, Ref<Statement> statement, LowerFunctionToIRState* state);
 
-	void LowerMethod(Ref<llvm::Module> module, Ref<MethodDeclaration> method);
+	void LowerMethod(Ref<llvm::Module> module, Ref<MethodDeclaration> method, Ref<ClassDeclaration> classDeclaration, llvm::legacy::FunctionPassManager& fpm);
 
 	void LowerClass(Ref<ClassDeclaration> classDeclaration);
 };
