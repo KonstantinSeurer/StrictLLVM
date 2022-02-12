@@ -1,0 +1,8 @@
+
+{
+	"type": "EXECUTABLE",
+	"units":
+	[
+		"ArrayTest"
+	]
+}

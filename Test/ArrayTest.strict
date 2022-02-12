@@ -1,0 +1,11 @@
+
+using Strict.Core.Array;
+
+public singleton ArrayTest
+{
+
+    public ArrayTest()
+    {
+        Array<Int8> bytes;
+    }
+}
