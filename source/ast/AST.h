@@ -724,9 +724,13 @@ STRICT_ENUM(ExpressionType, LITERAL, IDENTIFIER, OPERATOR, CALL, TERNARY, BRACKE
 class ExpressionMeta
 {
 public:
-	Ref<DataType> dataType;
-	Statement* parentStatement;
-	llvm::Value* ir;
+	Ref<DataType> dataType = nullptr;
+	Statement* parentStatement = nullptr;
+	llvm::Value* ir = nullptr;
+	bool pointer = false;
+
+public:
+	llvm::Value* Load(llvm::IRBuilder<>& builder) const;
 };
 
 class Expression : public ASTItem

@@ -298,6 +298,11 @@ bool PointerType::operator==(const PointerType& other) const
 	return true;
 }
 
+llvm::Value* ExpressionMeta::Load(llvm::IRBuilder<>& builder) const
+{
+	return pointer ? builder.CreateLoad(dataType->dataTypeMeta.ir, ir) : ir;
+}
+
 String Expression::ToStringImplementation(UInt32 indentation) const
 {
 	return ENUM_VAR(indentation, expressionType);
