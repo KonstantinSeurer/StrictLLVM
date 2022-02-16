@@ -730,6 +730,7 @@ class ExpressionMeta
 public:
 	Ref<DataType> dataType = nullptr;
 	Statement* parentStatement = nullptr;
+	Expression* parentExpression = nullptr;
 	llvm::Value* ir = nullptr;
 	bool pointer = false;
 

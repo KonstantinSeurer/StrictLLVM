@@ -52,6 +52,10 @@ void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type, Ref<Exp
 	case ExpressionType::BRACKET: {
 		Ref<BracketExpression> bracketExpression = std::dynamic_pointer_cast<BracketExpression>(expression);
 		GatherInformation(type, bracketExpression->expression, parentStatement);
+		if ((flags & GatherInformationFlags::PARENT) == GatherInformationFlags::PARENT)
+		{
+			bracketExpression->expression->expressionMeta.parentExpression = bracketExpression.get();
+		}
 		break;
 	}
 	case ExpressionType::CALL: {
@@ -60,6 +64,14 @@ void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type, Ref<Exp
 		for (auto argument : callExpression->arguments)
 		{
 			GatherInformation(type, argument, parentStatement);
+		}
+		if ((flags & GatherInformationFlags::PARENT) == GatherInformationFlags::PARENT)
+		{
+			callExpression->method->expressionMeta.parentExpression = callExpression.get();
+			for (auto argument : callExpression->arguments)
+			{
+				argument->expressionMeta.parentExpression = callExpression.get();
+			}
 		}
 		break;
 	}
@@ -70,29 +82,46 @@ void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type, Ref<Exp
 		{
 			GatherInformation(type, argument, parentStatement);
 		}
+		if ((flags & GatherInformationFlags::PARENT) == GatherInformationFlags::PARENT)
+		{
+			for (auto argument : newExpression->arguments)
+			{
+				argument->expressionMeta.parentExpression = newExpression.get();
+			}
+		}
 		break;
 	}
 	case ExpressionType::OPERATOR: {
 		Ref<OperatorExpression> operatorExpression = std::dynamic_pointer_cast<OperatorExpression>(expression);
+
 		GatherInformation(type, operatorExpression->a, parentStatement);
+		operatorExpression->a->expressionMeta.parentExpression = operatorExpression.get();
+
 		if (operatorExpression->b)
 		{
 			if (operatorExpression->b->dataType)
 			{
 				TryToInsertTemplatedObjectType(type->typeDeclarationMeta.usedTemplateTypes, *operatorExpression->b->dataType);
 			}
-			else
+			if (operatorExpression->b->expression)
 			{
 				GatherInformation(type, operatorExpression->b->expression, parentStatement);
+				operatorExpression->b->expression->expressionMeta.parentExpression = operatorExpression.get();
 			}
 		}
 		break;
 	}
 	case ExpressionType::TERNARY: {
 		Ref<TernaryExpression> ternaryExpression = std::dynamic_pointer_cast<TernaryExpression>(expression);
+
 		GatherInformation(type, ternaryExpression->condition, parentStatement);
+		ternaryExpression->condition->expressionMeta.parentExpression = ternaryExpression.get();
+
 		GatherInformation(type, ternaryExpression->thenExpression, parentStatement);
+		ternaryExpression->thenExpression->expressionMeta.parentExpression = ternaryExpression.get();
+
 		GatherInformation(type, ternaryExpression->elseExpression, parentStatement);
+		ternaryExpression->elseExpression->expressionMeta.parentExpression = ternaryExpression.get();
 		break;
 	}
 	default:
