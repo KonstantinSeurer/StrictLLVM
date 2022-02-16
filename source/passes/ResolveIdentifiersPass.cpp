@@ -254,7 +254,7 @@ PassResultFlags ResolveContext::ResolveOperatorExpression(Ref<MethodDeclaration>
 		}
 	}
 
-	if (pass == ResolvePass::EXPRESSION && !expression->expressionMeta.dataType)
+	if (pass == ResolvePass::EXPRESSION)
 	{
 		expression->expressionMeta.dataType = ResolveOperatorDataType(expression);
 	}
@@ -456,7 +456,7 @@ Ref<DataType> ResolveContext::ConvertExpressionToDataType(Ref<Expression> expres
 	{
 		Ref<IdentifierExpression> identifierExpression = std::dynamic_pointer_cast<IdentifierExpression>(expression);
 
-		if (identifierExpression->identifierExpressionMeta.destination->type != ASTItemType::UNIT_DECLARATION)
+		if (identifierExpression->identifierExpressionMeta.destination->type != ASTItemType::UNIT)
 		{
 			return nullptr;
 		}
@@ -531,6 +531,21 @@ Ref<DataType> ResolveContext::ConvertExpressionToDataType(Ref<Expression> expres
 	return nullptr;
 }
 
+static void SetNewExpressionMeta(Ref<NewExpression> expression)
+{
+	Ref<PointerType> pointer = Allocate<PointerType>();
+	if (expression->dataType->dataTypeType == DataTypeType::ARRAY)
+	{
+		pointer->dataTypeType = DataTypeType::ARRAY;
+	}
+	else
+	{
+		pointer->dataTypeType = DataTypeType::POINTER;
+	}
+	pointer->value = expression->dataType;
+	expression->expressionMeta.dataType = pointer;
+}
+
 PassResultFlags ResolveContext::ResolveCallExpression(Ref<MethodDeclaration> method, Ref<Expression>* expression)
 {
 	Ref<CallExpression> callExpression = std::dynamic_pointer_cast<CallExpression>(*expression);
@@ -558,6 +573,7 @@ PassResultFlags ResolveContext::ResolveCallExpression(Ref<MethodDeclaration> met
 			newExpression->allocationType = AllocationType::STACK;
 			newExpression->dataType = dataType;
 			newExpression->arguments = callExpression->arguments;
+			SetNewExpressionMeta(newExpression);
 
 			*expression = newExpression;
 
@@ -583,9 +599,26 @@ PassResultFlags ResolveContext::ResolveCallExpression(Ref<MethodDeclaration> met
 		if (destinationItem->type == ASTItemType::VARIABLE_DECLARATION)
 		{
 			Ref<VariableDeclaration> destination = std::dynamic_pointer_cast<VariableDeclaration>(destinationItem);
+			callExpression->callExpressionMeta.destination = destination;
+
 			if (destination->variableType == VariableDeclarationType::METHOD)
 			{
 				callExpression->expressionMeta.dataType = destination->dataType;
+
+				Expression* parentExpression = actualMethod->expressionMeta.parentExpression;
+
+				if (parentExpression && parentExpression->expressionType == ExpressionType::OPERATOR &&
+				    ((OperatorExpression*)parentExpression)->operatorType == OperatorType::ACCESS)
+				{
+					OperatorExpression* parentOperator = (OperatorExpression*)parentExpression;
+					assert(parentOperator->b->expression == actualMethod);
+					callExpression->callExpressionMeta.context = parentOperator->a;
+				}
+				else
+				{
+					// If this call does not look like 'a.b()', the destination method must be a member of the current type.
+					assert(std::find(type->members.begin(), type->members.end(), destination) != type->members.end());
+				}
 			}
 		}
 	}
@@ -607,16 +640,7 @@ PassResultFlags ResolveContext::ResolveNewExpression(Ref<MethodDeclaration> meth
 		return result;
 	}
 
-	if (expression->dataType->dataTypeType == DataTypeType::ARRAY)
-	{
-		expression->expressionMeta.dataType = expression->dataType;
-	}
-	else
-	{
-		Ref<PointerType> pointer = Allocate<PointerType>();
-		pointer->value = expression->dataType;
-		expression->expressionMeta.dataType = pointer;
-	}
+	SetNewExpressionMeta(expression);
 
 	return result;
 }

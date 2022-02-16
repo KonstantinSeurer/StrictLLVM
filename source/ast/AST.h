@@ -908,6 +908,8 @@ DECLARE_HASH(OperatorExpression)
 class CallExpressionMeta
 {
 public:
+	Ref<VariableDeclaration> destination;
+	Ref<Expression> context;
 };
 
 class CallExpression : public Expression
