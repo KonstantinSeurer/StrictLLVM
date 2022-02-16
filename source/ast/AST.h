@@ -601,6 +601,8 @@ public:
 	Ref<VariableDeclaration> thisDeclaration = nullptr;
 
 	Ref<llvm::Module> module = nullptr;
+	llvm::Function* malloc;
+	llvm::Function* free;
 };
 
 class ClassDeclaration : public TypeDeclaration

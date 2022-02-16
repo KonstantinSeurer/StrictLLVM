@@ -169,6 +169,32 @@ void LowerToIRPass::LowerLiteralExpression(Ref<llvm::Module> module, Ref<Literal
 
 void LowerToIRPass::LowerNewExpression(Ref<llvm::Module> module, Ref<NewExpression> expression, LowerFunctionToIRState* state)
 {
+	LowerDataType(module, expression->dataType);
+
+	llvm::Value* one = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*context), 1);
+
+	llvm::Value* arrayLength = one;
+	if (expression->dataType->dataTypeType == DataTypeType::ARRAY)
+	{
+		Ref<PointerType> currentType = std::dynamic_pointer_cast<PointerType>(expression->dataType);
+		while (true)
+		{
+			LowerExpression(module, currentType->arrayLength, state);
+			arrayLength = builder->CreateMul(arrayLength, currentType->arrayLength->expressionMeta.ir);
+			if (currentType->value->dataTypeType != DataTypeType::ARRAY)
+			{
+				break;
+			}
+			currentType = std::dynamic_pointer_cast<PointerType>(currentType->value);
+		}
+	}
+
+	llvm::Value* size = builder->CreateGEP(expression->dataType->dataTypeMeta.ir,
+	                                       llvm::ConstantPointerNull::get(llvm::PointerType::get(expression->dataType->dataTypeMeta.ir, 0)), {one});
+
+	expression->expressionMeta.ir = builder->CreateCall(state->classDeclaration->classDeclarationMeta.malloc, {size});
+
+	// TODO: Call the constructor.
 }
 
 llvm::Value* LowerToIRPass::LowerIntOperator(OperatorType type, llvm::Value* a, llvm::Value* b, bool isSigned)
@@ -647,6 +673,13 @@ void LowerToIRPass::LowerClass(Ref<ClassDeclaration> classDeclaration)
 	}
 
 	auto module = Allocate<llvm::Module>(classDeclaration->name, *context);
+
+	auto mallocSignature = llvm::FunctionType::get(llvm::Type::getInt8PtrTy(*context), {llvm::Type::getInt64Ty(*context)}, false);
+	classDeclaration->classDeclarationMeta.malloc =
+		llvm::Function::Create(mallocSignature, llvm::GlobalValue::LinkageTypes::ExternalLinkage, "malloc", *module);
+
+	auto freeSignature = llvm::FunctionType::get(llvm::Type::getVoidTy(*context), {llvm::Type::getInt8PtrTy(*context)}, false);
+	classDeclaration->classDeclarationMeta.free = llvm::Function::Create(freeSignature, llvm::GlobalValue::LinkageTypes::ExternalLinkage, "free", *module);
 
 	LowerDataType(module, classDeclaration->unitDeclarationMeta.thisType);
 
