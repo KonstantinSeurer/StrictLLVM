@@ -98,6 +98,39 @@ void LowerToIRPass::LowerDataType(Ref<llvm::Module> module, Ref<DataType> type)
 
 void LowerToIRPass::LowerCallExpression(Ref<llvm::Module> module, Ref<CallExpression> expression, LowerFunctionToIRState* state)
 {
+	assert(expression->callExpressionMeta.destination);
+
+	if (expression->callExpressionMeta.destination->variableType == VariableDeclarationType::METHOD)
+	{
+		Ref<MethodDeclaration> method = std::dynamic_pointer_cast<MethodDeclaration>(expression->callExpressionMeta.destination);
+
+		Array<llvm::Value*> arguments;
+		if (expression->callExpressionMeta.context)
+		{
+			Ref<Expression> context = expression->callExpressionMeta.context;
+			LowerExpression(module, context, state);
+
+			assert(context->expressionMeta.pointer);
+			arguments.push_back(context->expressionMeta.ir);
+		}
+		else
+		{
+			arguments.push_back(state->thisPointer);
+		}
+
+		for (auto argument : expression->arguments)
+		{
+			LowerExpression(module, argument, state);
+			arguments.push_back(argument->expressionMeta.Load(*builder));
+		}
+
+		expression->expressionMeta.ir = builder->CreateCall(method->methodDeclarationMeta.ir, arguments);
+	}
+	else
+	{
+		// TODO: Implement function pointers.
+		STRICT_UNREACHABLE;
+	}
 }
 
 void LowerToIRPass::LowerIdentifierExpression(Ref<llvm::Module> module, Ref<IdentifierExpression> expression, LowerFunctionToIRState* state)
@@ -121,12 +154,18 @@ void LowerToIRPass::LowerIdentifierExpression(Ref<llvm::Module> module, Ref<Iden
 		}
 		else
 		{
-			abort();
+			STRICT_UNREACHABLE;
 		}
-		return;
 	}
-
-	STRICT_UNREACHABLE;
+	else if (expression->identifierExpressionMeta.destination->type == ASTItemType::UNIT)
+	{
+		// TODO: Lower to global variable
+		expression->expressionMeta.pointer = true;
+	}
+	else
+	{
+		STRICT_UNREACHABLE;
+	}
 }
 
 void LowerToIRPass::LowerLiteralExpression(Ref<llvm::Module> module, Ref<LiteralExpression> expression, LowerFunctionToIRState* state)
@@ -341,6 +380,13 @@ void LowerToIRPass::LowerOperatorExpression(Ref<llvm::Module> module, Ref<Operat
 	{
 		builder->CreateStore(b, a);
 		expression->expressionMeta = expression->b->expression->expressionMeta;
+		return;
+	}
+	else if (expression->operatorType == OperatorType::ARRAY_ACCESS)
+	{
+		LowerDataType(module, expression->a->expressionMeta.dataType);
+		expression->expressionMeta.ir = builder->CreateGEP(expression->a->expressionMeta.dataType->dataTypeMeta.ir, a, b);
+		expression->expressionMeta.pointer = true;
 		return;
 	}
 
@@ -647,6 +693,7 @@ void LowerToIRPass::LowerMethod(Ref<llvm::Module> module, Ref<MethodDeclaration>
 		LowerFunctionToIRState state;
 		state.currentBlock = block;
 		state.method = method.get();
+		state.classDeclaration = classDeclaration;
 		state.thisPointer = thisArgument;
 
 		LowerStatement(module, method->body, &state);
@@ -661,7 +708,7 @@ void LowerToIRPass::LowerMethod(Ref<llvm::Module> module, Ref<MethodDeclaration>
 		}
 
 		llvm::verifyFunction(*function);
-		fpm.run(*function);
+		// fpm.run(*function);
 	}
 }
 
@@ -700,8 +747,14 @@ void LowerToIRPass::LowerClass(Ref<ClassDeclaration> classDeclaration)
 		{
 			LowerMethod(module, std::dynamic_pointer_cast<MethodDeclaration>(member), classDeclaration, fpm);
 		}
-
-		// TODO: lower accessors
+		else if (member->variableType == VariableDeclarationType::MEMBER_VARIABLE)
+		{
+			Ref<MemberVariableDeclaration> memberVariableDeclaration = std::dynamic_pointer_cast<MemberVariableDeclaration>(member);
+			for (auto accessor : memberVariableDeclaration->accessors)
+			{
+				LowerMethod(module, accessor, classDeclaration, fpm);
+			}
+		}
 	}
 
 	module->print(llvm::outs(), nullptr);

@@ -9,6 +9,7 @@
 class LowerFunctionToIRState
 {
 public:
+	Ref<ClassDeclaration> classDeclaration;
 	MethodDeclaration* method;
 	llvm::BasicBlock* currentBlock;
 	llvm::BasicBlock* breakBlock;
