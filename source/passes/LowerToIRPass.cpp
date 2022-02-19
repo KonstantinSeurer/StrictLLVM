@@ -464,41 +464,35 @@ void LowerToIRPass::LowerExpression(Ref<llvm::Module> module, Ref<Expression> ex
 {
 	switch (expression->expressionType)
 	{
-	case ExpressionType::BRACKET: {
-		Ref<BracketExpression> bracketExpression = std::dynamic_pointer_cast<BracketExpression>(expression);
-		LowerExpression(module, bracketExpression->expression, state);
+	case ExpressionType::BRACKET:
+		LowerExpression(module, std::dynamic_pointer_cast<BracketExpression>(expression)->expression, state);
+		break;
+	case ExpressionType::CALL:
+		LowerCallExpression(module, std::dynamic_pointer_cast<CallExpression>(expression), state);
+		break;
+	case ExpressionType::IDENTIFIER:
+		LowerIdentifierExpression(module, std::dynamic_pointer_cast<IdentifierExpression>(expression), state);
+		break;
+	case ExpressionType::LITERAL:
+		LowerLiteralExpression(module, std::dynamic_pointer_cast<LiteralExpression>(expression), state);
+		break;
+	case ExpressionType::NEW:
+		LowerNewExpression(module, std::dynamic_pointer_cast<NewExpression>(expression), state);
+		break;
+	case ExpressionType::OPERATOR:
+		LowerOperatorExpression(module, std::dynamic_pointer_cast<OperatorExpression>(expression), state);
+		break;
+	case ExpressionType::TERNARY:
+		LowerTernaryExpression(module, std::dynamic_pointer_cast<TernaryExpression>(expression), state);
 		break;
 	}
-	case ExpressionType::CALL: {
-		Ref<CallExpression> callExpression = std::dynamic_pointer_cast<CallExpression>(expression);
-		LowerCallExpression(module, callExpression, state);
-		break;
-	}
-	case ExpressionType::IDENTIFIER: {
-		Ref<IdentifierExpression> identifierExpression = std::dynamic_pointer_cast<IdentifierExpression>(expression);
-		LowerIdentifierExpression(module, identifierExpression, state);
-		break;
-	}
-	case ExpressionType::LITERAL: {
-		Ref<LiteralExpression> literalExpression = std::dynamic_pointer_cast<LiteralExpression>(expression);
-		LowerLiteralExpression(module, literalExpression, state);
-		break;
-	}
-	case ExpressionType::NEW: {
-		Ref<NewExpression> newExpression = std::dynamic_pointer_cast<NewExpression>(expression);
-		LowerNewExpression(module, newExpression, state);
-		break;
-	}
-	case ExpressionType::OPERATOR: {
-		Ref<OperatorExpression> operatorExpression = std::dynamic_pointer_cast<OperatorExpression>(expression);
-		LowerOperatorExpression(module, operatorExpression, state);
-		break;
-	}
-	case ExpressionType::TERNARY: {
-		Ref<TernaryExpression> ternaryExpression = std::dynamic_pointer_cast<TernaryExpression>(expression);
-		LowerTernaryExpression(module, ternaryExpression, state);
-		break;
-	}
+}
+
+void LowerToIRPass::LowerBlockStatement(Ref<llvm::Module> module, Ref<BlockStatement> statement, LowerFunctionToIRState* state)
+{
+	for (auto subStatement : statement->statements)
+	{
+		LowerStatement(module, subStatement, state);
 	}
 }
 
@@ -613,57 +607,36 @@ void LowerToIRPass::LowerStatement(Ref<llvm::Module> module, Ref<Statement> stat
 {
 	switch (statement->statementType)
 	{
-	case StatementType::BLOCK: {
-		Ref<BlockStatement> blockStatement = std::dynamic_pointer_cast<BlockStatement>(statement);
-		for (auto subStatement : blockStatement->statements)
-		{
-			LowerStatement(module, subStatement, state);
-		}
+	case StatementType::BLOCK:
+		LowerBlockStatement(module, std::dynamic_pointer_cast<BlockStatement>(statement), state);
 		break;
-	}
-	case StatementType::BREAK: {
+	case StatementType::BREAK:
 		builder->CreateBr(state->breakBlock);
 		break;
-	}
-	case StatementType::CONTINUE: {
+	case StatementType::CONTINUE:
 		builder->CreateBr(state->continueBlock);
 		break;
-	}
-	case StatementType::DELETE: {
-		Ref<DeleteStatement> deleteStatement = std::dynamic_pointer_cast<DeleteStatement>(statement);
-		LowerDeleteStatement(module, deleteStatement, state);
+	case StatementType::DELETE:
+		LowerDeleteStatement(module, std::dynamic_pointer_cast<DeleteStatement>(statement), state);
 		break;
-	}
-	case StatementType::EXPRESSION: {
-		Ref<ExpressionStatement> expressionStatement = std::dynamic_pointer_cast<ExpressionStatement>(statement);
-		LowerExpression(module, expressionStatement->expression, state);
+	case StatementType::EXPRESSION:
+		LowerExpression(module, std::dynamic_pointer_cast<ExpressionStatement>(statement)->expression, state);
 		break;
-	}
-	case StatementType::FOR: {
-		Ref<ForStatement> forStatement = std::dynamic_pointer_cast<ForStatement>(statement);
-		LowerForStatement(module, forStatement, state);
+	case StatementType::FOR:
+		LowerForStatement(module, std::dynamic_pointer_cast<ForStatement>(statement), state);
 		break;
-	}
-	case StatementType::IF: {
-		Ref<IfStatement> ifStatement = std::dynamic_pointer_cast<IfStatement>(statement);
-		LowerIfStatement(module, ifStatement, state);
+	case StatementType::IF:
+		LowerIfStatement(module, std::dynamic_pointer_cast<IfStatement>(statement), state);
 		break;
-	}
-	case StatementType::RETURN: {
-		Ref<ReturnStatement> returnStatement = std::dynamic_pointer_cast<ReturnStatement>(statement);
-		LowerReturnStatement(module, returnStatement, state);
+	case StatementType::RETURN:
+		LowerReturnStatement(module, std::dynamic_pointer_cast<ReturnStatement>(statement), state);
 		break;
-	}
-	case StatementType::VARIABLE_DECLARATION: {
-		Ref<VariableDeclarationStatement> variableDeclarationStatement = std::dynamic_pointer_cast<VariableDeclarationStatement>(statement);
-		LowerVariableDeclarationStatement(module, variableDeclarationStatement, state);
+	case StatementType::VARIABLE_DECLARATION:
+		LowerVariableDeclarationStatement(module, std::dynamic_pointer_cast<VariableDeclarationStatement>(statement), state);
 		break;
-	}
-	case StatementType::WHILE: {
-		Ref<WhileStatement> whileStatement = std::dynamic_pointer_cast<WhileStatement>(statement);
-		LowerWhileStatement(module, whileStatement, state);
+	case StatementType::WHILE:
+		LowerWhileStatement(module, std::dynamic_pointer_cast<WhileStatement>(statement), state);
 		break;
-	}
 	}
 }
 

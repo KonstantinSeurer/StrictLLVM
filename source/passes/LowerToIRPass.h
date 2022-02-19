@@ -50,6 +50,8 @@ private:
 
 	void LowerExpression(Ref<llvm::Module> module, Ref<Expression> expression, LowerFunctionToIRState* state);
 
+	void LowerBlockStatement(Ref<llvm::Module> module, Ref<BlockStatement> statement, LowerFunctionToIRState* state);
+
 	void LowerDeleteStatement(Ref<llvm::Module> module, Ref<DeleteStatement> statement, LowerFunctionToIRState* state);
 
 	void LowerForStatement(Ref<llvm::Module> module, Ref<ForStatement> statement, LowerFunctionToIRState* state);
