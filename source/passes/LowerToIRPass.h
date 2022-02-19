@@ -60,6 +60,8 @@ private:
 
 	void LowerWhileStatement(Ref<llvm::Module> module, Ref<WhileStatement> statement, LowerFunctionToIRState* state);
 
+	void LowerReturnStatement(Ref<llvm::Module> module, Ref<ReturnStatement> statement, LowerFunctionToIRState* state);
+
 	void LowerStatement(Ref<llvm::Module> module, Ref<Statement> statement, LowerFunctionToIRState* state);
 
 	void LowerMethod(Ref<llvm::Module> module, Ref<MethodDeclaration> method, Ref<ClassDeclaration> classDeclaration, llvm::legacy::FunctionPassManager& fpm);

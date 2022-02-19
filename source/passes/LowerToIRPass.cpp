@@ -385,7 +385,8 @@ void LowerToIRPass::LowerOperatorExpression(Ref<llvm::Module> module, Ref<Operat
 	else if (expression->operatorType == OperatorType::ARRAY_ACCESS)
 	{
 		LowerDataType(module, expression->a->expressionMeta.dataType);
-		expression->expressionMeta.ir = builder->CreateGEP(expression->a->expressionMeta.dataType->dataTypeMeta.ir, a, b);
+		llvm::Value* ppElement = builder->CreateGEP(expression->a->expressionMeta.dataType->dataTypeMeta.ir, a, b);
+		expression->expressionMeta.ir = builder->CreateLoad(ppElement->getType()->getPointerElementType(), ppElement);
 		expression->expressionMeta.pointer = true;
 		return;
 	}
@@ -594,6 +595,20 @@ void LowerToIRPass::LowerWhileStatement(Ref<llvm::Module> module, Ref<WhileState
 {
 }
 
+void LowerToIRPass::LowerReturnStatement(Ref<llvm::Module> module, Ref<ReturnStatement> statement, LowerFunctionToIRState* state)
+{
+	LowerExpression(module, statement->expression, state);
+	if (state->method->dataType->dataTypeType == DataTypeType::REFERENCE)
+	{
+		assert(statement->expression->expressionMeta.pointer);
+		builder->CreateRet(statement->expression->expressionMeta.ir);
+	}
+	else
+	{
+		builder->CreateRet(statement->expression->expressionMeta.Load(*builder));
+	}
+}
+
 void LowerToIRPass::LowerStatement(Ref<llvm::Module> module, Ref<Statement> statement, LowerFunctionToIRState* state)
 {
 	switch (statement->statementType)
@@ -636,8 +651,7 @@ void LowerToIRPass::LowerStatement(Ref<llvm::Module> module, Ref<Statement> stat
 	}
 	case StatementType::RETURN: {
 		Ref<ReturnStatement> returnStatement = std::dynamic_pointer_cast<ReturnStatement>(statement);
-		LowerExpression(module, returnStatement->expression, state);
-		builder->CreateRet(returnStatement->expression->expressionMeta.Load(*builder));
+		LowerReturnStatement(module, returnStatement, state);
 		break;
 	}
 	case StatementType::VARIABLE_DECLARATION: {
