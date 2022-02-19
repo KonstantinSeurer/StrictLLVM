@@ -667,7 +667,7 @@ void LowerToIRPass::LowerMethod(Ref<llvm::Module> module, Ref<MethodDeclaration>
 	}
 
 	auto signature = llvm::FunctionType::get(method->dataType->dataTypeMeta.ir, parameters, false);
-	auto function = llvm::Function::Create(signature, llvm::GlobalValue::LinkageTypes::ExternalLinkage, method->name, *module);
+	auto function = llvm::Function::Create(signature, llvm::GlobalValue::LinkageTypes::ExternalLinkage, method->methodDeclarationMeta.name, *module);
 	method->methodDeclarationMeta.ir = function;
 
 	if (method->body)

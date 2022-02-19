@@ -200,6 +200,37 @@ void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type, Ref<Sta
 
 void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type, Ref<MethodDeclaration> method)
 {
+	if ((flags & GatherInformationFlags::METHOD_NAME) == GatherInformationFlags::METHOD_NAME)
+	{
+		String name = type->name + ".";
+		switch (method->methodType)
+		{
+		case MethodType::CONSTRUCTOR:
+			name += type->name;
+			break;
+		case MethodType::DESTRUCTOR:
+			name += "~" + type->name;
+			break;
+		case MethodType::GETTER:
+			name += "get";
+			break;
+		case MethodType::METHOD:
+			name += method->name;
+			break;
+		case MethodType::OPERATOR: {
+			Ref<OperatorDeclaration> operatorDeclaration = std::dynamic_pointer_cast<OperatorDeclaration>(method);
+			name += ToString(operatorDeclaration->operatorType);
+			break;
+		}
+		case MethodType::SETTER:
+			name += "set";
+			break;
+		default:
+			STRICT_UNREACHABLE;
+		}
+		method->methodDeclarationMeta.name = name;
+	}
+
 	if (method->body)
 	{
 		GatherInformation(type, method->body, nullptr);

@@ -3,7 +3,7 @@
 
 #include "../BuildContext.h"
 
-STRICT_FLAGS(GatherInformationFlags, NONE = 0, THIS = 1, USED_TEMPLATES = 2, PARENT = 4, MEMBER_INDEX = 8, ALL = 15)
+STRICT_FLAGS(GatherInformationFlags, NONE = 0, THIS = 1, USED_TEMPLATES = 2, PARENT = 4, MEMBER_INDEX = 8, METHOD_NAME = 16, ALL = 31)
 
 class GatherInformationPass : public Pass
 {

@@ -378,6 +378,7 @@ class MethodDeclarationMeta
 {
 public:
 	llvm::Function* ir = nullptr;
+	String name;
 };
 
 class MethodDeclaration : public VariableDeclaration
