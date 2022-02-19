@@ -210,30 +210,28 @@ void LowerToIRPass::LowerNewExpression(Ref<llvm::Module> module, Ref<NewExpressi
 {
 	LowerDataType(module, expression->dataType);
 
-	llvm::Value* one = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*context), 1);
-
-	llvm::Value* arrayLength = one;
-	if (expression->dataType->dataTypeType == DataTypeType::ARRAY)
+	Ref<DataType> dataType = expression->dataType;
+	llvm::Value* arrayLength;
+	if (dataType->dataTypeType == DataTypeType::ARRAY)
 	{
-		Ref<PointerType> currentType = std::dynamic_pointer_cast<PointerType>(expression->dataType);
-		while (true)
-		{
-			LowerExpression(module, currentType->arrayLength, state);
-			arrayLength = builder->CreateMul(arrayLength, currentType->arrayLength->expressionMeta.ir);
-			if (currentType->value->dataTypeType != DataTypeType::ARRAY)
-			{
-				break;
-			}
-			currentType = std::dynamic_pointer_cast<PointerType>(currentType->value);
-		}
+		Ref<PointerType> arrayType = std::dynamic_pointer_cast<PointerType>(dataType);
+		LowerExpression(module, arrayType->arrayLength, state);
+		arrayLength = arrayType->arrayLength->expressionMeta.Load(*builder);
+		dataType = arrayType->value;
+	}
+	else
+	{
+		arrayLength = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*context), 1);
 	}
 
-	llvm::Value* size = builder->CreateGEP(expression->dataType->dataTypeMeta.ir,
-	                                       llvm::ConstantPointerNull::get(llvm::PointerType::get(expression->dataType->dataTypeMeta.ir, 0)), {one});
+	llvm::Value* null = llvm::ConstantPointerNull::get(llvm::PointerType::get(dataType->dataTypeMeta.ir, 0));
+	llvm::Value* sizePointer = builder->CreateGEP(dataType->dataTypeMeta.ir, null, {arrayLength});
+	llvm::Value* size = builder->CreatePtrToInt(sizePointer, llvm::Type::getInt64Ty(*context));
 
 	expression->expressionMeta.ir = builder->CreateCall(state->classDeclaration->classDeclarationMeta.malloc, {size});
 
 	// TODO: Call the constructor.
+	// TODO: Hanle multidimensional arrays
 }
 
 llvm::Value* LowerToIRPass::LowerIntOperator(OperatorType type, llvm::Value* a, llvm::Value* b, bool isSigned)
