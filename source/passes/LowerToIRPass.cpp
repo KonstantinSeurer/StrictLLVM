@@ -62,17 +62,27 @@ void LowerToIRPass::LowerDataType(Ref<llvm::Module> module, Ref<DataType> type)
 		Ref<UnitDeclaration> unitDeclaration = objectType->objectTypeMeta.unit->declaredType;
 		assert(unitDeclaration->declarationType != UnitDeclarationType::TYPE);
 
+		if (unitDeclaration->unitDeclarationMeta.thisType->dataTypeMeta.ir)
+		{
+			type->dataTypeMeta.ir = unitDeclaration->unitDeclarationMeta.thisType->dataTypeMeta.ir;
+			return;
+		}
+
 		if (unitDeclaration->declarationType == UnitDeclarationType::ERROR)
 		{
-			type->dataTypeMeta.ir = llvm::Type::getInt32Ty(*context);
+			unitDeclaration->unitDeclarationMeta.thisType->dataTypeMeta.ir = llvm::Type::getInt32Ty(*context);
 		}
 		else
 		{
 			Ref<ClassDeclaration> classDeclaration = std::dynamic_pointer_cast<ClassDeclaration>(unitDeclaration);
 			Array<llvm::Type*> elements;
+			for (auto superType : classDeclaration->superTypes)
+			{
+				LowerDataType(module, superType);
+				elements.push_back(superType->dataTypeMeta.ir);
+			}
 			for (auto member : classDeclaration->members)
 			{
-
 				if (member->variableType != VariableDeclarationType::MEMBER_VARIABLE)
 				{
 					continue;
@@ -81,8 +91,10 @@ void LowerToIRPass::LowerDataType(Ref<llvm::Module> module, Ref<DataType> type)
 				LowerDataType(module, member->dataType);
 				elements.push_back(member->dataType->dataTypeMeta.ir);
 			}
-			type->dataTypeMeta.ir = llvm::StructType::create(*context, elements, objectType->name);
+			unitDeclaration->unitDeclarationMeta.thisType->dataTypeMeta.ir = llvm::StructType::create(*context, elements, objectType->name);
 		}
+
+		type->dataTypeMeta.ir = unitDeclaration->unitDeclarationMeta.thisType->dataTypeMeta.ir;
 	}
 	else if (type->dataTypeType == DataTypeType::POINTER || type->dataTypeType == DataTypeType::REFERENCE || type->dataTypeType == DataTypeType::ARRAY)
 	{
@@ -94,6 +106,28 @@ void LowerToIRPass::LowerDataType(Ref<llvm::Module> module, Ref<DataType> type)
 	{
 		STRICT_UNREACHABLE;
 	}
+}
+
+static bool FindSuperDeclaration(Ref<TypeDeclaration> type, TypeDeclaration* declarationParent, Array<UInt32>& target)
+{
+	for (UInt32 index = 0; index < type->superTypes.size(); index++)
+	{
+		assert(type->superTypes[index]->dataTypeType == DataTypeType::OBJECT);
+
+		Ref<ObjectType> superObject = std::dynamic_pointer_cast<ObjectType>(type->superTypes[index]);
+		assert(superObject->objectTypeMeta.unit);
+		assert(superObject->objectTypeMeta.unit->declaredType->IsType());
+
+		Ref<TypeDeclaration> superTypeDeclaration = std::dynamic_pointer_cast<TypeDeclaration>(superObject->objectTypeMeta.unit->declaredType);
+
+		if (superTypeDeclaration.get() == declarationParent || FindSuperDeclaration(superTypeDeclaration, declarationParent, target))
+		{
+			target.push_back(index);
+			return true;
+		}
+	}
+
+	return false;
 }
 
 void LowerToIRPass::LowerCallExpression(Ref<llvm::Module> module, Ref<CallExpression> expression, LowerFunctionToIRState* state)
@@ -111,7 +145,35 @@ void LowerToIRPass::LowerCallExpression(Ref<llvm::Module> module, Ref<CallExpres
 			LowerExpression(module, context, state);
 
 			assert(context->expressionMeta.pointer);
-			arguments.push_back(context->expressionMeta.ir);
+			assert(context->expressionMeta.dataType->dataTypeType == DataTypeType::OBJECT);
+
+			Ref<ObjectType> contextType = std::dynamic_pointer_cast<ObjectType>(context->expressionMeta.dataType);
+			assert(contextType->objectTypeMeta.unit);
+			assert(contextType->objectTypeMeta.unit->declaredType->IsType());
+
+			Ref<TypeDeclaration> contextTypeDeclaration = std::dynamic_pointer_cast<TypeDeclaration>(contextType->objectTypeMeta.unit->declaredType);
+
+			if (contextTypeDeclaration.get() != method->variableDeclarationMeta.parentType)
+			{
+				// This method must be defined by a super type
+				Array<UInt32> indices;
+				bool found = FindSuperDeclaration(contextTypeDeclaration, method->variableDeclarationMeta.parentType, indices);
+				assert(found);
+
+				llvm::Value* thisPointer = context->expressionMeta.ir;
+				for (Int32 indexIndex = indices.size() - 1; indexIndex >= 0; indexIndex--)
+				{
+					Array<llvm::Value*> index = {llvm::ConstantInt::get(llvm::Type::getInt32Ty(*this->context), 0),
+					                             llvm::ConstantInt::get(llvm::Type::getInt32Ty(*this->context), indices[indexIndex])};
+					thisPointer = builder->CreateGEP(thisPointer->getType()->getPointerElementType(), thisPointer, index);
+				}
+
+				arguments.push_back(thisPointer);
+			}
+			else
+			{
+				arguments.push_back(context->expressionMeta.ir);
+			}
 		}
 		else
 		{
@@ -159,7 +221,14 @@ void LowerToIRPass::LowerIdentifierExpression(Ref<llvm::Module> module, Ref<Iden
 	}
 	else if (expression->identifierExpressionMeta.destination->type == ASTItemType::UNIT)
 	{
-		// TODO: Lower to global variable
+		Ref<Unit> unit = std::dynamic_pointer_cast<Unit>(expression->identifierExpressionMeta.destination);
+		assert(unit->declaredType->declarationType == UnitDeclarationType::CLASS);
+
+		Ref<ClassDeclaration> classDeclaration = std::dynamic_pointer_cast<ClassDeclaration>(unit->declaredType);
+		assert(classDeclaration->isSingleton);
+		assert(classDeclaration->classDeclarationMeta.singleton);
+
+		expression->expressionMeta.ir = classDeclaration->classDeclarationMeta.singleton;
 		expression->expressionMeta.pointer = true;
 	}
 	else
@@ -698,7 +767,7 @@ void LowerToIRPass::LowerMethod(Ref<llvm::Module> module, Ref<MethodDeclaration>
 		}
 
 		llvm::verifyFunction(*function);
-		// fpm.run(*function);
+		fpm.run(*function);
 	}
 }
 
@@ -719,6 +788,13 @@ void LowerToIRPass::LowerClass(Ref<ClassDeclaration> classDeclaration)
 	classDeclaration->classDeclarationMeta.free = llvm::Function::Create(freeSignature, llvm::GlobalValue::LinkageTypes::ExternalLinkage, "free", *module);
 
 	LowerDataType(module, classDeclaration->unitDeclarationMeta.thisType);
+
+	if (classDeclaration->isSingleton)
+	{
+		classDeclaration->classDeclarationMeta.singleton =
+			new llvm::GlobalVariable(*module, classDeclaration->unitDeclarationMeta.thisType->dataTypeMeta.ir, false,
+		                             llvm::GlobalValue::LinkageTypes::ExternalLinkage, nullptr, classDeclaration->name);
+	}
 
 	// TODO: Swith to the new pass manager once llvm 15 is released
 	llvm::legacy::FunctionPassManager fpm = llvm::legacy::FunctionPassManager(module.get());

@@ -335,10 +335,13 @@ DECLARE_HASH(ErrorDeclaration)
 
 STRICT_ENUM(VariableDeclarationType, VARIABLE, MEMBER_VARIABLE, METHOD)
 
+class TypeDeclaration;
+
 class VariableDeclarationMeta
 {
 public:
 	llvm::Value* ir = nullptr;
+	TypeDeclaration* parentType = nullptr;
 };
 
 class VariableDeclaration : public ASTItem
@@ -604,6 +607,8 @@ public:
 	Ref<llvm::Module> module = nullptr;
 	llvm::Function* malloc;
 	llvm::Function* free;
+
+	llvm::Value* singleton = nullptr;
 };
 
 class ClassDeclaration : public TypeDeclaration

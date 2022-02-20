@@ -257,10 +257,15 @@ void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type)
 		type->typeDeclarationMeta.usedTemplateTypes.clear();
 	}
 
-	UInt32 memberIndex = 0;
+	UInt32 memberIndex = type->superTypes.size();
 
 	for (auto member : type->members)
 	{
+		if ((flags & GatherInformationFlags::PARENT) == GatherInformationFlags::PARENT)
+		{
+			member->variableDeclarationMeta.parentType = type.get();
+		}
+
 		TryToInsertTemplatedObjectType(type->typeDeclarationMeta.usedTemplateTypes, *member->dataType);
 
 		if (member->variableType == VariableDeclarationType::MEMBER_VARIABLE)
