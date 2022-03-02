@@ -568,10 +568,6 @@ void LowerToIRPass::LowerDeleteStatement(Ref<llvm::Module> module, Ref<DeleteSta
 	LowerExpression(module, statement->expression, state);
 }
 
-void LowerToIRPass::LowerForStatement(Ref<llvm::Module> module, Ref<ForStatement> statement, LowerFunctionToIRState* state)
-{
-}
-
 bool EndsWithJump(Ref<Statement> statement)
 {
 	switch (statement->statementType)
@@ -591,6 +587,47 @@ bool EndsWithJump(Ref<Statement> statement)
 	default:
 		return false;
 	}
+}
+
+void LowerToIRPass::LowerForStatement(Ref<llvm::Module> module, Ref<ForStatement> statement, LowerFunctionToIRState* state)
+{
+	LowerStatement(module, statement->startStatement, state);
+
+	llvm::BasicBlock* entryBlock = state->currentBlock;
+
+	llvm::BasicBlock* conditionBlock = llvm::BasicBlock::Create(*context, "condition", state->method->methodDeclarationMeta.ir);
+	state->currentBlock = conditionBlock;
+	builder->SetInsertPoint(conditionBlock);
+	LowerExpression(module, statement->condition, state);
+
+	state->currentBlock = entryBlock;
+	builder->SetInsertPoint(entryBlock);
+	builder->CreateBr(conditionBlock);
+
+	llvm::BasicBlock* bodyBlock = llvm::BasicBlock::Create(*context, "body", state->method->methodDeclarationMeta.ir);
+	state->currentBlock = bodyBlock;
+	builder->SetInsertPoint(bodyBlock);
+	LowerStatement(module, statement->bodyStatement, state);
+
+	llvm::BasicBlock* continueBlock = llvm::BasicBlock::Create(*context, "continue", state->method->methodDeclarationMeta.ir);
+	state->currentBlock = continueBlock;
+	builder->SetInsertPoint(continueBlock);
+	LowerExpression(module, statement->incrementExpression, state);
+	builder->CreateBr(conditionBlock);
+
+	llvm::BasicBlock* breakBlock = llvm::BasicBlock::Create(*context, "break", state->method->methodDeclarationMeta.ir);
+
+	builder->SetInsertPoint(conditionBlock);
+	builder->CreateCondBr(statement->condition->expressionMeta.ir, bodyBlock, breakBlock);
+
+	if (!EndsWithJump(statement->bodyStatement))
+	{
+		builder->SetInsertPoint(bodyBlock);
+		builder->CreateBr(continueBlock);
+	}
+
+	state->currentBlock = breakBlock;
+	builder->SetInsertPoint(breakBlock);
 }
 
 void LowerToIRPass::LowerIfStatement(Ref<llvm::Module> module, Ref<IfStatement> statement, LowerFunctionToIRState* state)
