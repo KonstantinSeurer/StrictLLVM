@@ -13,7 +13,7 @@ public:
 	virtual PassResultFlags Run(PrintFunction print, BuildContext& context);
 
 private:
-	void LowerOperatorExpression(Ref<OperatorExpression>* pExpression);
+	void LowerOperatorExpression(Ref<Expression>* pExpression);
 
 	void LowerExpression(Ref<Expression>* pExpression);
 

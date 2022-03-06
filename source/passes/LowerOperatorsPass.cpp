@@ -34,13 +34,69 @@ static bool IsMutatingUnaryOperator(OperatorType op)
 	return false;
 }
 
-void LowerOperatorsPass::LowerOperatorExpression(Ref<OperatorExpression>* pExpression)
+void LowerOperatorsPass::LowerOperatorExpression(Ref<Expression>* pExpression)
 {
-	Ref<OperatorExpression> expression = *pExpression;
+	Ref<OperatorExpression> expression = std::dynamic_pointer_cast<OperatorExpression>(*pExpression);
 	LowerExpression(&expression->a);
 	if (expression->b && expression->b->expression)
 	{
 		LowerExpression(&expression->b->expression);
+	}
+
+	if (expression->operatorType == OperatorType::ASSIGN)
+	{
+		Ref<IdentifierExpression> identifier;
+		Ref<Expression> context;
+
+		if (expression->a->expressionType == ExpressionType::IDENTIFIER)
+		{
+			identifier = std::dynamic_pointer_cast<IdentifierExpression>(expression->a);
+		}
+
+		if (expression->a->expressionType == ExpressionType::OPERATOR)
+		{
+			Ref<OperatorExpression> op = std::dynamic_pointer_cast<OperatorExpression>(expression->a);
+			if (op->operatorType == OperatorType::ACCESS)
+			{
+				identifier = std::dynamic_pointer_cast<IdentifierExpression>(expression->b->expression);
+				context = expression->a;
+			}
+		}
+
+		if (identifier)
+		{
+			assert(identifier->identifierExpressionMeta.destination);
+			assert(identifier->identifierExpressionMeta.destination->type == ASTItemType::VARIABLE_DECLARATION);
+
+			Ref<VariableDeclaration> destination = std::dynamic_pointer_cast<VariableDeclaration>(identifier->identifierExpressionMeta.destination);
+
+			if (destination->variableType == VariableDeclarationType::MEMBER_VARIABLE)
+			{
+				Ref<MemberVariableDeclaration> memberVariable = std::dynamic_pointer_cast<MemberVariableDeclaration>(destination);
+				for (auto accessor : memberVariable->accessors)
+				{
+					if (accessor->methodType != MethodType::SETTER)
+					{
+						continue;
+					}
+
+					assert(accessor->parameters.size() == 1);
+
+					// TODO: Implement overloading -> don't always select the first one.
+
+					Ref<CallExpression> call = Allocate<CallExpression>();
+					call->callExpressionMeta.destination = accessor;
+					call->callExpressionMeta.context = nullptr;
+					call->method = identifier;
+					call->arguments = {expression->b->expression};
+
+					*pExpression = call;
+					return;
+				}
+			}
+		}
+
+		return;
 	}
 
 	bool lower = false;
@@ -81,8 +137,9 @@ void LowerOperatorsPass::LowerOperatorExpression(Ref<OperatorExpression>* pExpre
 				break;
 			}
 
-			LowerOperatorExpression(&replacement);
-			*pExpression = replacement;
+			Ref<Expression> replacementExpression = replacement;
+			LowerOperatorExpression(&replacementExpression);
+			*pExpression = replacementExpression;
 			return;
 		}
 
@@ -125,17 +182,19 @@ void LowerOperatorsPass::LowerOperatorExpression(Ref<OperatorExpression>* pExpre
 				break;
 			}
 
-			LowerOperatorExpression(&operation);
+			Ref<Expression> operationExpression = operation;
+			LowerOperatorExpression(&operationExpression);
 
 			Ref<OperatorExpression> assignment = Allocate<OperatorExpression>();
 			assignment->expressionMeta = expression->expressionMeta;
 			assignment->operatorType = OperatorType::ASSIGN;
 			assignment->a = expression->a;
 			assignment->b = SecondOperand();
-			assignment->b->expression = operation;
+			assignment->b->expression = operationExpression;
 
-			LowerOperatorExpression(&assignment);
-			*pExpression = assignment;
+			Ref<Expression> assignmentExpression = assignment;
+			LowerOperatorExpression(&assignmentExpression);
+			*pExpression = assignmentExpression;
 			return;
 		}
 	}
@@ -169,7 +228,7 @@ void LowerOperatorsPass::LowerExpression(Ref<Expression>* pExpression)
 		break;
 	}
 	case ExpressionType::OPERATOR: {
-		LowerOperatorExpression((Ref<OperatorExpression>*)pExpression);
+		LowerOperatorExpression(pExpression);
 		break;
 	}
 	case ExpressionType::TERNARY: {
