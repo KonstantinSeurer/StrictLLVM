@@ -137,6 +137,7 @@ void LowerToIRPass::LowerCallExpression(Ref<llvm::Module> module, Ref<CallExpres
 	if (expression->callExpressionMeta.destination->variableType == VariableDeclarationType::METHOD)
 	{
 		Ref<MethodDeclaration> method = std::dynamic_pointer_cast<MethodDeclaration>(expression->callExpressionMeta.destination);
+		LowerMethod(module, method, state->classDeclaration, nullptr);
 
 		Array<llvm::Value*> arguments;
 		if (expression->callExpressionMeta.context)
@@ -745,24 +746,29 @@ void LowerToIRPass::LowerStatement(Ref<llvm::Module> module, Ref<Statement> stat
 }
 
 void LowerToIRPass::LowerMethod(Ref<llvm::Module> module, Ref<MethodDeclaration> method, Ref<ClassDeclaration> classDeclaration,
-                                llvm::legacy::FunctionPassManager& fpm)
+                                llvm::legacy::FunctionPassManager* fpm)
 {
-	LowerDataType(module, method->dataType);
-
-	Array<llvm::Type*> parameters;
-	parameters.push_back(llvm::PointerType::get(classDeclaration->unitDeclarationMeta.thisType->dataTypeMeta.ir, 0));
-	for (auto parameter : method->parameters)
+	if (method->methodDeclarationMeta.ir == nullptr)
 	{
-		LowerDataType(module, parameter->dataType);
-		parameters.push_back(parameter->dataType->dataTypeMeta.ir);
+		LowerDataType(module, method->dataType);
+
+		Array<llvm::Type*> parameters;
+		parameters.push_back(llvm::PointerType::get(classDeclaration->unitDeclarationMeta.thisType->dataTypeMeta.ir, 0));
+		for (auto parameter : method->parameters)
+		{
+			LowerDataType(module, parameter->dataType);
+			parameters.push_back(parameter->dataType->dataTypeMeta.ir);
+		}
+
+		auto signature = llvm::FunctionType::get(method->dataType->dataTypeMeta.ir, parameters, false);
+		auto function = llvm::Function::Create(signature, llvm::GlobalValue::LinkageTypes::ExternalLinkage, method->methodDeclarationMeta.name, *module);
+		method->methodDeclarationMeta.ir = function;
 	}
 
-	auto signature = llvm::FunctionType::get(method->dataType->dataTypeMeta.ir, parameters, false);
-	auto function = llvm::Function::Create(signature, llvm::GlobalValue::LinkageTypes::ExternalLinkage, method->methodDeclarationMeta.name, *module);
-	method->methodDeclarationMeta.ir = function;
-
-	if (method->body)
+	if (method->body && fpm)
 	{
+		auto function = method->methodDeclarationMeta.ir;
+
 		auto block = llvm::BasicBlock::Create(*context, "entry", function);
 		builder->SetInsertPoint(block);
 
@@ -804,7 +810,7 @@ void LowerToIRPass::LowerMethod(Ref<llvm::Module> module, Ref<MethodDeclaration>
 		}
 
 		llvm::verifyFunction(*function);
-		fpm.run(*function);
+		fpm->run(*function);
 	}
 }
 
@@ -848,14 +854,14 @@ void LowerToIRPass::LowerClass(Ref<ClassDeclaration> classDeclaration)
 
 		if (member->variableType == VariableDeclarationType::METHOD)
 		{
-			LowerMethod(module, std::dynamic_pointer_cast<MethodDeclaration>(member), classDeclaration, fpm);
+			LowerMethod(module, std::dynamic_pointer_cast<MethodDeclaration>(member), classDeclaration, &fpm);
 		}
 		else if (member->variableType == VariableDeclarationType::MEMBER_VARIABLE)
 		{
 			Ref<MemberVariableDeclaration> memberVariableDeclaration = std::dynamic_pointer_cast<MemberVariableDeclaration>(member);
 			for (auto accessor : memberVariableDeclaration->accessors)
 			{
-				LowerMethod(module, accessor, classDeclaration, fpm);
+				LowerMethod(module, accessor, classDeclaration, &fpm);
 			}
 		}
 	}
