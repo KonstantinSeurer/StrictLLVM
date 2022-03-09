@@ -1101,7 +1101,6 @@ void Module::CloneImplementation(Ref<Module> target) const
 {
 	ASTItem::CloneImplementation(target);
 	target->moduleMeta = moduleMeta;
-	target->name = name;
 	target->units.resize(units.size());
 	for (UInt64 unitIndex = 0; unitIndex < units.size(); unitIndex++)
 	{
