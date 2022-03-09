@@ -265,6 +265,7 @@ class UnitDeclarationMeta
 {
 public:
 	Ref<ObjectType> thisType = nullptr;
+	Unit* parent = nullptr;
 };
 
 class UnitDeclaration : public ASTItem

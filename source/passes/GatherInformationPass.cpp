@@ -304,6 +304,11 @@ void GatherInformationPass::GatherInformation(BuildContext& context, Ref<Unit> u
 		unit->declaredType->unitDeclarationMeta.thisType->objectTypeMeta.unit = unit;
 	}
 
+	if ((flags & GatherInformationFlags::PARENT) == GatherInformationFlags::PARENT)
+	{
+		unit->declaredType->unitDeclarationMeta.parent = unit.get();
+	}
+
 	if (unit->declaredType->IsType())
 	{
 		GatherInformation(std::dynamic_pointer_cast<TypeDeclaration>(unit->declaredType));
