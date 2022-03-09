@@ -605,8 +605,8 @@ public:
 	Ref<VariableDeclaration> thisDeclaration = nullptr;
 
 	Ref<llvm::Module> module = nullptr;
-	llvm::Function* malloc;
-	llvm::Function* free;
+	llvm::Function* malloc = nullptr;
+	llvm::Function* free = nullptr;
 
 	llvm::Value* singleton = nullptr;
 };
