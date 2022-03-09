@@ -1095,7 +1095,7 @@ String Module::ToStringImplementation(UInt32 indentation) const
 	return "";
 }
 
-CLONE_METHOD(Module, name)
+CLONE_METHOD(Module, moduleType, name)
 
 void Module::CloneImplementation(Ref<Module> target) const
 {

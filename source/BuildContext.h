@@ -35,6 +35,7 @@ private:
 struct ModuleTask
 {
 public:
+	ModuleType type = ModuleType::INLINE;
 	String name;
 	String canonicalPath;
 	Array<UInt64> dependencyIndices;

@@ -147,6 +147,11 @@ void BuildContext::AddModule(const String& name)
 		}
 	}
 
+	if (moduleJSON.contains("type"))
+	{
+		moduleTask.type = StringToModuleType(moduleJSON["type"]);
+	}
+
 	taskList.push_back(Pair<ModuleTask, Array<UnitTask>>(moduleTask, Array<UnitTask>()));
 
 	if (moduleJSON.contains("units"))
@@ -303,7 +308,7 @@ void BuildContext::PropagateBuildFlagAndParse()
 			continue;
 		}
 
-		module.first.module = Allocate<Module>(module.first.name);
+		module.first.module = Allocate<Module>(module.first.type, module.first.name);
 		modules.push_back(module.first.module);
 	}
 

@@ -695,12 +695,13 @@ class Module : public ASTItem
 {
 public:
 	ModuleMeta moduleMeta;
+	ModuleType moduleType;
 	String name;
 	Array<Ref<Unit>> units;
 	Array<Ref<Module>> dependencies;
 
 public:
-	Module(const String& name) : ASTItem(ASTItemType::MODULE), name(name)
+	Module(ModuleType moduleType, const String& name) : ASTItem(ASTItemType::MODULE), moduleType(moduleType), name(name)
 	{
 	}
 
