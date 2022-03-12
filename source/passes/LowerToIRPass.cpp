@@ -187,7 +187,7 @@ void LowerToIRPass::LowerCallExpression(Ref<llvm::Module> module, Ref<CallExpres
 			arguments.push_back(argument->expressionMeta.Load(*builder));
 		}
 
-		expression->expressionMeta.ir = builder->CreateCall(method->methodDeclarationMeta.ir, arguments);
+		expression->expressionMeta.ir = builder->CreateCall(state->classDeclaration->classDeclarationMeta.methods.at(method.get()), arguments);
 	}
 	else
 	{
@@ -496,17 +496,17 @@ void LowerToIRPass::LowerTernaryExpression(Ref<llvm::Module> module, Ref<Ternary
 
 	llvm::BasicBlock* entryBlock = state->currentBlock;
 
-	llvm::BasicBlock* thenBlock = llvm::BasicBlock::Create(*context, "then", state->method->methodDeclarationMeta.ir);
+	llvm::BasicBlock* thenBlock = llvm::BasicBlock::Create(*context, "then", state->function);
 	state->currentBlock = thenBlock;
 	builder->SetInsertPoint(thenBlock);
 	LowerExpression(module, expression->thenExpression, state);
 
-	llvm::BasicBlock* elseBlock = llvm::BasicBlock::Create(*context, "else", state->method->methodDeclarationMeta.ir);
+	llvm::BasicBlock* elseBlock = llvm::BasicBlock::Create(*context, "else", state->function);
 	state->currentBlock = elseBlock;
 	builder->SetInsertPoint(elseBlock);
 	LowerExpression(module, expression->elseExpression, state);
 
-	llvm::BasicBlock* mergeBlock = llvm::BasicBlock::Create(*context, "merge", state->method->methodDeclarationMeta.ir);
+	llvm::BasicBlock* mergeBlock = llvm::BasicBlock::Create(*context, "merge", state->function);
 
 	builder->SetInsertPoint(entryBlock);
 	builder->CreateCondBr(expression->condition->expressionMeta.Load(*builder), thenBlock, elseBlock ? elseBlock : mergeBlock);
@@ -596,7 +596,7 @@ void LowerToIRPass::LowerForStatement(Ref<llvm::Module> module, Ref<ForStatement
 
 	llvm::BasicBlock* entryBlock = state->currentBlock;
 
-	llvm::BasicBlock* conditionBlock = llvm::BasicBlock::Create(*context, "condition", state->method->methodDeclarationMeta.ir);
+	llvm::BasicBlock* conditionBlock = llvm::BasicBlock::Create(*context, "condition", state->function);
 	state->currentBlock = conditionBlock;
 	builder->SetInsertPoint(conditionBlock);
 	LowerExpression(module, statement->condition, state);
@@ -605,18 +605,18 @@ void LowerToIRPass::LowerForStatement(Ref<llvm::Module> module, Ref<ForStatement
 	builder->SetInsertPoint(entryBlock);
 	builder->CreateBr(conditionBlock);
 
-	llvm::BasicBlock* bodyBlock = llvm::BasicBlock::Create(*context, "body", state->method->methodDeclarationMeta.ir);
+	llvm::BasicBlock* bodyBlock = llvm::BasicBlock::Create(*context, "body", state->function);
 	state->currentBlock = bodyBlock;
 	builder->SetInsertPoint(bodyBlock);
 	LowerStatement(module, statement->bodyStatement, state);
 
-	llvm::BasicBlock* continueBlock = llvm::BasicBlock::Create(*context, "continue", state->method->methodDeclarationMeta.ir);
+	llvm::BasicBlock* continueBlock = llvm::BasicBlock::Create(*context, "continue", state->function);
 	state->currentBlock = continueBlock;
 	builder->SetInsertPoint(continueBlock);
 	LowerExpression(module, statement->incrementExpression, state);
 	builder->CreateBr(conditionBlock);
 
-	llvm::BasicBlock* breakBlock = llvm::BasicBlock::Create(*context, "break", state->method->methodDeclarationMeta.ir);
+	llvm::BasicBlock* breakBlock = llvm::BasicBlock::Create(*context, "break", state->function);
 
 	builder->SetInsertPoint(conditionBlock);
 	builder->CreateCondBr(statement->condition->expressionMeta.ir, bodyBlock, breakBlock);
@@ -637,7 +637,7 @@ void LowerToIRPass::LowerIfStatement(Ref<llvm::Module> module, Ref<IfStatement> 
 
 	llvm::BasicBlock* entryBlock = state->currentBlock;
 
-	llvm::BasicBlock* thenBlock = llvm::BasicBlock::Create(*context, "then", state->method->methodDeclarationMeta.ir);
+	llvm::BasicBlock* thenBlock = llvm::BasicBlock::Create(*context, "then", state->function);
 	state->currentBlock = thenBlock;
 	builder->SetInsertPoint(thenBlock);
 	LowerStatement(module, statement->thenStatement, state);
@@ -645,13 +645,13 @@ void LowerToIRPass::LowerIfStatement(Ref<llvm::Module> module, Ref<IfStatement> 
 	llvm::BasicBlock* elseBlock = nullptr;
 	if (statement->elseStatement)
 	{
-		elseBlock = llvm::BasicBlock::Create(*context, "else", state->method->methodDeclarationMeta.ir);
+		elseBlock = llvm::BasicBlock::Create(*context, "else", state->function);
 		state->currentBlock = elseBlock;
 		builder->SetInsertPoint(elseBlock);
 		LowerStatement(module, statement->elseStatement, state);
 	}
 
-	llvm::BasicBlock* mergeBlock = llvm::BasicBlock::Create(*context, "merge", state->method->methodDeclarationMeta.ir);
+	llvm::BasicBlock* mergeBlock = llvm::BasicBlock::Create(*context, "merge", state->function);
 
 	builder->SetInsertPoint(entryBlock);
 	builder->CreateCondBr(statement->condition->expressionMeta.ir, thenBlock, elseBlock ? elseBlock : mergeBlock);
@@ -676,8 +676,7 @@ void LowerToIRPass::LowerVariableDeclarationStatement(Ref<llvm::Module> module, 
 {
 	LowerDataType(module, statement->declaration->dataType);
 
-	auto function = state->method->methodDeclarationMeta.ir;
-	llvm::IRBuilder<> tmpBuilder(&function->getEntryBlock(), function->getEntryBlock().begin());
+	llvm::IRBuilder<> tmpBuilder(&state->function->getEntryBlock(), state->function->getEntryBlock().begin());
 
 	auto variable = tmpBuilder.CreateAlloca(statement->declaration->dataType->dataTypeMeta.ir, nullptr, statement->declaration->name);
 	statement->declaration->variableDeclarationMeta.ir = variable;
@@ -745,29 +744,35 @@ void LowerToIRPass::LowerStatement(Ref<llvm::Module> module, Ref<Statement> stat
 	}
 }
 
+llvm::Function* LowerToIRPass::CreateFunction(Ref<llvm::Module> module, Ref<ClassDeclaration> classDeclaration, Ref<MethodDeclaration> method)
+{
+	LowerDataType(module, method->dataType);
+
+	Array<llvm::Type*> parameters;
+	parameters.push_back(llvm::PointerType::get(classDeclaration->unitDeclarationMeta.thisType->dataTypeMeta.ir, 0));
+	for (auto parameter : method->parameters)
+	{
+		LowerDataType(module, parameter->dataType);
+		parameters.push_back(parameter->dataType->dataTypeMeta.ir);
+	}
+
+	auto signature = llvm::FunctionType::get(method->dataType->dataTypeMeta.ir, parameters, false);
+	return llvm::Function::Create(signature, llvm::GlobalValue::LinkageTypes::ExternalLinkage, method->methodDeclarationMeta.name, *module);
+}
+
 void LowerToIRPass::LowerMethod(Ref<llvm::Module> module, Ref<MethodDeclaration> method, Ref<ClassDeclaration> classDeclaration,
                                 llvm::legacy::FunctionPassManager* fpm)
 {
-	if (method->methodDeclarationMeta.ir == nullptr)
+	auto& methods = classDeclaration->classDeclarationMeta.methods;
+
+	if (methods.find(method.get()) == methods.end())
 	{
-		LowerDataType(module, method->dataType);
-
-		Array<llvm::Type*> parameters;
-		parameters.push_back(llvm::PointerType::get(classDeclaration->unitDeclarationMeta.thisType->dataTypeMeta.ir, 0));
-		for (auto parameter : method->parameters)
-		{
-			LowerDataType(module, parameter->dataType);
-			parameters.push_back(parameter->dataType->dataTypeMeta.ir);
-		}
-
-		auto signature = llvm::FunctionType::get(method->dataType->dataTypeMeta.ir, parameters, false);
-		auto function = llvm::Function::Create(signature, llvm::GlobalValue::LinkageTypes::ExternalLinkage, method->methodDeclarationMeta.name, *module);
-		method->methodDeclarationMeta.ir = function;
+		methods[method.get()] = CreateFunction(module, classDeclaration, method);
 	}
 
 	if (method->body && fpm)
 	{
-		auto function = method->methodDeclarationMeta.ir;
+		auto function = methods.at(method.get());
 
 		auto block = llvm::BasicBlock::Create(*context, "entry", function);
 		builder->SetInsertPoint(block);
@@ -797,6 +802,7 @@ void LowerToIRPass::LowerMethod(Ref<llvm::Module> module, Ref<MethodDeclaration>
 		state.method = method.get();
 		state.classDeclaration = classDeclaration;
 		state.thisPointer = thisArgument;
+		state.function = function;
 
 		LowerStatement(module, method->body, &state);
 

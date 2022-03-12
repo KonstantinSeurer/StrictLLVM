@@ -15,6 +15,7 @@ public:
 	llvm::BasicBlock* breakBlock;
 	llvm::BasicBlock* continueBlock;
 	llvm::Value* thisPointer;
+	llvm::Function* function;
 };
 
 class LowerToIRPass : public Pass
@@ -65,6 +66,8 @@ private:
 	void LowerReturnStatement(Ref<llvm::Module> module, Ref<ReturnStatement> statement, LowerFunctionToIRState* state);
 
 	void LowerStatement(Ref<llvm::Module> module, Ref<Statement> statement, LowerFunctionToIRState* state);
+
+	llvm::Function* CreateFunction(Ref<llvm::Module> module, Ref<ClassDeclaration> classDeclaration, Ref<MethodDeclaration> method);
 
 	void LowerMethod(Ref<llvm::Module> module, Ref<MethodDeclaration> method, Ref<ClassDeclaration> classDeclaration, llvm::legacy::FunctionPassManager* fpm);
 

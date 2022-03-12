@@ -381,7 +381,6 @@ STRICT_ENUM(MethodType, METHOD, CONSTRUCTOR, DESTRUCTOR, OPERATOR, GETTER, SETTE
 class MethodDeclarationMeta
 {
 public:
-	llvm::Function* ir = nullptr;
 	String name;
 };
 
@@ -610,6 +609,8 @@ public:
 	llvm::Function* free = nullptr;
 
 	llvm::Value* singleton = nullptr;
+
+	HashMap<MethodDeclaration*, llvm::Function*> methods;
 };
 
 class ClassDeclaration : public TypeDeclaration
