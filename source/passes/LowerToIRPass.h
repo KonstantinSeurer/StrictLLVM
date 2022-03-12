@@ -72,6 +72,13 @@ private:
 	void LowerMethod(Ref<llvm::Module> module, Ref<MethodDeclaration> method, Ref<ClassDeclaration> classDeclaration, llvm::legacy::FunctionPassManager* fpm);
 
 	void LowerClass(Ref<ClassDeclaration> classDeclaration);
+
+	void InitializeSingleton(Ref<llvm::Module> entryModule, Ref<Unit> unit, llvm::IRBuilder<>& entryBuilder, HashSet<UnitDeclaration*> initializedUnits);
+
+	void InitializeSingleton(Ref<llvm::Module> entryModule, Ref<ClassDeclaration> classDeclaration, llvm::IRBuilder<>& entryBuilder,
+	                         HashSet<UnitDeclaration*> initializedUnits);
+
+	void LowerModule(Ref<Module> module);
 };
 
 #endif /* SOURCE_PASSES_LOWERTOIR */

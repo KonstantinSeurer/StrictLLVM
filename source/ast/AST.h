@@ -690,6 +690,10 @@ TargetFlags JSONToTargetFlags(const JSON& json);
 class ModuleMeta
 {
 public:
+	Ref<llvm::Module> module = nullptr;
+	llvm::Function* entryPoint = nullptr;
+	llvm::Function* main = nullptr;
+
 	HashMap<ObjectType, Ref<ClassDeclaration>> templateSpecializations;
 };
 

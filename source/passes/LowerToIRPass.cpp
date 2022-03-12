@@ -877,24 +877,124 @@ void LowerToIRPass::LowerClass(Ref<ClassDeclaration> classDeclaration)
 	classDeclaration->classDeclarationMeta.module = module;
 }
 
+void LowerToIRPass::InitializeSingleton(Ref<llvm::Module> entryModule, Ref<Unit> unit, llvm::IRBuilder<>& entryBuilder,
+                                        HashSet<UnitDeclaration*> initializedUnits)
+{
+	if (unit->declaredType->declarationType != UnitDeclarationType::CLASS)
+	{
+		return;
+	}
+
+	Ref<ClassDeclaration> classDeclaration = std::dynamic_pointer_cast<ClassDeclaration>(unit->declaredType);
+	if (!classDeclaration->isSingleton)
+	{
+		return;
+	}
+
+	InitializeSingleton(entryModule, classDeclaration, entryBuilder, initializedUnits);
+}
+
+void LowerToIRPass::InitializeSingleton(Ref<llvm::Module> entryModule, Ref<ClassDeclaration> classDeclaration, llvm::IRBuilder<>& entryBuilder,
+                                        HashSet<UnitDeclaration*> initializedUnits)
+{
+	if (initializedUnits.find(classDeclaration.get()) != initializedUnits.end())
+	{
+		return;
+	}
+
+	initializedUnits.insert(classDeclaration.get());
+
+	assert(classDeclaration->unitDeclarationMeta.parent);
+
+	for (auto dependency : classDeclaration->unitDeclarationMeta.parent->unitMeta.dependencies)
+	{
+		InitializeSingleton(entryModule, dependency, entryBuilder, initializedUnits);
+	}
+
+	for (auto member : classDeclaration->members)
+	{
+		if (member->variableType != VariableDeclarationType::METHOD)
+		{
+			continue;
+		}
+
+		Ref<MethodDeclaration> method = std::dynamic_pointer_cast<MethodDeclaration>(member);
+
+		if (method->methodType != MethodType::CONSTRUCTOR || method->parameters.size() > 0)
+		{
+			continue;
+		}
+
+		entryBuilder.CreateCall(CreateFunction(entryModule, classDeclaration, method), {classDeclaration->classDeclarationMeta.singleton});
+		break;
+	}
+}
+
+void LowerToIRPass::LowerModule(Ref<Module> module)
+{
+	auto entryModule = Allocate<llvm::Module>(module->name, *context);
+	module->moduleMeta.module = entryModule;
+
+	auto signature = llvm::FunctionType::get(llvm::Type::getVoidTy(*context), {}, false);
+
+	auto entryFunction = llvm::Function::Create(signature, llvm::GlobalValue::LinkageTypes::ExternalLinkage, module->name + ".EntryPoint", *entryModule);
+	module->moduleMeta.entryPoint = entryFunction;
+
+	auto entryBlock = llvm::BasicBlock::Create(*context, "entry", entryFunction);
+	llvm::IRBuilder<> entryBuilder(entryBlock);
+
+	if (module->moduleType == ModuleType::EXECUTABLE)
+	{
+		auto mainFunction = llvm::Function::Create(signature, llvm::GlobalValue::LinkageTypes::ExternalLinkage, "main", *entryModule);
+		module->moduleMeta.main = mainFunction;
+
+		auto block = llvm::BasicBlock::Create(*context, "entry", mainFunction);
+		llvm::IRBuilder<> mainBuilder(block);
+
+		mainBuilder.CreateCall(entryFunction);
+		mainBuilder.CreateRetVoid();
+	}
+
+	for (auto& specialization : module->moduleMeta.templateSpecializations)
+	{
+		LowerClass(specialization.second);
+	}
+
+	for (auto unit : module->units)
+	{
+		if (unit->declaredType->declarationType != UnitDeclarationType::CLASS)
+		{
+			continue;
+		}
+
+		LowerClass(std::dynamic_pointer_cast<ClassDeclaration>(unit->declaredType));
+	}
+
+	HashSet<UnitDeclaration*> initializedUnits;
+
+	for (auto& specialization : module->moduleMeta.templateSpecializations)
+	{
+		if (!specialization.second->isSingleton)
+		{
+			continue;
+		}
+
+		InitializeSingleton(entryModule, specialization.second, entryBuilder, initializedUnits);
+	}
+
+	for (auto unit : module->units)
+	{
+		InitializeSingleton(entryModule, unit, entryBuilder, initializedUnits);
+	}
+
+	entryModule->print(llvm::outs(), nullptr);
+}
+
 PassResultFlags LowerToIRPass::Run(PrintFunction print, BuildContext& context)
 {
 	for (auto module : context.GetModules())
 	{
-		for (auto& specialization : module->moduleMeta.templateSpecializations)
-		{
-			LowerClass(specialization.second);
-		}
-
-		for (auto unit : module->units)
-		{
-			if (unit->declaredType->declarationType != UnitDeclarationType::CLASS)
-			{
-				continue;
-			}
-
-			LowerClass(std::dynamic_pointer_cast<ClassDeclaration>(unit->declaredType));
-		}
+		LowerModule(module);
 	}
 
 	return PassResultFlags::SUCCESS;
