@@ -521,21 +521,6 @@ Ref<DataType> ResolveContext::ConvertExpressionToDataType(Ref<Expression> expres
 	return nullptr;
 }
 
-static void SetNewExpressionMeta(Ref<NewExpression> expression)
-{
-	Ref<PointerType> pointer = Allocate<PointerType>();
-	if (expression->dataType->dataTypeType == DataTypeType::ARRAY)
-	{
-		pointer->dataTypeType = DataTypeType::ARRAY;
-	}
-	else
-	{
-		pointer->dataTypeType = DataTypeType::POINTER;
-	}
-	pointer->value = expression->dataType;
-	expression->expressionMeta.dataType = pointer;
-}
-
 PassResultFlags ResolveContext::ResolveCallExpression(Ref<MethodDeclaration> method, Ref<Expression>* expression)
 {
 	Ref<CallExpression> callExpression = std::dynamic_pointer_cast<CallExpression>(*expression);
@@ -563,7 +548,6 @@ PassResultFlags ResolveContext::ResolveCallExpression(Ref<MethodDeclaration> met
 			newExpression->allocationType = AllocationType::STACK;
 			newExpression->dataType = dataType;
 			newExpression->arguments = callExpression->arguments;
-			SetNewExpressionMeta(newExpression);
 
 			*expression = newExpression;
 
@@ -630,7 +614,24 @@ PassResultFlags ResolveContext::ResolveNewExpression(Ref<MethodDeclaration> meth
 		return result;
 	}
 
-	SetNewExpressionMeta(expression);
+	if (expression->allocationType == AllocationType::HEAP)
+	{
+		Ref<PointerType> pointer = Allocate<PointerType>();
+		if (expression->dataType->dataTypeType == DataTypeType::ARRAY)
+		{
+			pointer->dataTypeType = DataTypeType::ARRAY;
+		}
+		else
+		{
+			pointer->dataTypeType = DataTypeType::POINTER;
+		}
+		pointer->value = expression->dataType;
+		expression->expressionMeta.dataType = pointer;
+	}
+	else
+	{
+		expression->expressionMeta.dataType = expression->dataType;
+	}
 
 	return result;
 }

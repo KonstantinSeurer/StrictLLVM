@@ -278,30 +278,41 @@ void LowerToIRPass::LowerLiteralExpression(Ref<llvm::Module> module, Ref<Literal
 
 void LowerToIRPass::LowerNewExpression(Ref<llvm::Module> module, Ref<NewExpression> expression, LowerFunctionToIRState* state)
 {
-	LowerDataType(module, expression->dataType);
-
 	Ref<DataType> dataType = expression->dataType;
-	llvm::Value* arrayLength;
-	if (dataType->dataTypeType == DataTypeType::ARRAY)
+	LowerDataType(module, dataType);
+
+	if (expression->allocationType == AllocationType::HEAP)
 	{
-		Ref<PointerType> arrayType = std::dynamic_pointer_cast<PointerType>(dataType);
-		LowerExpression(module, arrayType->arrayLength, state);
-		arrayLength = arrayType->arrayLength->expressionMeta.Load(*builder);
-		dataType = arrayType->value;
+		llvm::Value* arrayLength;
+		if (dataType->dataTypeType == DataTypeType::ARRAY)
+		{
+			Ref<PointerType> arrayType = std::dynamic_pointer_cast<PointerType>(dataType);
+			LowerExpression(module, arrayType->arrayLength, state);
+			arrayLength = arrayType->arrayLength->expressionMeta.Load(*builder);
+			dataType = arrayType->value;
+		}
+		else
+		{
+			arrayLength = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*context), 1);
+		}
+
+		llvm::Value* null = llvm::ConstantPointerNull::get(llvm::PointerType::get(dataType->dataTypeMeta.ir, 0));
+		llvm::Value* sizePointer = builder->CreateGEP(dataType->dataTypeMeta.ir, null, {arrayLength});
+		llvm::Value* size = builder->CreatePtrToInt(sizePointer, llvm::Type::getInt64Ty(*context));
+
+		expression->expressionMeta.ir = builder->CreateCall(state->classDeclaration->classDeclarationMeta.malloc, {size});
+		// TODO: Handle multidimensional arrays
 	}
 	else
 	{
-		arrayLength = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*context), 1);
+		llvm::IRBuilder<> tempBuilder(&state->function->getEntryBlock(), state->function->getEntryBlock().begin());
+		auto temp = tempBuilder.CreateAlloca(dataType->dataTypeMeta.ir);
+
+		expression->expressionMeta.ir = temp;
+		expression->expressionMeta.pointer = true;
 	}
 
-	llvm::Value* null = llvm::ConstantPointerNull::get(llvm::PointerType::get(dataType->dataTypeMeta.ir, 0));
-	llvm::Value* sizePointer = builder->CreateGEP(dataType->dataTypeMeta.ir, null, {arrayLength});
-	llvm::Value* size = builder->CreatePtrToInt(sizePointer, llvm::Type::getInt64Ty(*context));
-
-	expression->expressionMeta.ir = builder->CreateCall(state->classDeclaration->classDeclarationMeta.malloc, {size});
-
 	// TODO: Call the constructor.
-	// TODO: Hanle multidimensional arrays
 }
 
 llvm::Value* LowerToIRPass::LowerIntOperator(OperatorType type, llvm::Value* a, llvm::Value* b, bool isSigned)
