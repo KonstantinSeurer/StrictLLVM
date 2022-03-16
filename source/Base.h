@@ -19,7 +19,7 @@
 #ifdef DEBUG
 #define STRICT_UNREACHABLE                                                                                                                                     \
 	std::cerr << "Hit unreachable at " << __FILE__ << "::" << __FUNCTION__ << " line " << __LINE__ << std::endl;                                               \
-	exit(1)
+	abort()
 #else
 #define STRICT_UNREACHABLE
 #endif
