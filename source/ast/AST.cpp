@@ -298,6 +298,16 @@ bool PointerType::operator==(const PointerType& other) const
 	return true;
 }
 
+Ref<DataType> GetReferencedType(Ref<DataType> dataType)
+{
+	if (dataType->dataTypeType != DataTypeType::REFERENCE)
+	{
+		return dataType;
+	}
+	Ref<PointerType> referenceType = std::dynamic_pointer_cast<PointerType>(dataType);
+	return GetReferencedType(referenceType->value);
+}
+
 llvm::Value* ExpressionMeta::Load(llvm::IRBuilder<>& builder) const
 {
 	return pointer ? builder.CreateLoad(dataType->dataTypeMeta.ir, ir) : ir;
@@ -994,6 +1004,78 @@ DEFINE_HASH_WITH_SUPER(TypeDeclaration, UnitDeclaration,
                        HASH_REF(TemplateDeclaration, typeTemplate)                                                        //
                        for (UInt64 superTypeIndex = 0; superTypeIndex < HASH_ACCESS(superTypes).size(); superTypeIndex++) //
                        {HASH_REF(ObjectType, superTypes[superTypeIndex])})
+
+Ref<ConstructorDeclaration> TypeDeclaration::GetDefaultConstructor() const
+{
+	for (auto member : members)
+	{
+		if (member->variableType != VariableDeclarationType::METHOD)
+		{
+			continue;
+		}
+
+		Ref<MethodDeclaration> method = std::dynamic_pointer_cast<MethodDeclaration>(member);
+		if (method->methodType == MethodType::CONSTRUCTOR && method->parameters.empty())
+		{
+			return std::dynamic_pointer_cast<ConstructorDeclaration>(method);
+		}
+	}
+
+	return nullptr;
+}
+
+Ref<ConstructorDeclaration> TypeDeclaration::GetCopyConstructor() const
+{
+	for (auto member : members)
+	{
+		if (member->variableType != VariableDeclarationType::METHOD)
+		{
+			continue;
+		}
+
+		Ref<MethodDeclaration> method = std::dynamic_pointer_cast<MethodDeclaration>(member);
+		if (method->methodType != MethodType::CONSTRUCTOR || method->parameters.size() != 1)
+		{
+			continue;
+		}
+
+		Ref<DataType> parameterType = GetReferencedType(method->parameters[0]->dataType);
+		if (parameterType->dataTypeType != DataTypeType::OBJECT)
+		{
+			continue;
+		}
+
+		Ref<ObjectType> parameterObjectType = std::dynamic_pointer_cast<ObjectType>(parameterType);
+		if (parameterObjectType->name != name)
+		{
+			continue;
+		}
+
+		return std::dynamic_pointer_cast<ConstructorDeclaration>(method);
+	}
+
+	return nullptr;
+}
+
+Ref<MethodDeclaration> TypeDeclaration::GetDestructor() const
+{
+	for (auto member : members)
+	{
+		if (member->variableType != VariableDeclarationType::METHOD)
+		{
+			continue;
+		}
+
+		Ref<MethodDeclaration> method = std::dynamic_pointer_cast<MethodDeclaration>(member);
+		if (method->methodType == MethodType::DESTRUCTOR)
+		{
+			assert(method->parameters.empty());
+			return method;
+		}
+	}
+
+	return nullptr;
+}
 
 String ClassDeclaration::ToStringImplementation(UInt32 indentation) const
 {

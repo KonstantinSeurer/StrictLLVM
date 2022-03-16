@@ -208,6 +208,8 @@ protected:
 	void CloneImplementation(Ref<PointerType> target) const;
 };
 
+Ref<DataType> GetReferencedType(Ref<DataType> dataType);
+
 DECLARE_HASH(PointerType)
 
 class TemplateArgumentMeta
@@ -590,6 +592,11 @@ public:
 	virtual Ref<ASTItem> Clone() const;
 
 	bool operator==(const TypeDeclaration& other) const;
+
+	Ref<ConstructorDeclaration> GetDefaultConstructor() const;
+	Ref<ConstructorDeclaration> GetCopyConstructor() const;
+
+	Ref<MethodDeclaration> GetDestructor() const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;

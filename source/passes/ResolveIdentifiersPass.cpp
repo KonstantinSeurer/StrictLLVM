@@ -153,16 +153,6 @@ PassResultFlags ResolveContext::ResolveSuperTypes()
 	return result;
 }
 
-static Ref<DataType> GetReferencedType(Ref<DataType> dataType)
-{
-	if (dataType->dataTypeType != DataTypeType::REFERENCE)
-	{
-		return dataType;
-	}
-	Ref<PointerType> referenceType = std::dynamic_pointer_cast<PointerType>(dataType);
-	return GetReferencedType(referenceType->value);
-}
-
 static Ref<PrimitiveType> GetPrecedingPrimitiveType(Ref<PrimitiveType> a, Ref<PrimitiveType> b)
 {
 	if (a->primitiveType == b->primitiveType)

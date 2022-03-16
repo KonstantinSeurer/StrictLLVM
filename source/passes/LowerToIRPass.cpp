@@ -911,22 +911,10 @@ void LowerToIRPass::InitializeSingleton(Ref<llvm::Module> entryModule, Ref<Class
 		InitializeSingleton(entryModule, dependency, entryBuilder, initializedUnits);
 	}
 
-	for (auto member : classDeclaration->members)
+	Ref<ConstructorDeclaration> defaultConstructor = classDeclaration->GetDefaultConstructor();
+	if (defaultConstructor)
 	{
-		if (member->variableType != VariableDeclarationType::METHOD)
-		{
-			continue;
-		}
-
-		Ref<MethodDeclaration> method = std::dynamic_pointer_cast<MethodDeclaration>(member);
-
-		if (method->methodType != MethodType::CONSTRUCTOR || method->parameters.size() > 0)
-		{
-			continue;
-		}
-
-		entryBuilder.CreateCall(CreateFunction(entryModule, classDeclaration, method), {classDeclaration->classDeclarationMeta.singleton});
-		break;
+		entryBuilder.CreateCall(CreateFunction(entryModule, classDeclaration, defaultConstructor), {classDeclaration->classDeclarationMeta.singleton});
 	}
 }
 
