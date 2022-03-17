@@ -153,6 +153,29 @@ PassResultFlags ResolveContext::ResolveSuperTypes()
 	return result;
 }
 
+static Ref<PrimitiveType> GetPrecedingPrimitiveType(Ref<PrimitiveType> a, Ref<PrimitiveType> b)
+{
+	if (a->primitiveType == b->primitiveType)
+	{
+		return a;
+	}
+
+	const bool aFloat = a->IsFloat();
+	const bool bFloat = b->IsFloat();
+
+	if ((aFloat && !bFloat) || (!aFloat && !bFloat))
+	{
+		return a;
+	}
+
+	if (bFloat && !aFloat)
+	{
+		return b;
+	}
+
+	return (a->GetSize() < b->GetSize()) ? b : a;
+}
+
 static Ref<DataType> ResolveOperatorDataType(Ref<OperatorExpression> expression)
 {
 	if (expression->a->expressionMeta.dataType->dataTypeType == DataTypeType::PRIMITIVE)

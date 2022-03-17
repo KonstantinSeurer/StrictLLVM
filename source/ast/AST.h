@@ -142,8 +142,6 @@ protected:
 	void CloneImplementation(Ref<PrimitiveType> target) const;
 };
 
-Ref<PrimitiveType> GetPrecedingPrimitiveType(Ref<PrimitiveType> a, Ref<PrimitiveType> b);
-
 DECLARE_HASH(PrimitiveType)
 
 class ObjectTypeMeta

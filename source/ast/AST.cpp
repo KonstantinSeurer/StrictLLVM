@@ -218,29 +218,6 @@ bool PrimitiveType::IsFloat() const
 	return primitiveType == TokenType::FLOAT32 || primitiveType == TokenType::FLOAT64;
 }
 
-Ref<PrimitiveType> GetPrecedingPrimitiveType(Ref<PrimitiveType> a, Ref<PrimitiveType> b)
-{
-	if (a->primitiveType == b->primitiveType)
-	{
-		return a;
-	}
-
-	const bool aFloat = a->IsFloat();
-	const bool bFloat = b->IsFloat();
-
-	if ((aFloat && !bFloat) || (!aFloat && !bFloat))
-	{
-		return a;
-	}
-
-	if (bFloat && !aFloat)
-	{
-		return b;
-	}
-
-	return (a->GetSize() < b->GetSize()) ? b : a;
-}
-
 String ObjectType::ToStrict() const
 {
 	return DataType::ToStrict() + name + (typeTemplate ? typeTemplate->ToStrict() : " ");
