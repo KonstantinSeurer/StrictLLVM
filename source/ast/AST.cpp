@@ -1007,57 +1007,21 @@ DEFINE_HASH_WITH_SUPER(TypeDeclaration, UnitDeclaration,
 
 Ref<ConstructorDeclaration> TypeDeclaration::GetDefaultConstructor() const
 {
-	for (auto member : members)
-	{
-		if (member->variableType != VariableDeclarationType::METHOD)
-		{
-			continue;
-		}
-
-		Ref<MethodDeclaration> method = std::dynamic_pointer_cast<MethodDeclaration>(member);
-		if (method->methodType == MethodType::CONSTRUCTOR && method->parameters.empty())
-		{
-			return std::dynamic_pointer_cast<ConstructorDeclaration>(method);
-		}
-	}
-
-	return nullptr;
+	return std::dynamic_pointer_cast<ConstructorDeclaration>(FindMethod(MethodType::CONSTRUCTOR));
 }
 
 Ref<ConstructorDeclaration> TypeDeclaration::GetCopyConstructor() const
 {
-	for (auto member : members)
-	{
-		if (member->variableType != VariableDeclarationType::METHOD)
-		{
-			continue;
-		}
-
-		Ref<MethodDeclaration> method = std::dynamic_pointer_cast<MethodDeclaration>(member);
-		if (method->methodType != MethodType::CONSTRUCTOR || method->parameters.size() != 1)
-		{
-			continue;
-		}
-
-		Ref<DataType> parameterType = GetReferencedType(method->parameters[0]->dataType);
-		if (parameterType->dataTypeType != DataTypeType::OBJECT)
-		{
-			continue;
-		}
-
-		Ref<ObjectType> parameterObjectType = std::dynamic_pointer_cast<ObjectType>(parameterType);
-		if (parameterObjectType->name != name)
-		{
-			continue;
-		}
-
-		return std::dynamic_pointer_cast<ConstructorDeclaration>(method);
-	}
-
-	return nullptr;
+	Array<DataType*> parameters = {unitDeclarationMeta.thisType.get()};
+	return std::dynamic_pointer_cast<ConstructorDeclaration>(FindMethod(MethodType::CONSTRUCTOR, &parameters));
 }
 
 Ref<MethodDeclaration> TypeDeclaration::GetDestructor() const
+{
+	return FindMethod(MethodType::DESTRUCTOR);
+}
+
+Ref<MethodDeclaration> TypeDeclaration::FindMethod(MethodType methodType, Array<DataType*>* parameters, const String& name) const
 {
 	for (auto member : members)
 	{
@@ -1067,9 +1031,22 @@ Ref<MethodDeclaration> TypeDeclaration::GetDestructor() const
 		}
 
 		Ref<MethodDeclaration> method = std::dynamic_pointer_cast<MethodDeclaration>(member);
-		if (method->methodType == MethodType::DESTRUCTOR)
+		if (method->methodType != methodType || method->name != name)
 		{
-			assert(method->parameters.empty());
+			continue;
+		}
+
+		if (parameters)
+		{
+			if (method->parameters.size() != parameters->size())
+			{
+				continue;
+			}
+
+			STRICT_UNREACHABLE;
+		}
+		else if (method->parameters.empty())
+		{
 			return method;
 		}
 	}

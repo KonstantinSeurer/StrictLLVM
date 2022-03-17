@@ -598,6 +598,8 @@ public:
 
 	Ref<MethodDeclaration> GetDestructor() const;
 
+	Ref<MethodDeclaration> FindMethod(MethodType methodType, Array<DataType*>* parameters = nullptr, const String& name = "") const;
+
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
 
