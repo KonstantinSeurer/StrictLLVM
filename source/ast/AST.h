@@ -209,6 +209,7 @@ protected:
 };
 
 Ref<DataType> GetReferencedType(Ref<DataType> dataType);
+DataType* GetReferencedType(DataType* dataType);
 
 DECLARE_HASH(PointerType)
 

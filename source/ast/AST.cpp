@@ -308,6 +308,15 @@ Ref<DataType> GetReferencedType(Ref<DataType> dataType)
 	return GetReferencedType(referenceType->value);
 }
 
+DataType* GetReferencedType(DataType* dataType)
+{
+	if (dataType->dataTypeType != DataTypeType::REFERENCE)
+	{
+		return dataType;
+	}
+	return GetReferencedType(((PointerType*)dataType)->value.get());
+}
+
 llvm::Value* ExpressionMeta::Load(llvm::IRBuilder<>& builder) const
 {
 	return pointer ? builder.CreateLoad(dataType->dataTypeMeta.ir, ir) : ir;
