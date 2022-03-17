@@ -312,7 +312,21 @@ void LowerToIRPass::LowerNewExpression(Ref<llvm::Module> module, Ref<NewExpressi
 		expression->expressionMeta.pointer = true;
 	}
 
-	// TODO: Call the constructor.
+	if (dataType->dataTypeType == DataTypeType::OBJECT)
+	{
+		Ref<ObjectType> objectType = std::dynamic_pointer_cast<ObjectType>(dataType);
+		assert(objectType->objectTypeMeta.unit);
+		assert(objectType->objectTypeMeta.unit->declaredType->declarationType == UnitDeclarationType::CLASS);
+
+		Ref<ClassDeclaration> classDeclaration = std::dynamic_pointer_cast<ClassDeclaration>(objectType->objectTypeMeta.unit->declaredType);
+
+		// TODO: Handle initialization with arguments
+		Ref<ConstructorDeclaration> defaultConstructor = classDeclaration->GetDefaultConstructor();
+		if (defaultConstructor)
+		{
+			builder->CreateCall(classDeclaration->classDeclarationMeta.methods[defaultConstructor.get()], expression->expressionMeta.ir);
+		}
+	}
 }
 
 llvm::Value* LowerToIRPass::LowerIntOperator(OperatorType type, llvm::Value* a, llvm::Value* b, bool isSigned)
@@ -697,6 +711,21 @@ void LowerToIRPass::LowerVariableDeclarationStatement(Ref<llvm::Module> module, 
 		LowerExpression(module, statement->value, state);
 
 		builder->CreateStore(statement->value->expressionMeta.ir, variable);
+	}
+	else if (statement->declaration->dataType->dataTypeType == DataTypeType::OBJECT)
+	{
+		Ref<ObjectType> objectType = std::dynamic_pointer_cast<ObjectType>(statement->declaration->dataType);
+		assert(objectType->objectTypeMeta.unit);
+		assert(objectType->objectTypeMeta.unit->declaredType->declarationType == UnitDeclarationType::CLASS);
+
+		Ref<ClassDeclaration> classDeclaration = std::dynamic_pointer_cast<ClassDeclaration>(objectType->objectTypeMeta.unit->declaredType);
+
+		// TODO: Handle initialization with arguments
+		Ref<ConstructorDeclaration> defaultConstructor = classDeclaration->GetDefaultConstructor();
+		if (defaultConstructor)
+		{
+			builder->CreateCall(classDeclaration->classDeclarationMeta.methods[defaultConstructor.get()], variable);
+		}
 	}
 }
 
