@@ -877,7 +877,7 @@ void LowerToIRPass::LowerMethod(Ref<llvm::Module> module, Ref<MethodDeclaration>
 	}
 }
 
-void LowerToIRPass::LowerClass(Ref<ClassDeclaration> classDeclaration)
+void LowerToIRPass::LowerClass(Ref<Module> parentModule, Ref<ClassDeclaration> classDeclaration, BuildContext& buildContext)
 {
 	if (classDeclaration->typeTemplate)
 	{
@@ -929,9 +929,14 @@ void LowerToIRPass::LowerClass(Ref<ClassDeclaration> classDeclaration)
 		}
 	}
 
-	module->print(llvm::outs(), nullptr);
-
 	classDeclaration->classDeclarationMeta.module = module;
+
+	if (buildContext.dumpIR)
+	{
+		std::error_code error;
+		llvm::raw_fd_ostream dumpIRStream(parentModule->moduleMeta.outputPath + "/" + classDeclaration->name + ".ll", error);
+		module->print(dumpIRStream, nullptr);
+	}
 }
 
 void LowerToIRPass::InitializeSingleton(Ref<llvm::Module> entryModule, Ref<Unit> unit, llvm::IRBuilder<>& entryBuilder,
@@ -975,7 +980,7 @@ void LowerToIRPass::InitializeSingleton(Ref<llvm::Module> entryModule, Ref<Class
 	}
 }
 
-void LowerToIRPass::LowerModule(Ref<Module> module)
+void LowerToIRPass::LowerModule(Ref<Module> module, BuildContext& buildContext)
 {
 	auto entryModule = Allocate<llvm::Module>(module->name, *context);
 	module->moduleMeta.module = entryModule;
@@ -1002,7 +1007,7 @@ void LowerToIRPass::LowerModule(Ref<Module> module)
 
 	for (auto& specialization : module->moduleMeta.templateSpecializations)
 	{
-		LowerClass(specialization.second);
+		LowerClass(module, specialization.second, buildContext);
 	}
 
 	for (auto unit : module->units)
@@ -1012,7 +1017,7 @@ void LowerToIRPass::LowerModule(Ref<Module> module)
 			continue;
 		}
 
-		LowerClass(std::dynamic_pointer_cast<ClassDeclaration>(unit->declaredType));
+		LowerClass(module, std::dynamic_pointer_cast<ClassDeclaration>(unit->declaredType), buildContext);
 	}
 
 	HashSet<UnitDeclaration*> initializedUnits;
@@ -1032,14 +1037,19 @@ void LowerToIRPass::LowerModule(Ref<Module> module)
 		InitializeSingleton(entryModule, unit, entryBuilder, initializedUnits);
 	}
 
-	entryModule->print(llvm::outs(), nullptr);
+	if (buildContext.dumpIR)
+	{
+		std::error_code error;
+		llvm::raw_fd_ostream dumpIRStream(module->moduleMeta.outputPath + "/module.ll", error);
+		entryModule->print(dumpIRStream, nullptr);
+	}
 }
 
 PassResultFlags LowerToIRPass::Run(PrintFunction print, BuildContext& context)
 {
 	for (auto module : context.GetModules())
 	{
-		LowerModule(module);
+		LowerModule(module, context);
 	}
 
 	return PassResultFlags::SUCCESS;

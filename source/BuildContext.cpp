@@ -34,8 +34,8 @@ bool operator==(const ModuleTask& a, const ModuleTask& b)
 }
 
 BuildContext::BuildContext(const Array<String>& modulePath, const String& outputPath, const String& cachePath, const Optional<String>& logFile,
-                           TargetFlags target)
-	: modulePath(modulePath), outputPath(outputPath), cachePath(cachePath), target(target), errorCount(0)
+                           TargetFlags target, bool dumpIR)
+	: modulePath(modulePath), outputPath(outputPath), cachePath(cachePath), target(target), errorCount(0), dumpIR(dumpIR)
 {
 	if (!std::filesystem::exists(outputPath))
 	{
@@ -308,7 +308,14 @@ void BuildContext::PropagateBuildFlagAndParse()
 			continue;
 		}
 
+		String moduleOutputPath = outputPath + "/" + module.first.name;
+		if (!std::filesystem::exists(moduleOutputPath))
+		{
+			std::filesystem::create_directory(moduleOutputPath);
+		}
+
 		module.first.module = Allocate<Module>(module.first.type, module.first.name);
+		module.first.module->moduleMeta.outputPath = moduleOutputPath;
 		modules.push_back(module.first.module);
 	}
 

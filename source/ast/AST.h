@@ -707,6 +707,8 @@ public:
 	llvm::Function* main = nullptr;
 
 	HashMap<ObjectType, Ref<ClassDeclaration>> templateSpecializations;
+
+	String outputPath;
 };
 
 class Module : public ASTItem

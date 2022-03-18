@@ -104,7 +104,11 @@ private:
 	std::ofstream logFileOutput;
 
 public:
-	BuildContext(const Array<String>& modulePath, const String& outputPath, const String& cachePath, const Optional<String>& logFile, TargetFlags target);
+	const bool dumpIR;
+
+public:
+	BuildContext(const Array<String>& modulePath, const String& outputPath, const String& cachePath, const Optional<String>& logFile, TargetFlags target,
+	             bool dumpIR);
 
 	String ResolveModulePath(const String& moduleName) const;
 	Pair<String, String> ResolveUnitIdentifier(const String& identifier) const;

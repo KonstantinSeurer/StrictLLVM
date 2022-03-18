@@ -16,6 +16,7 @@ enum class Flag
 	CACHE_PATH,
 	OPTIMIZATION_LEVEL,
 	LOG_FILE,
+	DUMP_IR,
 	COUNT
 };
 
@@ -42,6 +43,7 @@ static FlagData flagData[(UInt64)Flag::COUNT] = {
 	{'C', "cache-path", "Directory where the cache files will be written to. (-C /path/to/cache)", Flag::CACHE_PATH, true},
 	{'o', "output-path", "Directory where the output files will be written to. (-o /path/to/output)", Flag::OUTPUT_PATH, true},
 	{'O', "optimization-level", "Indicates what optimizations should be done. Can be debug, performance or size. (-O size)", Flag::OPTIMIZATION_LEVEL, true},
+	{'d', "dump-ir", "Dump generated IR into the output directory.", Flag::DUMP_IR, false},
 	{'l', "log-file", "File to log the compiler output (stdout, stderr) to. (-l /path/to/logfile.log)", Flag::LOG_FILE, true}};
 
 static void PrintHelp()
@@ -197,6 +199,7 @@ int main(int argc, const char** args)
 		}
 	}
 
+	bool dumpIR = false;
 	for (const Flag& flag : flags)
 	{
 		if (flag == Flag::HELP)
@@ -215,11 +218,15 @@ int main(int argc, const char** args)
 				std::filesystem::remove_all(cachePath);
 			}
 		}
+		else if (flag == Flag::DUMP_IR)
+		{
+			dumpIR = true;
+		}
 	}
 
 	const TargetFlags target = TargetFlags::BIT64 | TargetFlags::LINUX | TargetFlags::X86;
 
-	BuildContext context(modulePath, outputPath, cachePath, logFile, target);
+	BuildContext context(modulePath, outputPath, cachePath, logFile, target, dumpIR);
 
 	std::cout << "Scanning modules...";
 	Time scanStart;
