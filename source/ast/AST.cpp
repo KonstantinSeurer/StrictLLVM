@@ -317,6 +317,71 @@ DataType* GetReferencedType(DataType* dataType)
 	return GetReferencedType(((PointerType*)dataType)->value.get());
 }
 
+bool CanCast(const DataType* source, const DataType* destination)
+{
+	if (source == destination)
+	{
+		return true;
+	}
+
+	if (source->dataTypeType != destination->dataTypeType)
+	{
+		return false;
+	}
+
+	if (source->dataTypeType == DataTypeType::PRIMITIVE)
+	{
+		const PrimitiveType* sourcePrimitive = (const PrimitiveType*)source;
+		const PrimitiveType* destinationPrimitive = (const PrimitiveType*)destination;
+
+		if (sourcePrimitive->primitiveType == destinationPrimitive->primitiveType)
+		{
+			return true;
+		}
+
+		const bool sourceFloat = sourcePrimitive->IsFloat();
+		const bool destinationFloat = destinationPrimitive->IsFloat();
+
+		if (sourceFloat && !destinationFloat)
+		{
+			return false;
+		}
+
+		if (destinationFloat && !sourceFloat)
+		{
+			return true;
+		}
+
+		return sourcePrimitive->GetSize() < destinationPrimitive->GetSize();
+	}
+
+	if (source->dataTypeType == DataTypeType::OBJECT)
+	{
+		const ObjectType* sourceObject = (const ObjectType*)source;
+		const ObjectType* destinationObject = (const ObjectType*)destination;
+
+		return *sourceObject == *destinationObject;
+	}
+
+	if (source->dataTypeType == DataTypeType::REFERENCE || source->dataTypeType == DataTypeType::POINTER || source->dataTypeType == DataTypeType::ARRAY)
+	{
+		const PointerType* sourcePointer = (const PointerType*)source;
+		const PointerType* destinationPointer = (const PointerType*)destination;
+
+		if (sourcePointer->value->dataTypeType == DataTypeType::PRIMITIVE)
+		{
+			const PrimitiveType* sourcePrimitive = (const PrimitiveType*)sourcePointer->value.get();
+			const PrimitiveType* destinationPrimitive = (const PrimitiveType*)destinationPointer->value.get();
+
+			return sourcePrimitive->primitiveType == destinationPrimitive->primitiveType;
+		}
+
+		return CanCast(sourcePointer->value.get(), destinationPointer->value.get());
+	}
+
+	STRICT_UNREACHABLE;
+}
+
 llvm::Value* ExpressionMeta::Load(llvm::IRBuilder<>& builder) const
 {
 	return pointer ? builder.CreateLoad(dataType->dataTypeMeta.ir, ir) : ir;
@@ -1052,7 +1117,22 @@ Ref<MethodDeclaration> TypeDeclaration::FindMethod(MethodType methodType, Array<
 				continue;
 			}
 
-			STRICT_UNREACHABLE;
+			bool select = true;
+			for (UInt32 parameterIndex = 0; parameterIndex < parameters->size(); parameterIndex++)
+			{
+				DataType* destination = GetReferencedType(method->parameters[parameterIndex]->dataType.get());
+				DataType* source = GetReferencedType((*parameters)[parameterIndex]);
+				if (!CanCast(source, destination))
+				{
+					select = false;
+					break;
+				}
+			}
+
+			if (select)
+			{
+				return method;
+			}
 		}
 		else if (method->parameters.empty())
 		{
