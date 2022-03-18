@@ -320,11 +320,28 @@ void LowerToIRPass::LowerNewExpression(Ref<llvm::Module> module, Ref<NewExpressi
 
 		Ref<ClassDeclaration> classDeclaration = std::dynamic_pointer_cast<ClassDeclaration>(objectType->objectTypeMeta.unit->declaredType);
 
-		// TODO: Handle initialization with arguments
-		Ref<ConstructorDeclaration> defaultConstructor = classDeclaration->GetDefaultConstructor();
-		if (defaultConstructor)
+		Array<DataType*> parameters(expression->arguments.size());
+		for (UInt32 parameterIndex = 0; parameterIndex < expression->arguments.size(); parameterIndex++)
 		{
-			builder->CreateCall(classDeclaration->classDeclarationMeta.methods[defaultConstructor.get()], expression->expressionMeta.ir);
+			parameters[parameterIndex] = expression->arguments[parameterIndex]->expressionMeta.dataType.get();
+		}
+
+		Ref<MethodDeclaration> constructor = classDeclaration->FindMethod(MethodType::CONSTRUCTOR, &parameters);
+		if (constructor)
+		{
+			Array<llvm::Value*> arguments;
+			arguments.push_back(expression->expressionMeta.ir);
+			for (auto argument : expression->arguments)
+			{
+				LowerExpression(module, argument, state);
+				arguments.push_back(argument->expressionMeta.Load(*builder));
+			}
+
+			builder->CreateCall(classDeclaration->classDeclarationMeta.methods[constructor.get()], arguments);
+		}
+		else
+		{
+			STRICT_UNREACHABLE;
 		}
 	}
 }
