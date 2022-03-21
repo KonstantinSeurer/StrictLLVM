@@ -227,9 +227,19 @@ void LowerToIRPass::LowerIdentifierExpression(llvm::Module* module, Ref<Identifi
 
 		Ref<ClassDeclaration> classDeclaration = std::dynamic_pointer_cast<ClassDeclaration>(unit->declaredType);
 		assert(classDeclaration->isSingleton);
-		assert(classDeclaration->classDeclarationMeta.singleton);
 
-		expression->expressionMeta.ir = classDeclaration->classDeclarationMeta.singleton;
+		auto& singletons = state->classDeclaration->classDeclarationMeta.singletons;
+		if (singletons.find(classDeclaration.get()) == singletons.end())
+		{
+			expression->expressionMeta.ir = new llvm::GlobalVariable(*module, classDeclaration->unitDeclarationMeta.thisType->dataTypeMeta.ir, false,
+			                                                         llvm::GlobalValue::LinkageTypes::ExternalLinkage, nullptr, classDeclaration->name);
+			singletons[classDeclaration.get()] = expression->expressionMeta.ir;
+		}
+		else
+		{
+			expression->expressionMeta.ir = singletons.at(classDeclaration.get());
+		}
+
 		expression->expressionMeta.pointer = true;
 	}
 	else
@@ -337,7 +347,8 @@ void LowerToIRPass::LowerNewExpression(llvm::Module* module, Ref<NewExpression> 
 				arguments.push_back(argument->expressionMeta.Load(*builder));
 			}
 
-			builder->CreateCall(classDeclaration->classDeclarationMeta.methods[constructor.get()], arguments);
+			LowerMethod(module, constructor, state->classDeclaration, nullptr);
+			builder->CreateCall(state->classDeclaration->classDeclarationMeta.methods.at(constructor.get()), arguments);
 		}
 		else
 		{
@@ -488,6 +499,11 @@ void LowerToIRPass::LowerOperatorExpression(llvm::Module* module, Ref<OperatorEx
 
 	if (expression->operatorType == OperatorType::ASSIGN)
 	{
+		// TODO: Call the copy constructor
+		if (expression->b->expression->expressionMeta.dataType->dataTypeType == DataTypeType::REFERENCE)
+		{
+			b = builder->CreateLoad(b->getType()->getPointerElementType(), b);
+		}
 		builder->CreateStore(b, a);
 		expression->expressionMeta = expression->b->expression->expressionMeta;
 		return;
@@ -542,11 +558,13 @@ void LowerToIRPass::LowerTernaryExpression(llvm::Module* module, Ref<TernaryExpr
 	state->currentBlock = thenBlock;
 	builder->SetInsertPoint(thenBlock);
 	LowerExpression(module, expression->thenExpression, state);
+	llvm::Value* thenValue = expression->thenExpression->expressionMeta.Load(*builder);
 
 	llvm::BasicBlock* elseBlock = llvm::BasicBlock::Create(*context, "else", state->function);
 	state->currentBlock = elseBlock;
 	builder->SetInsertPoint(elseBlock);
 	LowerExpression(module, expression->elseExpression, state);
+	llvm::Value* elseValue = expression->elseExpression->expressionMeta.Load(*builder);
 
 	llvm::BasicBlock* mergeBlock = llvm::BasicBlock::Create(*context, "merge", state->function);
 
@@ -564,8 +582,8 @@ void LowerToIRPass::LowerTernaryExpression(llvm::Module* module, Ref<TernaryExpr
 
 	LowerDataType(module, expression->expressionMeta.dataType);
 	auto phi = builder->CreatePHI(expression->expressionMeta.dataType->dataTypeMeta.ir, 2);
-	phi->addIncoming(expression->thenExpression->expressionMeta.Load(*builder), thenBlock);
-	phi->addIncoming(expression->elseExpression->expressionMeta.Load(*builder), elseBlock);
+	phi->addIncoming(thenValue, thenBlock);
+	phi->addIncoming(elseValue, elseBlock);
 	expression->expressionMeta.ir = phi;
 	expression->expressionMeta.pointer = false;
 }
@@ -737,11 +755,11 @@ void LowerToIRPass::LowerVariableDeclarationStatement(llvm::Module* module, Ref<
 
 		Ref<ClassDeclaration> classDeclaration = std::dynamic_pointer_cast<ClassDeclaration>(objectType->objectTypeMeta.unit->declaredType);
 
-		// TODO: Handle initialization with arguments
 		Ref<ConstructorDeclaration> defaultConstructor = classDeclaration->GetDefaultConstructor();
 		if (defaultConstructor)
 		{
-			builder->CreateCall(classDeclaration->classDeclarationMeta.methods[defaultConstructor.get()], variable);
+			LowerMethod(module, defaultConstructor, state->classDeclaration, nullptr);
+			builder->CreateCall(state->classDeclaration->classDeclarationMeta.methods.at(defaultConstructor.get()), variable);
 		}
 	}
 }
@@ -801,12 +819,12 @@ void LowerToIRPass::LowerStatement(llvm::Module* module, Ref<Statement> statemen
 	}
 }
 
-llvm::Function* LowerToIRPass::CreateFunction(llvm::Module* module, Ref<ClassDeclaration> classDeclaration, Ref<MethodDeclaration> method)
+llvm::Function* LowerToIRPass::CreateFunction(llvm::Module* module, Ref<MethodDeclaration> method)
 {
 	LowerDataType(module, method->dataType);
 
 	Array<llvm::Type*> parameters;
-	parameters.push_back(llvm::PointerType::get(classDeclaration->unitDeclarationMeta.thisType->dataTypeMeta.ir, 0));
+	parameters.push_back(llvm::PointerType::get(method->methodDeclarationMeta.parent->unitDeclarationMeta.thisType->dataTypeMeta.ir, 0));
 	for (auto parameter : method->parameters)
 	{
 		LowerDataType(module, parameter->dataType);
@@ -824,7 +842,7 @@ void LowerToIRPass::LowerMethod(llvm::Module* module, Ref<MethodDeclaration> met
 
 	if (methods.find(method.get()) == methods.end())
 	{
-		methods[method.get()] = CreateFunction(module, classDeclaration, method);
+		methods[method.get()] = CreateFunction(module, method);
 	}
 
 	if (method->body && fpm)
@@ -872,7 +890,13 @@ void LowerToIRPass::LowerMethod(llvm::Module* module, Ref<MethodDeclaration> met
 			}
 		}
 
-		llvm::verifyFunction(*function);
+		if (llvm::verifyFunction(*function, &llvm::outs()))
+		{
+			llvm::outs() << "\n";
+			function->print(llvm::outs());
+			llvm::outs() << "\n";
+		}
+
 		fpm->run(*function);
 	}
 }
@@ -897,7 +921,7 @@ void LowerToIRPass::LowerClass(Ref<Module> parentModule, Ref<ClassDeclaration> c
 
 	if (classDeclaration->isSingleton)
 	{
-		classDeclaration->classDeclarationMeta.singleton =
+		classDeclaration->classDeclarationMeta.singletons[classDeclaration.get()] =
 			new llvm::GlobalVariable(*module, classDeclaration->unitDeclarationMeta.thisType->dataTypeMeta.ir, false,
 		                             llvm::GlobalValue::LinkageTypes::ExternalLinkage, nullptr, classDeclaration->name);
 	}
@@ -982,7 +1006,9 @@ void LowerToIRPass::InitializeSingleton(Ref<llvm::Module> entryModule, Ref<Class
 	Ref<ConstructorDeclaration> defaultConstructor = classDeclaration->GetDefaultConstructor();
 	if (defaultConstructor)
 	{
-		entryBuilder.CreateCall(CreateFunction(entryModule.get(), classDeclaration, defaultConstructor), {classDeclaration->classDeclarationMeta.singleton});
+		entryBuilder.CreateCall(CreateFunction(entryModule.get(), defaultConstructor),
+		                        {new llvm::GlobalVariable(*entryModule, classDeclaration->unitDeclarationMeta.thisType->dataTypeMeta.ir, false,
+		                                                  llvm::GlobalValue::LinkageTypes::ExternalLinkage, nullptr, classDeclaration->name)});
 	}
 }
 

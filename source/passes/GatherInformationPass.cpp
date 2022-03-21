@@ -200,6 +200,11 @@ void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type, Ref<Sta
 
 void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type, Ref<MethodDeclaration> method)
 {
+	if ((flags & GatherInformationFlags::PARENT) == GatherInformationFlags::PARENT)
+	{
+		method->methodDeclarationMeta.parent = type.get();
+	}
+
 	if ((flags & GatherInformationFlags::METHOD_NAME) == GatherInformationFlags::METHOD_NAME)
 	{
 		String name = type->name + ".";

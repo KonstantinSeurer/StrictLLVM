@@ -67,7 +67,7 @@ private:
 
 	void LowerStatement(llvm::Module* module, Ref<Statement> statement, LowerFunctionToIRState* state);
 
-	llvm::Function* CreateFunction(llvm::Module* module, Ref<ClassDeclaration> classDeclaration, Ref<MethodDeclaration> method);
+	llvm::Function* CreateFunction(llvm::Module* module, Ref<MethodDeclaration> method);
 
 	void LowerMethod(llvm::Module* module, Ref<MethodDeclaration> method, Ref<ClassDeclaration> classDeclaration, llvm::legacy::FunctionPassManager* fpm);
 

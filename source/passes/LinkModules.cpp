@@ -12,7 +12,7 @@ PassResultFlags LinkModulesPass::LinkDependency(Ref<Module> module, Ref<Module> 
 {
 	llvm::Linker linker(*module->moduleMeta.module);
 
-	if (linker.linkInModule(llvm::CloneModule(*dependency->moduleMeta.module), llvm::Linker::Flags::OverrideFromSrc))
+	if (linker.linkInModule(llvm::CloneModule(*dependency->moduleMeta.module)))
 	{
 		return PassResultFlags::CRITICAL_ERROR;
 	}
@@ -36,7 +36,7 @@ PassResultFlags LinkModulesPass::Run(PrintFunction print, BuildContext& context)
 
 		for (auto& specialization : module->moduleMeta.templateSpecializations)
 		{
-			if (linker.linkInModule(std::move(specialization.second->classDeclarationMeta.module), llvm::Linker::Flags::OverrideFromSrc))
+			if (linker.linkInModule(std::move(specialization.second->classDeclarationMeta.module)))
 			{
 				return PassResultFlags::CRITICAL_ERROR;
 			}
@@ -55,7 +55,7 @@ PassResultFlags LinkModulesPass::Run(PrintFunction print, BuildContext& context)
 				continue;
 			}
 
-			if (linker.linkInModule(std::move(classDeclaration->classDeclarationMeta.module), llvm::Linker::Flags::OverrideFromSrc))
+			if (linker.linkInModule(std::move(classDeclaration->classDeclarationMeta.module)))
 			{
 				return PassResultFlags::CRITICAL_ERROR;
 			}

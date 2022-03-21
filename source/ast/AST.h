@@ -387,6 +387,7 @@ class MethodDeclarationMeta
 {
 public:
 	String name;
+	TypeDeclaration* parent;
 };
 
 class MethodDeclaration : public VariableDeclaration
@@ -611,6 +612,8 @@ protected:
 
 DECLARE_HASH(TypeDeclaration)
 
+class ClassDeclaration;
+
 class ClassDeclarationMeta
 {
 public:
@@ -619,8 +622,8 @@ public:
 	Unique<llvm::Module> module = nullptr;
 	llvm::Function* malloc = nullptr;
 	llvm::Function* free = nullptr;
-	llvm::Value* singleton = nullptr;
 	HashMap<MethodDeclaration*, llvm::Function*> methods;
+	HashMap<ClassDeclaration*, llvm::Value*> singletons;
 	llvm::Value* typeId = nullptr;
 };
 
