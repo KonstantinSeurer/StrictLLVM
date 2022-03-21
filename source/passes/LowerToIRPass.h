@@ -21,8 +21,8 @@ public:
 class LowerToIRPass : public Pass
 {
 private:
-	Ref<llvm::IRBuilder<>> builder;
-	Ref<llvm::LLVMContext> context;
+	llvm::IRBuilder<>* builder;
+	llvm::LLVMContext* context;
 
 public:
 	LowerToIRPass();

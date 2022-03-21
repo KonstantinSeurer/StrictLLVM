@@ -8,8 +8,8 @@
 
 LowerToIRPass::LowerToIRPass() : Pass("LowerToIRPass")
 {
-	context = Allocate<llvm::LLVMContext>();
-	builder = Allocate<llvm::IRBuilder<>>(*context);
+	context = new llvm::LLVMContext();
+	builder = new llvm::IRBuilder<>(*context);
 }
 
 void LowerToIRPass::LowerDataType(llvm::Module* module, Ref<DataType> type)
