@@ -31,45 +31,45 @@ public:
 	virtual PassResultFlags Run(PrintFunction print, BuildContext& context);
 
 private:
-	void LowerDataType(Ref<llvm::Module> module, Ref<DataType> type);
+	void LowerDataType(llvm::Module* module, Ref<DataType> type);
 
-	void LowerCallExpression(Ref<llvm::Module> module, Ref<CallExpression> expression, LowerFunctionToIRState* state);
+	void LowerCallExpression(llvm::Module* module, Ref<CallExpression> expression, LowerFunctionToIRState* state);
 
-	void LowerIdentifierExpression(Ref<llvm::Module> module, Ref<IdentifierExpression> expression, LowerFunctionToIRState* state);
+	void LowerIdentifierExpression(llvm::Module* module, Ref<IdentifierExpression> expression, LowerFunctionToIRState* state);
 
-	void LowerLiteralExpression(Ref<llvm::Module> module, Ref<LiteralExpression> expression, LowerFunctionToIRState* state);
+	void LowerLiteralExpression(llvm::Module* module, Ref<LiteralExpression> expression, LowerFunctionToIRState* state);
 
-	void LowerNewExpression(Ref<llvm::Module> module, Ref<NewExpression> expression, LowerFunctionToIRState* state);
+	void LowerNewExpression(llvm::Module* module, Ref<NewExpression> expression, LowerFunctionToIRState* state);
 
 	llvm::Value* LowerIntOperator(OperatorType type, llvm::Value* a, llvm::Value* b, bool isSigned);
 
 	llvm::Value* LowerFloatOperator(OperatorType type, llvm::Value* a, llvm::Value* b);
 
-	void LowerOperatorExpression(Ref<llvm::Module> module, Ref<OperatorExpression> expression, LowerFunctionToIRState* state);
+	void LowerOperatorExpression(llvm::Module* module, Ref<OperatorExpression> expression, LowerFunctionToIRState* state);
 
-	void LowerTernaryExpression(Ref<llvm::Module> module, Ref<TernaryExpression> expression, LowerFunctionToIRState* state);
+	void LowerTernaryExpression(llvm::Module* module, Ref<TernaryExpression> expression, LowerFunctionToIRState* state);
 
-	void LowerExpression(Ref<llvm::Module> module, Ref<Expression> expression, LowerFunctionToIRState* state);
+	void LowerExpression(llvm::Module* module, Ref<Expression> expression, LowerFunctionToIRState* state);
 
-	void LowerBlockStatement(Ref<llvm::Module> module, Ref<BlockStatement> statement, LowerFunctionToIRState* state);
+	void LowerBlockStatement(llvm::Module* module, Ref<BlockStatement> statement, LowerFunctionToIRState* state);
 
-	void LowerDeleteStatement(Ref<llvm::Module> module, Ref<DeleteStatement> statement, LowerFunctionToIRState* state);
+	void LowerDeleteStatement(llvm::Module* module, Ref<DeleteStatement> statement, LowerFunctionToIRState* state);
 
-	void LowerForStatement(Ref<llvm::Module> module, Ref<ForStatement> statement, LowerFunctionToIRState* state);
+	void LowerForStatement(llvm::Module* module, Ref<ForStatement> statement, LowerFunctionToIRState* state);
 
-	void LowerIfStatement(Ref<llvm::Module> module, Ref<IfStatement> statement, LowerFunctionToIRState* state);
+	void LowerIfStatement(llvm::Module* module, Ref<IfStatement> statement, LowerFunctionToIRState* state);
 
-	void LowerVariableDeclarationStatement(Ref<llvm::Module> module, Ref<VariableDeclarationStatement> statement, LowerFunctionToIRState* state);
+	void LowerVariableDeclarationStatement(llvm::Module* module, Ref<VariableDeclarationStatement> statement, LowerFunctionToIRState* state);
 
-	void LowerWhileStatement(Ref<llvm::Module> module, Ref<WhileStatement> statement, LowerFunctionToIRState* state);
+	void LowerWhileStatement(llvm::Module* module, Ref<WhileStatement> statement, LowerFunctionToIRState* state);
 
-	void LowerReturnStatement(Ref<llvm::Module> module, Ref<ReturnStatement> statement, LowerFunctionToIRState* state);
+	void LowerReturnStatement(llvm::Module* module, Ref<ReturnStatement> statement, LowerFunctionToIRState* state);
 
-	void LowerStatement(Ref<llvm::Module> module, Ref<Statement> statement, LowerFunctionToIRState* state);
+	void LowerStatement(llvm::Module* module, Ref<Statement> statement, LowerFunctionToIRState* state);
 
-	llvm::Function* CreateFunction(Ref<llvm::Module> module, Ref<ClassDeclaration> classDeclaration, Ref<MethodDeclaration> method);
+	llvm::Function* CreateFunction(llvm::Module* module, Ref<ClassDeclaration> classDeclaration, Ref<MethodDeclaration> method);
 
-	void LowerMethod(Ref<llvm::Module> module, Ref<MethodDeclaration> method, Ref<ClassDeclaration> classDeclaration, llvm::legacy::FunctionPassManager* fpm);
+	void LowerMethod(llvm::Module* module, Ref<MethodDeclaration> method, Ref<ClassDeclaration> classDeclaration, llvm::legacy::FunctionPassManager* fpm);
 
 	void LowerClass(Ref<Module> parentModule, Ref<ClassDeclaration> classDeclaration, BuildContext& context);
 

@@ -560,6 +560,7 @@ PassResultFlags ResolveContext::ResolveCallExpression(Ref<MethodDeclaration> met
 		return result;
 	}
 
+	// TODO: Consider overloading
 	Ref<Expression> actualMethod = GetRightMostExpression(callExpression->method);
 	if (!actualMethod || actualMethod->expressionType != ExpressionType::IDENTIFIER)
 	{

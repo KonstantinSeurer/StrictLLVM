@@ -616,13 +616,12 @@ class ClassDeclarationMeta
 public:
 	Ref<VariableDeclaration> thisDeclaration = nullptr;
 
-	Ref<llvm::Module> module = nullptr;
+	Unique<llvm::Module> module = nullptr;
 	llvm::Function* malloc = nullptr;
 	llvm::Function* free = nullptr;
-
 	llvm::Value* singleton = nullptr;
-
 	HashMap<MethodDeclaration*, llvm::Function*> methods;
+	llvm::Value* typeId = nullptr;
 };
 
 class ClassDeclaration : public TypeDeclaration
@@ -705,6 +704,8 @@ public:
 	Ref<llvm::Module> module = nullptr;
 	llvm::Function* entryPoint = nullptr;
 	llvm::Function* main = nullptr;
+	llvm::Value* virtualTable = nullptr;
+	llvm::Value* typeId = nullptr;
 
 	HashMap<ObjectType, Ref<ClassDeclaration>> templateSpecializations;
 

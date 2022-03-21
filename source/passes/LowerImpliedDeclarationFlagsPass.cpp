@@ -43,6 +43,15 @@ void LowerImpliedDeclarationFlags(Ref<MemberVariableDeclaration> variable)
 
 void LowerImpliedDeclarationFlags(Ref<TypeDeclaration> type)
 {
+	for (auto superType : type->superTypes)
+	{
+		assert(superType->objectTypeMeta.unit);
+		if ((superType->objectTypeMeta.unit->declaredType->flags & DeclarationFlags::VIRTUAL) == DeclarationFlags::VIRTUAL)
+		{
+			type->flags = type->flags | DeclarationFlags::VIRTUAL;
+		}
+	}
+
 	for (auto member : type->members)
 	{
 		if (member->variableType == VariableDeclarationType::MEMBER_VARIABLE)

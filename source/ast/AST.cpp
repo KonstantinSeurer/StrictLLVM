@@ -1153,7 +1153,6 @@ CLONE_METHOD(ClassDeclaration)
 void ClassDeclaration::CloneImplementation(Ref<ClassDeclaration> target) const
 {
 	TypeDeclaration::CloneImplementation(target);
-	target->classDeclarationMeta = classDeclarationMeta;
 	target->isSingleton = isSingleton;
 }
 

@@ -53,6 +53,13 @@ template <typename T, typename... Args> inline Ref<T> Allocate(Args&&... args)
 	return std::make_shared<T>(args...);
 }
 
+template <typename T> using Unique = std::unique_ptr<T>;
+
+template <typename T, typename... Args> inline Unique<T> AllocateUnique(Args&&... args)
+{
+	return std::make_unique<T>(args...);
+}
+
 template <typename T> using Array = std::vector<T>;
 
 template <typename K, typename V, typename... MiscArgs> using HashMap = std::unordered_map<K, V, MiscArgs...>;

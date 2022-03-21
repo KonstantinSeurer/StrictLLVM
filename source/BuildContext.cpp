@@ -5,6 +5,7 @@
 
 #include "passes/GatherInformationPass.h"
 #include "passes/InlineTemplatesPass.h"
+#include "passes/LinkModules.h"
 #include "passes/LowerImpliedDeclarationFlagsPass.h"
 #include "passes/LowerOperatorsPass.h"
 #include "passes/LowerToIRPass.h"
@@ -54,13 +55,14 @@ BuildContext::BuildContext(const Array<String>& modulePath, const String& output
 	}
 
 	// Add required passes
-	AddPass(Allocate<LowerImpliedDeclarationFlagsPass>());
 	AddPass(Allocate<ValidateStructurePass>());
 	AddPass(Allocate<GatherInformationPass>(GatherInformationFlags::PARENT | GatherInformationFlags::THIS | GatherInformationFlags::MEMBER_INDEX));
 	AddPass(Allocate<ResolveIdentifiersPass>());
+	AddPass(Allocate<LowerImpliedDeclarationFlagsPass>());
 	AddPass(Allocate<InlineTemplatesPass>());
 	AddPass(Allocate<LowerOperatorsPass>());
 	AddPass(Allocate<LowerToIRPass>());
+	AddPass(Allocate<LinkModulesPass>());
 }
 
 void BuildContext::Print(const String& string, bool console)
