@@ -4,5 +4,9 @@
 	"units":
 	[
 		"ArrayTest"
+	],
+	"requires":
+	[
+		"Strict.Core"
 	]
 }
