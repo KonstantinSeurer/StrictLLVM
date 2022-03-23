@@ -9,6 +9,7 @@
 #include "passes/LowerImpliedDeclarationFlagsPass.h"
 #include "passes/LowerOperatorsPass.h"
 #include "passes/LowerToIRPass.h"
+#include "passes/OutputModulesPass.h"
 #include "passes/ResolveIdentifiersPass.h"
 #include "passes/ValidateStructurePass.h"
 
@@ -64,6 +65,7 @@ BuildContext::BuildContext(const Array<String>& modulePath, const String& output
 	AddPass(Allocate<LowerOperatorsPass>());
 	AddPass(Allocate<LowerToIRPass>());
 	AddPass(Allocate<LinkModulesPass>());
+	AddPass(Allocate<OutputModulesPass>());
 }
 
 void BuildContext::Print(const String& string, bool console)
