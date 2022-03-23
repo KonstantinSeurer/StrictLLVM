@@ -114,7 +114,7 @@ public:
 	Pair<String, String> ResolveUnitIdentifier(const String& identifier) const;
 	Ref<Unit> ResolveUnit(const String& identifier) const;
 
-	void AddModule(const String& moduleName);
+	UInt32 AddModule(const String& moduleName);
 	void Build();
 
 	void AddPass(Ref<Pass> pass)

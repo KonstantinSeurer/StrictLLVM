@@ -123,11 +123,18 @@ Ref<Unit> BuildContext::ResolveUnit(const String& identifier) const
 	return taskList[moduleIndex].second[unitIndex].unit;
 }
 
-void BuildContext::AddModule(const String& name)
+UInt32 BuildContext::AddModule(const String& name)
 {
 	if (moduleSet.find(name) != moduleSet.end())
 	{
-		return;
+		for (UInt32 taskIndex = 0; taskIndex < taskList.size(); taskIndex++)
+		{
+			if (taskList[taskIndex].first.name == name)
+			{
+				return taskIndex;
+			}
+		}
+		STRICT_UNREACHABLE;
 	}
 
 	moduleSet.insert(name);
@@ -145,8 +152,7 @@ void BuildContext::AddModule(const String& name)
 	{
 		for (const auto& requireJSON : moduleJSON["requires"])
 		{
-			AddModule(String(requireJSON));
-			moduleTask.dependencyIndices.push_back(taskList.size() - 1);
+			moduleTask.dependencyIndices.push_back(AddModule(String(requireJSON)));
 		}
 	}
 
@@ -165,6 +171,8 @@ void BuildContext::AddModule(const String& name)
 			taskList[taskList.size() - 1].second.push_back(UnitTask(String(unitJSON)));
 		}
 	}
+
+	return taskList.size() - 1;
 }
 
 void BuildContext::Build()
