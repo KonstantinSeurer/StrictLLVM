@@ -8,7 +8,7 @@ find_package(LLVM REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 
-llvm_map_components_to_libnames(REQUIRED_LLVM_LIBRARIES core scalaropts linker)
+execute_process(COMMAND llvm-config --libs all OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE REQUIRED_LLVM_LIBRARIES)
 
 file(GLOB_RECURSE STRICTLLVM_SOURCE_FILES source/*.cpp)
 
