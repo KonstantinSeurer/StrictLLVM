@@ -1069,6 +1069,8 @@ void LowerToIRPass::LowerModule(Ref<Module> module, BuildContext& buildContext)
 		InitializeSingleton(entryModule, unit, entryBuilder, initializedUnits);
 	}
 
+	entryBuilder.CreateRetVoid();
+
 	if (buildContext.dumpIR)
 	{
 		std::error_code error;
