@@ -1017,9 +1017,8 @@ void LowerToIRPass::LowerModule(Ref<Module> module, BuildContext& buildContext)
 	auto entryModule = Allocate<llvm::Module>(module->name, *context);
 	module->moduleMeta.module = entryModule;
 
-	auto signature = llvm::FunctionType::get(llvm::Type::getVoidTy(*context), {}, false);
-
-	auto entryFunction = llvm::Function::Create(signature, llvm::GlobalValue::LinkageTypes::ExternalLinkage, module->name + ".EntryPoint", *entryModule);
+	auto entrySignature = llvm::FunctionType::get(llvm::Type::getVoidTy(*context), {}, false);
+	auto entryFunction = llvm::Function::Create(entrySignature, llvm::GlobalValue::LinkageTypes::ExternalLinkage, module->name + ".EntryPoint", *entryModule);
 	module->moduleMeta.entryPoint = entryFunction;
 
 	auto entryBlock = llvm::BasicBlock::Create(*context, "entry", entryFunction);
@@ -1027,14 +1026,15 @@ void LowerToIRPass::LowerModule(Ref<Module> module, BuildContext& buildContext)
 
 	if (module->moduleType == ModuleType::EXECUTABLE)
 	{
-		auto mainFunction = llvm::Function::Create(signature, llvm::GlobalValue::LinkageTypes::ExternalLinkage, "main", *entryModule);
+		auto mainSignature = llvm::FunctionType::get(llvm::Type::getInt32Ty(*context), {}, false);
+		auto mainFunction = llvm::Function::Create(mainSignature, llvm::GlobalValue::LinkageTypes::ExternalLinkage, "main", *entryModule);
 		module->moduleMeta.main = mainFunction;
 
 		auto block = llvm::BasicBlock::Create(*context, "entry", mainFunction);
 		llvm::IRBuilder<> mainBuilder(block);
 
 		mainBuilder.CreateCall(entryFunction);
-		mainBuilder.CreateRetVoid();
+		mainBuilder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(*context), 0));
 	}
 
 	for (auto& specialization : module->moduleMeta.templateSpecializations)
