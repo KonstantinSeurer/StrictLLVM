@@ -187,7 +187,14 @@ void LowerToIRPass::LowerCallExpression(llvm::Module* module, Ref<CallExpression
 			arguments.push_back(argument->expressionMeta.Load(*builder));
 		}
 
-		expression->expressionMeta.ir = builder->CreateCall(state->classDeclaration->classDeclarationMeta.methods.at(method.get()), arguments);
+		if ((method->flags & DeclarationFlags::VIRTUAL) == DeclarationFlags::VIRTUAL)
+		{
+			expression->expressionMeta.ir = llvm::Constant::getNullValue(method->dataType->dataTypeMeta.ir);
+		}
+		else
+		{
+			expression->expressionMeta.ir = builder->CreateCall(state->classDeclaration->classDeclarationMeta.methods.at(method.get()), arguments);
+		}
 	}
 	else
 	{
