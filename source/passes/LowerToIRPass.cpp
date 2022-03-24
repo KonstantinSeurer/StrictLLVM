@@ -927,7 +927,7 @@ PassResultFlags LowerToIRPass::LowerClass(Ref<Module> parentModule, Ref<ClassDec
 
 	if (classDeclaration->isSingleton)
 	{
-		llvm::Constant* initializer = llvm::ConstantStruct::get((llvm::StructType*)classDeclaration->unitDeclarationMeta.thisType->dataTypeMeta.ir);
+		llvm::Constant* initializer = llvm::Constant::getNullValue(classDeclaration->unitDeclarationMeta.thisType->dataTypeMeta.ir);
 		classDeclaration->classDeclarationMeta.singletons[classDeclaration.get()] =
 			new llvm::GlobalVariable(*module, classDeclaration->unitDeclarationMeta.thisType->dataTypeMeta.ir, false,
 		                             llvm::GlobalValue::LinkageTypes::ExternalLinkage, initializer, classDeclaration->name);
