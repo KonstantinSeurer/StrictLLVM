@@ -890,6 +890,7 @@ PassResultFlags LowerToIRPass::LowerMethod(llvm::Module* module, Ref<MethodDecla
 			}
 		}
 
+#ifdef DEBUG
 		if (llvm::verifyFunction(*function, &llvm::outs()))
 		{
 			llvm::outs() << "\n";
@@ -898,6 +899,7 @@ PassResultFlags LowerToIRPass::LowerMethod(llvm::Module* module, Ref<MethodDecla
 
 			return PassResultFlags::CRITICAL_ERROR;
 		}
+#endif
 
 		fpm->run(*function);
 	}
@@ -970,10 +972,12 @@ PassResultFlags LowerToIRPass::LowerClass(Ref<Module> parentModule, Ref<ClassDec
 		}
 	}
 
+#ifdef DEBUG
 	if (llvm::verifyModule(*module, &llvm::outs()))
 	{
 		return PassResultFlags::CRITICAL_ERROR;
 	}
+#endif
 
 	if (buildContext.dumpIR)
 	{
