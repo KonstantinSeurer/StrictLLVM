@@ -835,8 +835,8 @@ llvm::Function* LowerToIRPass::CreateFunction(llvm::Module* module, Ref<MethodDe
 	return llvm::Function::Create(signature, llvm::GlobalValue::LinkageTypes::ExternalLinkage, method->methodDeclarationMeta.name, *module);
 }
 
-void LowerToIRPass::LowerMethod(llvm::Module* module, Ref<MethodDeclaration> method, Ref<ClassDeclaration> classDeclaration,
-                                llvm::legacy::FunctionPassManager* fpm)
+PassResultFlags LowerToIRPass::LowerMethod(llvm::Module* module, Ref<MethodDeclaration> method, Ref<ClassDeclaration> classDeclaration,
+                                           llvm::legacy::FunctionPassManager* fpm)
 {
 	auto& methods = classDeclaration->classDeclarationMeta.methods;
 
@@ -895,17 +895,21 @@ void LowerToIRPass::LowerMethod(llvm::Module* module, Ref<MethodDeclaration> met
 			llvm::outs() << "\n";
 			function->print(llvm::outs());
 			llvm::outs() << "\n";
+
+			return PassResultFlags::CRITICAL_ERROR;
 		}
 
 		fpm->run(*function);
 	}
+
+	return PassResultFlags::SUCCESS;
 }
 
-void LowerToIRPass::LowerClass(Ref<Module> parentModule, Ref<ClassDeclaration> classDeclaration, BuildContext& buildContext)
+PassResultFlags LowerToIRPass::LowerClass(Ref<Module> parentModule, Ref<ClassDeclaration> classDeclaration, BuildContext& buildContext)
 {
 	if (classDeclaration->typeTemplate)
 	{
-		return;
+		return PassResultFlags::SUCCESS;
 	}
 
 	auto module = AllocateUnique<llvm::Module>(classDeclaration->name, *context);
@@ -947,16 +951,27 @@ void LowerToIRPass::LowerClass(Ref<Module> parentModule, Ref<ClassDeclaration> c
 
 		if (member->variableType == VariableDeclarationType::METHOD)
 		{
-			LowerMethod(module.get(), std::dynamic_pointer_cast<MethodDeclaration>(member), classDeclaration, &fpm);
+			if (LowerMethod(module.get(), std::dynamic_pointer_cast<MethodDeclaration>(member), classDeclaration, &fpm) != PassResultFlags::SUCCESS)
+			{
+				return PassResultFlags::CRITICAL_ERROR;
+			}
 		}
 		else if (member->variableType == VariableDeclarationType::MEMBER_VARIABLE)
 		{
 			Ref<MemberVariableDeclaration> memberVariableDeclaration = std::dynamic_pointer_cast<MemberVariableDeclaration>(member);
 			for (auto accessor : memberVariableDeclaration->accessors)
 			{
-				LowerMethod(module.get(), accessor, classDeclaration, &fpm);
+				if (LowerMethod(module.get(), accessor, classDeclaration, &fpm) != PassResultFlags::SUCCESS)
+				{
+					return PassResultFlags::CRITICAL_ERROR;
+				}
 			}
 		}
+	}
+
+	if (llvm::verifyModule(*module, &llvm::outs()))
+	{
+		return PassResultFlags::CRITICAL_ERROR;
 	}
 
 	if (buildContext.dumpIR)
@@ -967,6 +982,8 @@ void LowerToIRPass::LowerClass(Ref<Module> parentModule, Ref<ClassDeclaration> c
 	}
 
 	classDeclaration->classDeclarationMeta.module = std::move(module);
+
+	return PassResultFlags::SUCCESS;
 }
 
 void LowerToIRPass::InitializeSingleton(Ref<llvm::Module> entryModule, Ref<Unit> unit, llvm::IRBuilder<>& entryBuilder,
@@ -1012,7 +1029,7 @@ void LowerToIRPass::InitializeSingleton(Ref<llvm::Module> entryModule, Ref<Class
 	}
 }
 
-void LowerToIRPass::LowerModule(Ref<Module> module, BuildContext& buildContext)
+PassResultFlags LowerToIRPass::LowerModule(Ref<Module> module, BuildContext& buildContext)
 {
 	auto entryModule = Allocate<llvm::Module>(module->name, *context);
 	module->moduleMeta.module = entryModule;
@@ -1039,7 +1056,10 @@ void LowerToIRPass::LowerModule(Ref<Module> module, BuildContext& buildContext)
 
 	for (auto& specialization : module->moduleMeta.templateSpecializations)
 	{
-		LowerClass(module, specialization.second, buildContext);
+		if (LowerClass(module, specialization.second, buildContext) != PassResultFlags::SUCCESS)
+		{
+			return PassResultFlags::CRITICAL_ERROR;
+		}
 	}
 
 	for (auto unit : module->units)
@@ -1049,7 +1069,10 @@ void LowerToIRPass::LowerModule(Ref<Module> module, BuildContext& buildContext)
 			continue;
 		}
 
-		LowerClass(module, std::dynamic_pointer_cast<ClassDeclaration>(unit->declaredType), buildContext);
+		if (LowerClass(module, std::dynamic_pointer_cast<ClassDeclaration>(unit->declaredType), buildContext) != PassResultFlags::SUCCESS)
+		{
+			return PassResultFlags::CRITICAL_ERROR;
+		}
 	}
 
 	HashSet<UnitDeclaration*> initializedUnits;
@@ -1077,13 +1100,18 @@ void LowerToIRPass::LowerModule(Ref<Module> module, BuildContext& buildContext)
 		llvm::raw_fd_ostream dumpIRStream(module->moduleMeta.outputPath + "/module.ll", error);
 		entryModule->print(dumpIRStream, nullptr);
 	}
+
+	return PassResultFlags::SUCCESS;
 }
 
 PassResultFlags LowerToIRPass::Run(PrintFunction print, BuildContext& context)
 {
 	for (auto module : context.GetModules())
 	{
-		LowerModule(module, context);
+		if (LowerModule(module, context) != PassResultFlags::SUCCESS)
+		{
+			return PassResultFlags::CRITICAL_ERROR;
+		}
 	}
 
 	return PassResultFlags::SUCCESS;
