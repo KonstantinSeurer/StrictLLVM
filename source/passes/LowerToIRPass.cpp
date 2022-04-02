@@ -258,37 +258,55 @@ void LowerToIRPass::LowerIdentifierExpression(llvm::Module* module, Ref<Identifi
 void LowerToIRPass::LowerLiteralExpression(llvm::Module* module, Ref<LiteralExpression> expression, LowerFunctionToIRState* state)
 {
 	assert(expression->expressionMeta.dataType);
-	assert(expression->expressionMeta.dataType->dataTypeType == DataTypeType::PRIMITIVE);
-
 	LowerDataType(module, expression->expressionMeta.dataType);
 
-	Ref<PrimitiveType> dataType = std::dynamic_pointer_cast<PrimitiveType>(expression->expressionMeta.dataType);
-	switch (dataType->primitiveType)
+	if (expression->expressionMeta.dataType->dataTypeType == DataTypeType::PRIMITIVE)
 	{
-	case TokenType::BOOL: {
-		expression->expressionMeta.ir = llvm::ConstantInt::getBool(dataType->dataTypeMeta.ir, expression->data.data.boolData);
-		break;
+		Ref<PrimitiveType> dataType = std::dynamic_pointer_cast<PrimitiveType>(expression->expressionMeta.dataType);
+		switch (dataType->primitiveType)
+		{
+		case TokenType::BOOL: {
+			expression->expressionMeta.ir = llvm::ConstantInt::getBool(dataType->dataTypeMeta.ir, expression->data.data.boolData);
+			break;
+		}
+		case TokenType::INT8:
+		case TokenType::INT16:
+		case TokenType::INT32:
+		case TokenType::INT64: {
+			expression->expressionMeta.ir = llvm::ConstantInt::get(dataType->dataTypeMeta.ir, expression->data.data.intData);
+			break;
+		}
+		case TokenType::UINT8:
+		case TokenType::UINT16:
+		case TokenType::UINT32:
+		case TokenType::UINT64: {
+			expression->expressionMeta.ir = llvm::ConstantInt::get(dataType->dataTypeMeta.ir, expression->data.data.uintData);
+			break;
+		}
+		case TokenType::FLOAT32:
+		case TokenType::FLOAT64: {
+			expression->expressionMeta.ir = llvm::ConstantFP::get(dataType->dataTypeMeta.ir, expression->data.data.floatData);
+			break;
+		}
+		default:
+			STRICT_UNREACHABLE;
+		}
 	}
-	case TokenType::INT8:
-	case TokenType::INT16:
-	case TokenType::INT32:
-	case TokenType::INT64: {
-		expression->expressionMeta.ir = llvm::ConstantInt::get(dataType->dataTypeMeta.ir, expression->data.data.intData);
-		break;
+	else if (expression->expressionMeta.dataType->dataTypeType == DataTypeType::ARRAY)
+	{
+		Ref<PointerType> dataType = std::dynamic_pointer_cast<PointerType>(expression->expressionMeta.dataType);
+		assert(dataType->value->dataTypeType == DataTypeType::PRIMITIVE);
+		assert(dataType->dataTypeMeta.ir);
+		assert(expression->data.type == TokenType::STRING_LITERAL);
+
+		llvm::Constant* string = llvm::ConstantDataArray::getString(*context, expression->data.data.stringData);
+
+		Array<llvm::Value*> indices = {llvm::ConstantInt::get(llvm::Type::getInt32Ty(*context), 0),
+		                               llvm::ConstantInt::get(llvm::Type::getInt32Ty(*context), 0)};
+		expression->expressionMeta.ir = builder->CreateInBoundsGEP(string->getType(), string, indices);
 	}
-	case TokenType::UINT8:
-	case TokenType::UINT16:
-	case TokenType::UINT32:
-	case TokenType::UINT64: {
-		expression->expressionMeta.ir = llvm::ConstantInt::get(dataType->dataTypeMeta.ir, expression->data.data.uintData);
-		break;
-	}
-	case TokenType::FLOAT32:
-	case TokenType::FLOAT64: {
-		expression->expressionMeta.ir = llvm::ConstantFP::get(dataType->dataTypeMeta.ir, expression->data.data.floatData);
-		break;
-	}
-	default:
+	else
+	{
 		STRICT_UNREACHABLE;
 	}
 }
