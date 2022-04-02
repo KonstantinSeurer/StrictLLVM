@@ -399,7 +399,7 @@ void ResolveContext::ResolveLiteralExpression(Ref<LiteralExpression> expression)
 	{
 		Ref<PointerType> type = Allocate<PointerType>();
 		type->dataTypeType = DataTypeType::ARRAY;
-		type->value = Allocate<PrimitiveType>(TokenType::FLOAT64);
+		type->value = Allocate<PrimitiveType>(TokenType::INT8);
 		expression->expressionMeta.dataType = type;
 	}
 	else
