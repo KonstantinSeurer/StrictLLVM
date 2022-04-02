@@ -48,10 +48,9 @@ static String ParseUsing(ErrorStream& err, Lexer& lexer)
 	}
 
 static HashMap<TokenType, DeclarationFlags> declarationFlags = {
-	{TokenType::PRIVATE, DeclarationFlags::PRIVATE},   {TokenType::PROTECTED, DeclarationFlags::PROTECTED},
-	{TokenType::INTERNAL, DeclarationFlags::INTERNAL}, {TokenType::PUBLIC, DeclarationFlags::PUBLIC},
-	{TokenType::MUT, DeclarationFlags::MUT},           {TokenType::IMPURE, DeclarationFlags::IMPURE},
-	{TokenType::VIRTUAL, DeclarationFlags::VIRTUAL}};
+	{TokenType::PRIVATE, DeclarationFlags::PRIVATE},   {TokenType::PROTECTED, DeclarationFlags::PROTECTED}, {TokenType::INTERNAL, DeclarationFlags::INTERNAL},
+	{TokenType::EXTERNAL, DeclarationFlags::EXTERNAL}, {TokenType::PUBLIC, DeclarationFlags::PUBLIC},       {TokenType::MUT, DeclarationFlags::MUT},
+	{TokenType::IMPURE, DeclarationFlags::IMPURE},     {TokenType::VIRTUAL, DeclarationFlags::VIRTUAL}};
 
 static DeclarationFlags ParseDeclarationFlags(Lexer& lexer)
 {
