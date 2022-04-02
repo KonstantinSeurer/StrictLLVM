@@ -705,17 +705,21 @@ void LowerToIRPass::LowerIfStatement(llvm::Module* module, Ref<IfStatement> stat
 	llvm::BasicBlock* entryBlock = state->currentBlock;
 
 	llvm::BasicBlock* thenBlock = llvm::BasicBlock::Create(*context, "then", state->function);
+	llvm::BasicBlock* thenBlock2;
 	state->currentBlock = thenBlock;
 	builder->SetInsertPoint(thenBlock);
 	LowerStatement(module, statement->thenStatement, state);
+	thenBlock2 = state->currentBlock;
 
 	llvm::BasicBlock* elseBlock = nullptr;
+	llvm::BasicBlock* elseBlock2;
 	if (statement->elseStatement)
 	{
 		elseBlock = llvm::BasicBlock::Create(*context, "else", state->function);
 		state->currentBlock = elseBlock;
 		builder->SetInsertPoint(elseBlock);
 		LowerStatement(module, statement->elseStatement, state);
+		elseBlock2 = state->currentBlock;
 	}
 
 	llvm::BasicBlock* mergeBlock = llvm::BasicBlock::Create(*context, "merge", state->function);
@@ -725,13 +729,13 @@ void LowerToIRPass::LowerIfStatement(llvm::Module* module, Ref<IfStatement> stat
 
 	if (!EndsWithJump(statement->thenStatement))
 	{
-		builder->SetInsertPoint(thenBlock);
+		builder->SetInsertPoint(thenBlock2);
 		builder->CreateBr(mergeBlock);
 	}
 
 	if (statement->elseStatement && !EndsWithJump(statement->elseStatement))
 	{
-		builder->SetInsertPoint(elseBlock);
+		builder->SetInsertPoint(elseBlock2);
 		builder->CreateBr(mergeBlock);
 	}
 
