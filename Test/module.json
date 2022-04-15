@@ -3,10 +3,12 @@
 	"type": "EXECUTABLE",
 	"units":
 	[
+		"HelloWorld",
 		"ArrayTest"
 	],
 	"requires":
 	[
-		"Strict.Core"
+		"Strict.Core",
+		"Strict.System"
 	]
 }

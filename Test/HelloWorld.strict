@@ -1,0 +1,12 @@
+
+using Strict.System.Console;
+
+public singleton HelloWorld
+{
+
+    public HelloWorld()
+    {
+        Console.PrintOut("Hello, World!\n");
+    }
+
+}
