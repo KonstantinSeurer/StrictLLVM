@@ -18,7 +18,7 @@ public:
 public:
 	virtual PassResultFlags Run(PrintFunction print, BuildContext& context);
 
-	void GatherInformation(BuildContext& context, Ref<Unit> unit);
+	void GatherInformation(BuildContext& context, Ref<Module> module, Ref<Unit> unit);
 
 private:
 	void TryToInsertTemplatedObjectType(HashMap<ObjectType, Array<ObjectType*>>& target, DataType& dataType);

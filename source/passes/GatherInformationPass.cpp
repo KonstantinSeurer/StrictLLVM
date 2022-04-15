@@ -299,7 +299,7 @@ void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type)
 	}
 }
 
-void GatherInformationPass::GatherInformation(BuildContext& context, Ref<Unit> unit)
+void GatherInformationPass::GatherInformation(BuildContext& context, Ref<Module> module, Ref<Unit> unit)
 {
 	if ((flags & GatherInformationFlags::THIS) == GatherInformationFlags::THIS)
 	{
@@ -312,6 +312,7 @@ void GatherInformationPass::GatherInformation(BuildContext& context, Ref<Unit> u
 	if ((flags & GatherInformationFlags::PARENT) == GatherInformationFlags::PARENT)
 	{
 		unit->declaredType->unitDeclarationMeta.parent = unit.get();
+		unit->unitMeta.parent = module.get();
 	}
 
 	if (unit->declaredType->IsType())
@@ -331,7 +332,7 @@ PassResultFlags GatherInformationPass::Run(PrintFunction print, BuildContext& co
 	{
 		for (auto unit : module->units)
 		{
-			GatherInformation(context, unit);
+			GatherInformation(context, module, unit);
 		}
 	}
 

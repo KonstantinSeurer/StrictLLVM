@@ -291,7 +291,7 @@ bool InlineTemplatesPass::GenerateSpecializations(PrintFunction print, BuildCont
 
 		if (specialization)
 		{
-			gatherAllInformationPass->GatherInformation(context, specialization);
+			gatherAllInformationPass->GatherInformation(context, module, specialization);
 			ResolveUnitIdentifiers(print, context, specialization);
 
 			progress = true;

@@ -15,6 +15,7 @@ class Unit;
 class UnitDeclaration;
 class Expression;
 class Statement;
+class Module;
 
 STRICT_ENUM(ASTItemType, NONE, MODULE, UNIT, UNIT_DECLARATION, TEMPLATE_DECLARATION, TEMPLATE, VARIABLE_DECLARATION, DATA_TYPE, EXPRESSION, STATEMENT)
 
@@ -660,6 +661,7 @@ class UnitMeta
 public:
 	Array<Ref<Unit>> dependencies;
 	Lexer lexer;
+	Module* parent;
 };
 
 class Unit : public ASTItem
