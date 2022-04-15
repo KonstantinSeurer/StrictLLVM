@@ -1051,6 +1051,11 @@ void LowerToIRPass::InitializeSingleton(Ref<llvm::Module> entryModule, Ref<Class
 
 	for (auto dependency : classDeclaration->unitDeclarationMeta.parent->unitMeta.dependencies)
 	{
+		if (dependency->unitMeta.parent != classDeclaration->unitDeclarationMeta.parent->unitMeta.parent)
+		{
+			continue;
+		}
+
 		InitializeSingleton(entryModule, dependency, entryBuilder, initializedUnits);
 	}
 
