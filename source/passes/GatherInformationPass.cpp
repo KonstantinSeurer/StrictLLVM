@@ -207,7 +207,8 @@ void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type, Ref<Met
 
 	if ((flags & GatherInformationFlags::METHOD_NAME) == GatherInformationFlags::METHOD_NAME)
 	{
-		String name = type->name + ".";
+		const bool isExternal = (method->flags & DeclarationFlags::EXTERNAL) == DeclarationFlags::EXTERNAL;
+		String name = type->name + (isExternal ? "_" : ".");
 		switch (method->methodType)
 		{
 		case MethodType::CONSTRUCTOR:
