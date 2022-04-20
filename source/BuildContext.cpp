@@ -20,9 +20,8 @@
 
 void UnitTask::InitFileName()
 {
-	fileName = name;
-	std::replace(fileName.begin(), fileName.end(), '.', '/');
-	fileName += ".strict";
+	baseFileName = name;
+	std::replace(baseFileName.begin(), baseFileName.end(), '.', '/');
 }
 
 bool operator==(const UnitTask& a, const UnitTask& b)
@@ -257,7 +256,7 @@ void BuildContext::MarkChangedUnits(bool& build)
 
 		for (auto& unit : module.second)
 		{
-			std::filesystem::file_time_type lastWrite = std::filesystem::last_write_time(module.first.canonicalPath + "/" + unit.fileName);
+			std::filesystem::file_time_type lastWrite = std::filesystem::last_write_time(module.first.canonicalPath + "/" + unit.baseFileName + ".strict");
 
 			if (moduleJSON.find(unit.name) == moduleJSON.end() || (lastWrite.time_since_epoch().count() != (int64_t)moduleJSON[unit.name]))
 			{
@@ -286,7 +285,7 @@ void BuildContext::AddModuleToLastWriteJSON(Pair<ModuleTask, Array<UnitTask>>& m
 		auto& unit = module.second[unitIndex];
 		unit.build = true;
 
-		std::filesystem::file_time_type lastWrite = std::filesystem::last_write_time(module.first.canonicalPath + "/" + unit.fileName);
+		std::filesystem::file_time_type lastWrite = std::filesystem::last_write_time(module.first.canonicalPath + "/" + unit.baseFileName + ".strict");
 		moduleJSON[unit.name] = lastWrite.time_since_epoch().count();
 	}
 
@@ -402,7 +401,7 @@ void BuildContext::PropagateBuildFlagAndParse()
 
 void BuildContext::CompileUnit(const ModuleTask& module, UnitTask& unit)
 {
-	const String unitSourcePath = module.canonicalPath + "/" + unit.fileName;
+	const String unitSourcePath = module.canonicalPath + "/" + unit.baseFileName + ".strict";
 
 	std::ifstream unitSourceStream(unitSourcePath);
 	const String unitSource = String(std::istreambuf_iterator<char>(unitSourceStream), std::istreambuf_iterator<char>());
@@ -410,7 +409,7 @@ void BuildContext::CompileUnit(const ModuleTask& module, UnitTask& unit)
 	Ref<Lexer> lexer = Lexer::Create(unitSource);
 	lexerCache[unitSourcePath] = lexer;
 
-	ErrorStream err(unit.fileName, PRINT_FUNCTION, lexer.get());
+	ErrorStream err(unit.baseFileName + ".strict", PRINT_FUNCTION, lexer.get());
 
 	unit.unit = ParseUnit(err, *lexer, unit.name);
 

@@ -13,7 +13,7 @@ struct UnitTask
 {
 public:
 	String name;
-	String fileName;
+	String baseFileName;
 	bool build;
 	Ref<Unit> unit;
 
