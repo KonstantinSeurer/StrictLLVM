@@ -140,6 +140,8 @@ private:
 
 	void PropagateBuildFlagAndParse();
 
+	void CompileUnit(const ModuleTask& module, UnitTask& unit);
+
 	UInt64 FindModule(const String& name) const;
 	UInt64 FindUnit(UInt64 moduleIndex, const String& name) const;
 };

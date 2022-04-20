@@ -366,23 +366,7 @@ void BuildContext::PropagateBuildFlagAndParse()
 
 			if (unit.build)
 			{
-				const String unitSourcePath = module.first.canonicalPath + "/" + unit.fileName;
-
-				std::ifstream unitSourceStream(unitSourcePath);
-				const String unitSource = String(std::istreambuf_iterator<char>(unitSourceStream), std::istreambuf_iterator<char>());
-
-				Ref<Lexer> lexer = Lexer::Create(unitSource);
-				lexerCache[unitSourcePath] = lexer;
-
-				ErrorStream err(unit.fileName, PRINT_FUNCTION, lexer.get());
-
-				unit.unit = ParseUnit(err, *lexer, unit.name);
-
-				if (err.HasErrorOccured())
-				{
-					errorCount += err.GetErrorCount();
-					return;
-				}
+				CompileUnit(module.first, unit);
 
 				JSON unitJSON = unit.unit->GetStructureJSON();
 
@@ -407,28 +391,33 @@ void BuildContext::PropagateBuildFlagAndParse()
 
 				if (unit.build)
 				{
-					const String unitSourcePath = module.first.canonicalPath + "/" + unit.fileName;
-
-					std::ifstream unitSourceStream(unitSourcePath);
-					const String unitSource = String(std::istreambuf_iterator<char>(unitSourceStream), std::istreambuf_iterator<char>());
-
-					Ref<Lexer> lexer = Lexer::Create(unitSource);
-					lexerCache[unitSourcePath] = lexer;
-
-					ErrorStream err(unit.fileName, PRINT_FUNCTION, lexer.get());
-
-					unit.unit = ParseUnit(err, *lexer, unit.name);
-
-					if (err.HasErrorOccured())
-					{
-						errorCount += err.GetErrorCount();
-						return;
-					}
+					CompileUnit(module.first, unit);
 				}
 			}
 
 			module.first.module->units.push_back(unit.unit);
 		}
+	}
+}
+
+void BuildContext::CompileUnit(const ModuleTask& module, UnitTask& unit)
+{
+	const String unitSourcePath = module.canonicalPath + "/" + unit.fileName;
+
+	std::ifstream unitSourceStream(unitSourcePath);
+	const String unitSource = String(std::istreambuf_iterator<char>(unitSourceStream), std::istreambuf_iterator<char>());
+
+	Ref<Lexer> lexer = Lexer::Create(unitSource);
+	lexerCache[unitSourcePath] = lexer;
+
+	ErrorStream err(unit.fileName, PRINT_FUNCTION, lexer.get());
+
+	unit.unit = ParseUnit(err, *lexer, unit.name);
+
+	if (err.HasErrorOccured())
+	{
+		errorCount += err.GetErrorCount();
+		return;
 	}
 }
 
