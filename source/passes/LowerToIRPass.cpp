@@ -140,45 +140,48 @@ void LowerToIRPass::LowerCallExpression(llvm::Module* module, Ref<CallExpression
 		LowerMethod(module, method, state->classDeclaration, nullptr);
 
 		Array<llvm::Value*> arguments;
-		if (expression->callExpressionMeta.context)
+		if ((method->flags & DeclarationFlags::EXTERNAL) != DeclarationFlags::EXTERNAL)
 		{
-			Ref<Expression> context = expression->callExpressionMeta.context;
-			LowerExpression(module, context, state);
-
-			assert(context->expressionMeta.pointer);
-			assert(context->expressionMeta.dataType->dataTypeType == DataTypeType::OBJECT);
-
-			Ref<ObjectType> contextType = std::dynamic_pointer_cast<ObjectType>(context->expressionMeta.dataType);
-			assert(contextType->objectTypeMeta.unit);
-			assert(contextType->objectTypeMeta.unit->declaredType->IsType());
-
-			Ref<TypeDeclaration> contextTypeDeclaration = std::dynamic_pointer_cast<TypeDeclaration>(contextType->objectTypeMeta.unit->declaredType);
-
-			if (contextTypeDeclaration.get() != method->variableDeclarationMeta.parentType)
+			if (expression->callExpressionMeta.context)
 			{
-				// This method must be defined by a super type
-				Array<UInt32> indices;
-				bool found = FindSuperDeclaration(contextTypeDeclaration, method->variableDeclarationMeta.parentType, indices);
-				assert(found);
+				Ref<Expression> context = expression->callExpressionMeta.context;
+				LowerExpression(module, context, state);
 
-				llvm::Value* thisPointer = context->expressionMeta.ir;
-				for (Int32 indexIndex = indices.size() - 1; indexIndex >= 0; indexIndex--)
+				assert(context->expressionMeta.pointer);
+				assert(context->expressionMeta.dataType->dataTypeType == DataTypeType::OBJECT);
+
+				Ref<ObjectType> contextType = std::dynamic_pointer_cast<ObjectType>(context->expressionMeta.dataType);
+				assert(contextType->objectTypeMeta.unit);
+				assert(contextType->objectTypeMeta.unit->declaredType->IsType());
+
+				Ref<TypeDeclaration> contextTypeDeclaration = std::dynamic_pointer_cast<TypeDeclaration>(contextType->objectTypeMeta.unit->declaredType);
+
+				if (contextTypeDeclaration.get() != method->variableDeclarationMeta.parentType)
 				{
-					Array<llvm::Value*> index = {llvm::ConstantInt::get(llvm::Type::getInt32Ty(*this->context), 0),
-					                             llvm::ConstantInt::get(llvm::Type::getInt32Ty(*this->context), indices[indexIndex])};
-					thisPointer = builder->CreateGEP(thisPointer->getType()->getPointerElementType(), thisPointer, index);
-				}
+					// This method must be defined by a super type
+					Array<UInt32> indices;
+					bool found = FindSuperDeclaration(contextTypeDeclaration, method->variableDeclarationMeta.parentType, indices);
+					assert(found);
 
-				arguments.push_back(thisPointer);
+					llvm::Value* thisPointer = context->expressionMeta.ir;
+					for (Int32 indexIndex = indices.size() - 1; indexIndex >= 0; indexIndex--)
+					{
+						Array<llvm::Value*> index = {llvm::ConstantInt::get(llvm::Type::getInt32Ty(*this->context), 0),
+						                             llvm::ConstantInt::get(llvm::Type::getInt32Ty(*this->context), indices[indexIndex])};
+						thisPointer = builder->CreateGEP(thisPointer->getType()->getPointerElementType(), thisPointer, index);
+					}
+
+					arguments.push_back(thisPointer);
+				}
+				else
+				{
+					arguments.push_back(context->expressionMeta.ir);
+				}
 			}
 			else
 			{
-				arguments.push_back(context->expressionMeta.ir);
+				arguments.push_back(state->thisPointer);
 			}
-		}
-		else
-		{
-			arguments.push_back(state->thisPointer);
 		}
 
 		for (auto argument : expression->arguments)
@@ -853,7 +856,12 @@ llvm::Function* LowerToIRPass::CreateFunction(llvm::Module* module, Ref<MethodDe
 	LowerDataType(module, method->dataType);
 
 	Array<llvm::Type*> parameters;
-	parameters.push_back(llvm::PointerType::get(method->methodDeclarationMeta.parent->unitDeclarationMeta.thisType->dataTypeMeta.ir, 0));
+
+	if ((method->flags & DeclarationFlags::EXTERNAL) != DeclarationFlags::EXTERNAL)
+	{
+		parameters.push_back(llvm::PointerType::get(method->methodDeclarationMeta.parent->unitDeclarationMeta.thisType->dataTypeMeta.ir, 0));
+	}
+
 	for (auto parameter : method->parameters)
 	{
 		LowerDataType(module, parameter->dataType);
