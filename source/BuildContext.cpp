@@ -403,6 +403,13 @@ void BuildContext::CompileUnit(const ModuleTask& module, UnitTask& unit)
 {
 	const String unitBasePath = module.canonicalPath + "/" + unit.baseFileName;
 
+	const String unitCSourcePath = unitBasePath + ".c";
+	if (std::filesystem::exists(unitCSourcePath))
+	{
+		const String unitCOutputPath = module.module->moduleMeta.outputPath + "/" + unit.baseFileName + ".o";
+		InvokeCompiler({unitCSourcePath}, unitCOutputPath);
+	}
+
 	std::ifstream unitSourceStream(unitBasePath + ".strict");
 	const String unitSource = String(std::istreambuf_iterator<char>(unitSourceStream), std::istreambuf_iterator<char>());
 
@@ -448,4 +455,21 @@ UInt64 BuildContext::FindUnit(UInt64 moduleIndex, const String& name) const
 
 	std::cerr << "Could not find unit '" << name << "' in module '" << taskList[moduleIndex].first.name << "'!" << std::endl;
 	return 0;
+}
+
+void BuildContext::InvokeCompiler(const Array<String>& inputFiles, const String& outputFile)
+{
+	String command = "clang -c ";
+	for (const String& inputFile : inputFiles)
+	{
+		command += inputFile + " ";
+	}
+	command += "-o " + outputFile;
+
+	int exitCode = system(command.c_str());
+
+	if (exitCode)
+	{
+		std::cerr << "Executing " << command << " returned " << exitCode << "!" << std::endl;
+	}
 }
