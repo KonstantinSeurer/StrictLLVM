@@ -401,13 +401,13 @@ void BuildContext::PropagateBuildFlagAndParse()
 
 void BuildContext::CompileUnit(const ModuleTask& module, UnitTask& unit)
 {
-	const String unitSourcePath = module.canonicalPath + "/" + unit.baseFileName + ".strict";
+	const String unitBasePath = module.canonicalPath + "/" + unit.baseFileName;
 
-	std::ifstream unitSourceStream(unitSourcePath);
+	std::ifstream unitSourceStream(unitBasePath + ".strict");
 	const String unitSource = String(std::istreambuf_iterator<char>(unitSourceStream), std::istreambuf_iterator<char>());
 
 	Ref<Lexer> lexer = Lexer::Create(unitSource);
-	lexerCache[unitSourcePath] = lexer;
+	lexerCache[unitBasePath] = lexer;
 
 	ErrorStream err(unit.baseFileName + ".strict", PRINT_FUNCTION, lexer.get());
 
