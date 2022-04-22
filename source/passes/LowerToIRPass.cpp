@@ -302,11 +302,13 @@ void LowerToIRPass::LowerLiteralExpression(llvm::Module* module, Ref<LiteralExpr
 		assert(dataType->dataTypeMeta.ir);
 		assert(expression->data.type == TokenType::STRING_LITERAL);
 
-		llvm::Constant* string = llvm::ConstantDataArray::getString(*context, expression->data.data.stringData);
+		llvm::Constant* stringConstant = llvm::ConstantDataArray::getString(*context, expression->data.data.stringData);
+		llvm::Value* stringGlobal =
+			new llvm::GlobalVariable(*module, stringConstant->getType(), true, llvm::GlobalValue::LinkageTypes::PrivateLinkage, stringConstant);
 
 		Array<llvm::Value*> indices = {llvm::ConstantInt::get(llvm::Type::getInt32Ty(*context), 0),
 		                               llvm::ConstantInt::get(llvm::Type::getInt32Ty(*context), 0)};
-		expression->expressionMeta.ir = builder->CreateInBoundsGEP(string->getType(), string, indices);
+		expression->expressionMeta.ir = builder->CreateInBoundsGEP(stringConstant->getType(), stringGlobal, indices);
 	}
 	else
 	{
