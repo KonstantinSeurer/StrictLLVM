@@ -34,13 +34,13 @@ static bool IsMutatingUnaryOperator(OperatorType op)
 	return false;
 }
 
-void LowerOperatorsPass::LowerOperatorExpression(Ref<Expression>* pExpression)
+void LowerOperatorsPass::LowerOperatorExpression(Ref<MethodDeclaration> method, Ref<Expression>* pExpression)
 {
 	Ref<OperatorExpression> expression = std::dynamic_pointer_cast<OperatorExpression>(*pExpression);
-	LowerExpression(&expression->a);
+	LowerExpression(method, &expression->a);
 	if (expression->b && expression->b->expression)
 	{
-		LowerExpression(&expression->b->expression);
+		LowerExpression(method, &expression->b->expression);
 	}
 
 	if (expression->operatorType == OperatorType::ASSIGN)
@@ -70,29 +70,36 @@ void LowerOperatorsPass::LowerOperatorExpression(Ref<Expression>* pExpression)
 
 			Ref<VariableDeclaration> destination = std::dynamic_pointer_cast<VariableDeclaration>(identifier->identifierExpressionMeta.destination);
 
-			if (destination->variableType == VariableDeclarationType::MEMBER_VARIABLE)
+			if (destination->variableType != VariableDeclarationType::MEMBER_VARIABLE)
 			{
-				Ref<MemberVariableDeclaration> memberVariable = std::dynamic_pointer_cast<MemberVariableDeclaration>(destination);
-				for (auto accessor : memberVariable->accessors)
+				return;
+			}
+
+			Ref<MemberVariableDeclaration> memberVariable = std::dynamic_pointer_cast<MemberVariableDeclaration>(destination);
+			for (auto accessor : memberVariable->accessors)
+			{
+				if (accessor->methodType != MethodType::SETTER)
 				{
-					if (accessor->methodType != MethodType::SETTER)
-					{
-						continue;
-					}
-
-					assert(accessor->parameters.size() == 1);
-
-					// TODO: Implement overloading -> don't always select the first one.
-
-					Ref<CallExpression> call = Allocate<CallExpression>();
-					call->callExpressionMeta.destination = accessor;
-					call->callExpressionMeta.context = nullptr;
-					call->method = identifier;
-					call->arguments = {expression->b->expression};
-
-					*pExpression = call;
-					return;
+					continue;
 				}
+
+				if (method == accessor)
+				{
+					continue;
+				}
+
+				assert(accessor->parameters.size() == 1);
+
+				// TODO: Implement overloading -> don't always select the first one.
+
+				Ref<CallExpression> call = Allocate<CallExpression>();
+				call->callExpressionMeta.destination = accessor;
+				call->callExpressionMeta.context = nullptr;
+				call->method = identifier;
+				call->arguments = {expression->b->expression};
+
+				*pExpression = call;
+				return;
 			}
 		}
 
@@ -138,7 +145,7 @@ void LowerOperatorsPass::LowerOperatorExpression(Ref<Expression>* pExpression)
 			}
 
 			Ref<Expression> replacementExpression = replacement;
-			LowerOperatorExpression(&replacementExpression);
+			LowerOperatorExpression(method, &replacementExpression);
 			*pExpression = replacementExpression;
 			return;
 		}
@@ -183,7 +190,7 @@ void LowerOperatorsPass::LowerOperatorExpression(Ref<Expression>* pExpression)
 			}
 
 			Ref<Expression> operationExpression = operation;
-			LowerOperatorExpression(&operationExpression);
+			LowerOperatorExpression(method, &operationExpression);
 
 			Ref<OperatorExpression> assignment = Allocate<OperatorExpression>();
 			assignment->expressionMeta = expression->expressionMeta;
@@ -193,29 +200,29 @@ void LowerOperatorsPass::LowerOperatorExpression(Ref<Expression>* pExpression)
 			assignment->b->expression = operationExpression;
 
 			Ref<Expression> assignmentExpression = assignment;
-			LowerOperatorExpression(&assignmentExpression);
+			LowerOperatorExpression(method, &assignmentExpression);
 			*pExpression = assignmentExpression;
 			return;
 		}
 	}
 }
 
-void LowerOperatorsPass::LowerExpression(Ref<Expression>* pExpression)
+void LowerOperatorsPass::LowerExpression(Ref<MethodDeclaration> method, Ref<Expression>* pExpression)
 {
 	Ref<Expression> expression = *pExpression;
 	switch (expression->expressionType)
 	{
 	case ExpressionType::BRACKET: {
 		Ref<BracketExpression> bracketExpression = std::dynamic_pointer_cast<BracketExpression>(expression);
-		LowerExpression(&bracketExpression->expression);
+		LowerExpression(method, &bracketExpression->expression);
 		break;
 	}
 	case ExpressionType::CALL: {
 		Ref<CallExpression> callExpression = std::dynamic_pointer_cast<CallExpression>(expression);
-		LowerExpression(&callExpression->method);
+		LowerExpression(method, &callExpression->method);
 		for (auto& argument : callExpression->arguments)
 		{
-			LowerExpression(&argument);
+			LowerExpression(method, &argument);
 		}
 		break;
 	}
@@ -223,25 +230,25 @@ void LowerOperatorsPass::LowerExpression(Ref<Expression>* pExpression)
 		Ref<NewExpression> newExpression = std::dynamic_pointer_cast<NewExpression>(expression);
 		for (auto& argument : newExpression->arguments)
 		{
-			LowerExpression(&argument);
+			LowerExpression(method, &argument);
 		}
 		break;
 	}
 	case ExpressionType::OPERATOR: {
-		LowerOperatorExpression(pExpression);
+		LowerOperatorExpression(method, pExpression);
 		break;
 	}
 	case ExpressionType::TERNARY: {
 		Ref<TernaryExpression> ternaryExpression = std::dynamic_pointer_cast<TernaryExpression>(expression);
-		LowerExpression(&ternaryExpression->condition);
-		LowerExpression(&ternaryExpression->thenExpression);
-		LowerExpression(&ternaryExpression->elseExpression);
+		LowerExpression(method, &ternaryExpression->condition);
+		LowerExpression(method, &ternaryExpression->thenExpression);
+		LowerExpression(method, &ternaryExpression->elseExpression);
 		break;
 	}
 	}
 }
 
-void LowerOperatorsPass::LowerStatement(Ref<Statement> statement)
+void LowerOperatorsPass::LowerStatement(Ref<MethodDeclaration> method, Ref<Statement> statement)
 {
 	switch (statement->statementType)
 	{
@@ -249,35 +256,35 @@ void LowerOperatorsPass::LowerStatement(Ref<Statement> statement)
 		Ref<BlockStatement> blockStatement = std::dynamic_pointer_cast<BlockStatement>(statement);
 		for (auto subStatement : blockStatement->statements)
 		{
-			LowerStatement(subStatement);
+			LowerStatement(method, subStatement);
 		}
 		break;
 	}
 	case StatementType::DELETE: {
 		Ref<DeleteStatement> deleteStatement = std::dynamic_pointer_cast<DeleteStatement>(statement);
-		LowerExpression(&deleteStatement->expression);
+		LowerExpression(method, &deleteStatement->expression);
 		break;
 	}
 	case StatementType::EXPRESSION: {
 		Ref<ExpressionStatement> expressionStatement = std::dynamic_pointer_cast<ExpressionStatement>(statement);
-		LowerExpression(&expressionStatement->expression);
+		LowerExpression(method, &expressionStatement->expression);
 		break;
 	}
 	case StatementType::FOR: {
 		Ref<ForStatement> forStatement = std::dynamic_pointer_cast<ForStatement>(statement);
-		LowerStatement(forStatement->startStatement);
-		LowerExpression(&forStatement->condition);
-		LowerExpression(&forStatement->incrementExpression);
-		LowerStatement(forStatement->bodyStatement);
+		LowerStatement(method, forStatement->startStatement);
+		LowerExpression(method, &forStatement->condition);
+		LowerExpression(method, &forStatement->incrementExpression);
+		LowerStatement(method, forStatement->bodyStatement);
 		break;
 	}
 	case StatementType::IF: {
 		Ref<IfStatement> ifStatement = std::dynamic_pointer_cast<IfStatement>(statement);
-		LowerExpression(&ifStatement->condition);
-		LowerStatement(ifStatement->thenStatement);
+		LowerExpression(method, &ifStatement->condition);
+		LowerStatement(method, ifStatement->thenStatement);
 		if (ifStatement->elseStatement)
 		{
-			LowerStatement(ifStatement->elseStatement);
+			LowerStatement(method, ifStatement->elseStatement);
 		}
 		break;
 	}
@@ -285,7 +292,7 @@ void LowerOperatorsPass::LowerStatement(Ref<Statement> statement)
 		Ref<ReturnStatement> returnStatement = std::dynamic_pointer_cast<ReturnStatement>(statement);
 		if (returnStatement->expression)
 		{
-			LowerExpression(&returnStatement->expression);
+			LowerExpression(method, &returnStatement->expression);
 		}
 		break;
 	}
@@ -293,14 +300,14 @@ void LowerOperatorsPass::LowerStatement(Ref<Statement> statement)
 		Ref<VariableDeclarationStatement> variableDeclarationStatement = std::dynamic_pointer_cast<VariableDeclarationStatement>(statement);
 		if (variableDeclarationStatement->value)
 		{
-			LowerExpression(&variableDeclarationStatement->value);
+			LowerExpression(method, &variableDeclarationStatement->value);
 		}
 		break;
 	}
 	case StatementType::WHILE: {
 		Ref<WhileStatement> whileStatement = std::dynamic_pointer_cast<WhileStatement>(statement);
-		LowerExpression(&whileStatement->condition);
-		LowerStatement(whileStatement->bodyStatement);
+		LowerExpression(method, &whileStatement->condition);
+		LowerStatement(method, whileStatement->bodyStatement);
 		break;
 	}
 	}
@@ -310,7 +317,7 @@ void LowerOperatorsPass::LowerMethodDeclaration(Ref<MethodDeclaration> method)
 {
 	if (method->body)
 	{
-		LowerStatement(method->body);
+		LowerStatement(method, method->body);
 	}
 }
 

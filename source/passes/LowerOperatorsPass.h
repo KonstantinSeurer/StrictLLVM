@@ -13,11 +13,11 @@ public:
 	virtual PassResultFlags Run(PrintFunction print, BuildContext& context);
 
 private:
-	void LowerOperatorExpression(Ref<Expression>* pExpression);
+	void LowerOperatorExpression(Ref<MethodDeclaration> method, Ref<Expression>* pExpression);
 
-	void LowerExpression(Ref<Expression>* pExpression);
+	void LowerExpression(Ref<MethodDeclaration> method, Ref<Expression>* pExpression);
 
-	void LowerStatement(Ref<Statement> statement);
+	void LowerStatement(Ref<MethodDeclaration> method, Ref<Statement> statement);
 
 	void LowerMethodDeclaration(Ref<MethodDeclaration> MethodDeclaration);
 
