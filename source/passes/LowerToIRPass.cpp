@@ -499,26 +499,13 @@ llvm::Value* LowerToIRPass::LowerFloatOperator(OperatorType type, llvm::Value* a
 	}
 }
 
-static bool IsAccessOperator(OperatorType op)
-{
-	switch (op)
-	{
-	case OperatorType::ACCESS:
-	case OperatorType::ARRAY_ACCESS:
-	case OperatorType::ASSIGN:
-		return true;
-	}
-
-	return false;
-}
-
 void LowerToIRPass::LowerOperatorExpression(llvm::Module* module, Ref<OperatorExpression> expression, LowerFunctionToIRState* state)
 {
 	LowerExpression(module, expression->a, state);
 
-	bool access = IsAccessOperator(expression->operatorType);
+	bool keepPointer = (expression->operatorType == OperatorType::ACCESS) || (expression->operatorType == OperatorType::ASSIGN);
 
-	llvm::Value* a = access ? expression->a->expressionMeta.ir : expression->a->expressionMeta.Load(*builder);
+	llvm::Value* a = keepPointer ? expression->a->expressionMeta.ir : expression->a->expressionMeta.Load(*builder);
 	llvm::Value* b = nullptr;
 
 	if (expression->b && expression->b->expression)
@@ -540,9 +527,7 @@ void LowerToIRPass::LowerOperatorExpression(llvm::Module* module, Ref<OperatorEx
 	}
 	else if (expression->operatorType == OperatorType::ARRAY_ACCESS)
 	{
-		LowerDataType(module, expression->a->expressionMeta.dataType);
-		llvm::Value* ppElement = builder->CreateGEP(expression->a->expressionMeta.dataType->dataTypeMeta.ir, a, b);
-		expression->expressionMeta.ir = builder->CreateLoad(ppElement->getType()->getPointerElementType(), ppElement);
+		expression->expressionMeta.ir = builder->CreateGEP(a->getType()->getPointerElementType(), a, b);
 		expression->expressionMeta.pointer = true;
 		return;
 	}
