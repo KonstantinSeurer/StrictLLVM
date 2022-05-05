@@ -403,13 +403,6 @@ void BuildContext::CompileUnit(const ModuleTask& module, UnitTask& unit)
 {
 	const String unitBasePath = module.canonicalPath + "/" + unit.baseFileName;
 
-	const String unitCSourcePath = unitBasePath + ".c";
-	if (std::filesystem::exists(unitCSourcePath))
-	{
-		const String unitCOutputPath = module.module->moduleMeta.outputPath + "/" + unit.baseFileName + ".o";
-		InvokeCompiler(unitCSourcePath, unitCOutputPath);
-	}
-
 	std::ifstream unitSourceStream(unitBasePath + ".strict");
 	const String unitSource = String(std::istreambuf_iterator<char>(unitSourceStream), std::istreambuf_iterator<char>());
 
@@ -424,6 +417,15 @@ void BuildContext::CompileUnit(const ModuleTask& module, UnitTask& unit)
 	{
 		errorCount += err.GetErrorCount();
 		return;
+	}
+
+	const String unitCSourcePath = unitBasePath + ".c";
+	if (std::filesystem::exists(unitCSourcePath))
+	{
+		const String unitCOutputPath = module.module->moduleMeta.outputPath + "/" + unit.baseFileName + ".o";
+		InvokeCompiler(unitCSourcePath, unitCOutputPath);
+
+		unit.unit->unitMeta.hasExternals = true;
 	}
 }
 

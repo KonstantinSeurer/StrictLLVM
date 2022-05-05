@@ -662,6 +662,7 @@ public:
 	Array<Ref<Unit>> dependencies;
 	Lexer lexer;
 	Module* parent;
+	bool hasExternals = false;
 };
 
 class Unit : public ASTItem
