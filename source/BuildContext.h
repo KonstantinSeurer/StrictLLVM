@@ -133,6 +133,7 @@ public:
 	}
 
 	void InvokeCompiler(const String inputFile, const String& outputFile);
+	void InvokeLinker(const HashSet<String>& inputFiles, const String& outputFile);
 
 private:
 	void Print(const String& string, bool console = true);

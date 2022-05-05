@@ -470,3 +470,19 @@ void BuildContext::InvokeCompiler(const String inputFile, const String& outputFi
 		std::cerr << "Executing " << command << " returned " << exitCode << "!" << std::endl;
 	}
 }
+
+void BuildContext::InvokeLinker(const HashSet<String>& inputFiles, const String& outputFile)
+{
+	String command = "clang  -o " + outputFile;
+	for (const String& inputFile : inputFiles)
+	{
+		command += " " + inputFile;
+	}
+
+	int exitCode = system(command.c_str());
+
+	if (exitCode)
+	{
+		std::cerr << "Executing " << command << " returned " << exitCode << "!" << std::endl;
+	}
+}
