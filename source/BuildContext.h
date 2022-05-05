@@ -132,7 +132,7 @@ public:
 		return modules;
 	}
 
-	void InvokeCompiler(const Array<String>& inputFiles, const String& outputFile);
+	void InvokeCompiler(const String inputFile, const String& outputFile);
 
 private:
 	void Print(const String& string, bool console = true);
