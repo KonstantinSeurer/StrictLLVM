@@ -12,6 +12,24 @@ OutputModulesPass::OutputModulesPass() : Pass("OutputModulesPass")
 {
 }
 
+static void AddExternalBinaries(Ref<Module> module, HashSet<String>& target)
+{
+	for (auto unit : module->units)
+	{
+		if (!unit->unitMeta.hasExternals)
+		{
+			continue;
+		}
+
+		target.insert(module->moduleMeta.outputPath + "/" + unit->name + ".o");
+	}
+
+	for (auto dependency : module->dependencies)
+	{
+		AddExternalBinaries(dependency, target);
+	}
+}
+
 PassResultFlags OutputModulesPass::Run(PrintFunction print, BuildContext& context)
 {
 	// TODO: Cross compiling
@@ -46,8 +64,10 @@ PassResultFlags OutputModulesPass::Run(PrintFunction print, BuildContext& contex
 		module->moduleMeta.module->setTargetTriple(targetTriple);
 		module->moduleMeta.module->setDataLayout(dataLayout);
 
+		String outputPath = module->moduleMeta.outputPath + "/output.o";
+
 		std::error_code errorCode;
-		llvm::raw_fd_ostream outputStream(module->moduleMeta.outputPath + "/output.o", errorCode);
+		llvm::raw_fd_ostream outputStream(outputPath, errorCode);
 		if (errorCode)
 		{
 			llvm::errs() << "Could not open file: " << errorCode.message() << "\n";
@@ -63,6 +83,14 @@ PassResultFlags OutputModulesPass::Run(PrintFunction print, BuildContext& contex
 
 		passManager.run(*module->moduleMeta.module);
 		outputStream.flush();
+
+		if (module->moduleType == ModuleType::EXECUTABLE)
+		{
+			HashSet<String> inputFiles = {outputPath};
+			AddExternalBinaries(module, inputFiles);
+
+			context.InvokeLinker(inputFiles, module->moduleMeta.outputPath + "/output");
+		}
 	}
 
 	return PassResultFlags::SUCCESS;
