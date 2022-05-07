@@ -2,6 +2,7 @@
 #define STRICT_ENUM_IMPLEMENTATION
 #include "Base.h"
 
+#include "BuildContext.h"
 #include "Lexer.h"
 #include "ast/AST.h"
 #include "passes/GatherInformationPass.h"

@@ -87,6 +87,27 @@ void Split(const String& string, const char delim, Array<String>& out)
 	}
 }
 
+static OptimizationLevel ArgumentToOptimizationLevel(const String& argument)
+{
+	if (argument == "size")
+	{
+		return OptimizationLevel::SIZE;
+	}
+
+	if (argument == "performance")
+	{
+		return OptimizationLevel::PERFORMANCE;
+	}
+
+	if (argument == "debug")
+	{
+		return OptimizationLevel::DEBUGGING;
+	}
+
+	std::cerr << "Invalid optimization level '" << argument << "'!" << std::endl;
+	return OptimizationLevel::DEBUGGING;
+}
+
 int main(int argc, const char** args)
 {
 	if (argc < 2)
@@ -98,6 +119,7 @@ int main(int argc, const char** args)
 	Array<Pair<Flag, String>> valueFlags;
 	Array<Flag> flags;
 	Array<String> moduleNames;
+	OptimizationLevel optimizationLevel = OptimizationLevel::DEBUGGING;
 
 	UInt64 flagValueIndex = 0;
 	for (UInt64 argumentIndex = 1; argumentIndex < argc; argumentIndex++)
@@ -197,6 +219,10 @@ int main(int argc, const char** args)
 		{
 			logFile = flag.second;
 		}
+		else if (flag.first == Flag::OPTIMIZATION_LEVEL)
+		{
+			optimizationLevel = ArgumentToOptimizationLevel(flag.second);
+		}
 	}
 
 	bool dumpIR = false;
@@ -226,7 +252,7 @@ int main(int argc, const char** args)
 
 	const TargetFlags target = TargetFlags::BIT64 | TargetFlags::LINUX | TargetFlags::X86;
 
-	BuildContext context(modulePath, outputPath, cachePath, logFile, target, dumpIR);
+	BuildContext context(modulePath, outputPath, cachePath, logFile, target, dumpIR, optimizationLevel);
 
 	std::cout << "Scanning modules...";
 	Time scanStart;

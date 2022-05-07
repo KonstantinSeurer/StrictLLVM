@@ -35,8 +35,8 @@ bool operator==(const ModuleTask& a, const ModuleTask& b)
 }
 
 BuildContext::BuildContext(const Array<String>& modulePath, const String& outputPath, const String& cachePath, const Optional<String>& logFile,
-                           TargetFlags target, bool dumpIR)
-	: modulePath(modulePath), outputPath(outputPath), cachePath(cachePath), target(target), errorCount(0), dumpIR(dumpIR)
+                           TargetFlags target, bool dumpIR, OptimizationLevel optimizationLevel)
+	: modulePath(modulePath), outputPath(outputPath), cachePath(cachePath), target(target), errorCount(0), dumpIR(dumpIR), optimizationLevel(optimizationLevel)
 {
 	if (!std::filesystem::exists(outputPath))
 	{

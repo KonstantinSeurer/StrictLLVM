@@ -9,6 +9,8 @@
 
 #include <fstream>
 
+STRICT_ENUM(OptimizationLevel, DEBUGGING, PERFORMANCE, SIZE);
+
 struct UnitTask
 {
 public:
@@ -89,6 +91,8 @@ private:
 	String cachePath;
 	TargetFlags target;
 
+	OptimizationLevel optimizationLevel;
+
 	HashMap<String, Ref<Lexer>> lexerCache;
 
 	HashSet<String> moduleSet;
@@ -108,7 +112,7 @@ public:
 
 public:
 	BuildContext(const Array<String>& modulePath, const String& outputPath, const String& cachePath, const Optional<String>& logFile, TargetFlags target,
-	             bool dumpIR);
+	             bool dumpIR, OptimizationLevel optimizationLevel);
 
 	String ResolveModulePath(const String& moduleName) const;
 	Pair<String, String> ResolveUnitIdentifier(const String& identifier) const;
