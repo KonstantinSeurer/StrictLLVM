@@ -91,8 +91,6 @@ private:
 	String cachePath;
 	TargetFlags target;
 
-	OptimizationLevel optimizationLevel;
-
 	HashMap<String, Ref<Lexer>> lexerCache;
 
 	HashSet<String> moduleSet;
@@ -109,6 +107,7 @@ private:
 
 public:
 	const bool dumpIR;
+	OptimizationLevel optimizationLevel;
 
 public:
 	BuildContext(const Array<String>& modulePath, const String& outputPath, const String& cachePath, const Optional<String>& logFile, TargetFlags target,
