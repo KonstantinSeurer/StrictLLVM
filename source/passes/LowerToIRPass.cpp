@@ -951,10 +951,9 @@ PassResultFlags LowerToIRPass::LowerClass(Ref<Module> parentModule, Ref<ClassDec
 
 	if (classDeclaration->isSingleton)
 	{
-		llvm::Constant* initializer = llvm::Constant::getNullValue(classDeclaration->unitDeclarationMeta.thisType->dataTypeMeta.ir);
 		classDeclaration->classDeclarationMeta.singletons[classDeclaration.get()] =
 			new llvm::GlobalVariable(*module, classDeclaration->unitDeclarationMeta.thisType->dataTypeMeta.ir, false,
-		                             llvm::GlobalValue::LinkageTypes::ExternalLinkage, initializer, classDeclaration->name);
+		                             llvm::GlobalValue::LinkageTypes::ExternalLinkage, nullptr, classDeclaration->name);
 	}
 
 	if ((classDeclaration->flags & DeclarationFlags::VIRTUAL) == DeclarationFlags::VIRTUAL)
@@ -1054,12 +1053,14 @@ void LowerToIRPass::InitializeSingleton(Ref<llvm::Module> entryModule, Ref<Class
 		InitializeSingleton(entryModule, dependency, entryBuilder, initializedUnits);
 	}
 
+	llvm::Constant* initializer = llvm::Constant::getNullValue(classDeclaration->unitDeclarationMeta.thisType->dataTypeMeta.ir);
+	llvm::Value* instance = new llvm::GlobalVariable(*entryModule, classDeclaration->unitDeclarationMeta.thisType->dataTypeMeta.ir, false,
+	                                                 llvm::GlobalValue::LinkageTypes::ExternalLinkage, initializer, classDeclaration->name);
+
 	Ref<ConstructorDeclaration> defaultConstructor = classDeclaration->GetDefaultConstructor();
 	if (defaultConstructor)
 	{
-		entryBuilder.CreateCall(CreateFunction(entryModule.get(), defaultConstructor),
-		                        {new llvm::GlobalVariable(*entryModule, classDeclaration->unitDeclarationMeta.thisType->dataTypeMeta.ir, false,
-		                                                  llvm::GlobalValue::LinkageTypes::ExternalLinkage, nullptr, classDeclaration->name)});
+		entryBuilder.CreateCall(CreateFunction(entryModule.get(), defaultConstructor), {instance});
 	}
 }
 
