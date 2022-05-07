@@ -964,11 +964,14 @@ PassResultFlags LowerToIRPass::LowerClass(Ref<Module> parentModule, Ref<ClassDec
 
 	// TODO: Swith to the new pass manager once llvm 15 is released
 	llvm::legacy::FunctionPassManager fpm = llvm::legacy::FunctionPassManager(module.get());
-	fpm.add(llvm::createPromoteMemoryToRegisterPass());
-	fpm.add(llvm::createInstructionCombiningPass());
-	fpm.add(llvm::createReassociatePass());
-	fpm.add(llvm::createGVNPass());
-	fpm.add(llvm::createCFGSimplificationPass());
+	if (buildContext.optimizationLevel != OptimizationLevel::DEBUGGING)
+	{
+		fpm.add(llvm::createPromoteMemoryToRegisterPass());
+		fpm.add(llvm::createInstructionCombiningPass());
+		fpm.add(llvm::createReassociatePass());
+		fpm.add(llvm::createGVNPass());
+		fpm.add(llvm::createCFGSimplificationPass());
+	}
 	fpm.doInitialization();
 
 	for (auto member : classDeclaration->members)
