@@ -12,7 +12,7 @@ LowerToIRPass::LowerToIRPass() : Pass("LowerToIRPass")
 	builder = new llvm::IRBuilder<>(*context);
 }
 
-void LowerToIRPass::LowerDataType(llvm::Module* module, Ref<DataType> type)
+void LowerToIRPass::LowerDataType(Ref<DataType> type, const LowerUnitToIRState* state)
 {
 	if (type->dataTypeMeta.ir)
 		return;
@@ -78,7 +78,7 @@ void LowerToIRPass::LowerDataType(llvm::Module* module, Ref<DataType> type)
 			Array<llvm::Type*> elements;
 			for (auto superType : classDeclaration->superTypes)
 			{
-				LowerDataType(module, superType);
+				LowerDataType(superType, state);
 				elements.push_back(superType->dataTypeMeta.ir);
 			}
 			for (auto member : classDeclaration->members)
@@ -88,7 +88,7 @@ void LowerToIRPass::LowerDataType(llvm::Module* module, Ref<DataType> type)
 					continue;
 				}
 
-				LowerDataType(module, member->dataType);
+				LowerDataType(member->dataType, state);
 				elements.push_back(member->dataType->dataTypeMeta.ir);
 			}
 			unitDeclaration->unitDeclarationMeta.thisType->dataTypeMeta.ir = llvm::StructType::create(*context, elements, objectType->name);
@@ -99,7 +99,7 @@ void LowerToIRPass::LowerDataType(llvm::Module* module, Ref<DataType> type)
 	else if (type->dataTypeType == DataTypeType::POINTER || type->dataTypeType == DataTypeType::REFERENCE || type->dataTypeType == DataTypeType::ARRAY)
 	{
 		Ref<PointerType> pointerType = std::dynamic_pointer_cast<PointerType>(type);
-		LowerDataType(module, pointerType->value);
+		LowerDataType(pointerType->value, state);
 		type->dataTypeMeta.ir = llvm::PointerType::get(pointerType->value->dataTypeMeta.ir, 0);
 	}
 	else
@@ -130,14 +130,14 @@ static bool FindSuperDeclaration(Ref<TypeDeclaration> type, TypeDeclaration* dec
 	return false;
 }
 
-void LowerToIRPass::LowerCallExpression(llvm::Module* module, Ref<CallExpression> expression, LowerFunctionToIRState* state)
+void LowerToIRPass::LowerCallExpression(Ref<CallExpression> expression, LowerFunctionToIRState* state)
 {
 	assert(expression->callExpressionMeta.destination);
 
 	if (expression->callExpressionMeta.destination->variableType == VariableDeclarationType::METHOD)
 	{
 		Ref<MethodDeclaration> method = std::dynamic_pointer_cast<MethodDeclaration>(expression->callExpressionMeta.destination);
-		LowerMethod(module, method, state->classDeclaration, nullptr);
+		LowerMethod(method, nullptr, state->parent);
 
 		Array<llvm::Value*> arguments;
 		if ((method->flags & DeclarationFlags::EXTERNAL) != DeclarationFlags::EXTERNAL)
@@ -145,7 +145,7 @@ void LowerToIRPass::LowerCallExpression(llvm::Module* module, Ref<CallExpression
 			if (expression->callExpressionMeta.context)
 			{
 				Ref<Expression> context = expression->callExpressionMeta.context;
-				LowerExpression(module, context, state);
+				LowerExpression(context, state);
 
 				assert(context->expressionMeta.pointer);
 				assert(context->expressionMeta.dataType->dataTypeType == DataTypeType::OBJECT);
@@ -186,7 +186,7 @@ void LowerToIRPass::LowerCallExpression(llvm::Module* module, Ref<CallExpression
 
 		for (auto argument : expression->arguments)
 		{
-			LowerExpression(module, argument, state);
+			LowerExpression(argument, state);
 			arguments.push_back(argument->expressionMeta.Load(*builder));
 		}
 
@@ -196,7 +196,7 @@ void LowerToIRPass::LowerCallExpression(llvm::Module* module, Ref<CallExpression
 		}
 		else
 		{
-			expression->expressionMeta.ir = builder->CreateCall(state->classDeclaration->classDeclarationMeta.methods.at(method.get()), arguments);
+			expression->expressionMeta.ir = builder->CreateCall(state->parent->classDeclaration->classDeclarationMeta.methods.at(method.get()), arguments);
 		}
 	}
 	else
@@ -206,7 +206,7 @@ void LowerToIRPass::LowerCallExpression(llvm::Module* module, Ref<CallExpression
 	}
 }
 
-void LowerToIRPass::LowerIdentifierExpression(llvm::Module* module, Ref<IdentifierExpression> expression, LowerFunctionToIRState* state)
+void LowerToIRPass::LowerIdentifierExpression(Ref<IdentifierExpression> expression, LowerFunctionToIRState* state)
 {
 	if (expression->identifierExpressionMeta.destination->type == ASTItemType::VARIABLE_DECLARATION)
 	{
@@ -238,11 +238,11 @@ void LowerToIRPass::LowerIdentifierExpression(llvm::Module* module, Ref<Identifi
 		Ref<ClassDeclaration> classDeclaration = std::dynamic_pointer_cast<ClassDeclaration>(unit->declaredType);
 		assert(classDeclaration->isSingleton);
 
-		auto& singletons = state->classDeclaration->classDeclarationMeta.singletons;
+		auto& singletons = state->parent->classDeclaration->classDeclarationMeta.singletons;
 		if (singletons.find(classDeclaration.get()) == singletons.end())
 		{
-			expression->expressionMeta.ir = new llvm::GlobalVariable(*module, classDeclaration->unitDeclarationMeta.thisType->dataTypeMeta.ir, false,
-			                                                         llvm::GlobalValue::LinkageTypes::ExternalLinkage, nullptr, classDeclaration->name);
+			expression->expressionMeta.ir = new llvm::GlobalVariable(*state->parent->module, classDeclaration->unitDeclarationMeta.thisType->dataTypeMeta.ir,
+			                                                         false, llvm::GlobalValue::LinkageTypes::ExternalLinkage, nullptr, classDeclaration->name);
 			singletons[classDeclaration.get()] = expression->expressionMeta.ir;
 		}
 		else
@@ -258,10 +258,10 @@ void LowerToIRPass::LowerIdentifierExpression(llvm::Module* module, Ref<Identifi
 	}
 }
 
-void LowerToIRPass::LowerLiteralExpression(llvm::Module* module, Ref<LiteralExpression> expression, LowerFunctionToIRState* state)
+void LowerToIRPass::LowerLiteralExpression(Ref<LiteralExpression> expression, LowerFunctionToIRState* state)
 {
 	assert(expression->expressionMeta.dataType);
-	LowerDataType(module, expression->expressionMeta.dataType);
+	LowerDataType(expression->expressionMeta.dataType, state->parent);
 
 	if (expression->expressionMeta.dataType->dataTypeType == DataTypeType::PRIMITIVE)
 	{
@@ -304,7 +304,7 @@ void LowerToIRPass::LowerLiteralExpression(llvm::Module* module, Ref<LiteralExpr
 
 		llvm::Constant* stringConstant = llvm::ConstantDataArray::getString(*context, expression->data.data.stringData);
 		llvm::Value* stringGlobal =
-			new llvm::GlobalVariable(*module, stringConstant->getType(), true, llvm::GlobalValue::LinkageTypes::PrivateLinkage, stringConstant);
+			new llvm::GlobalVariable(*state->parent->module, stringConstant->getType(), true, llvm::GlobalValue::LinkageTypes::PrivateLinkage, stringConstant);
 
 		Array<llvm::Value*> indices = {llvm::ConstantInt::get(llvm::Type::getInt32Ty(*context), 0),
 		                               llvm::ConstantInt::get(llvm::Type::getInt32Ty(*context), 0)};
@@ -316,10 +316,10 @@ void LowerToIRPass::LowerLiteralExpression(llvm::Module* module, Ref<LiteralExpr
 	}
 }
 
-void LowerToIRPass::LowerNewExpression(llvm::Module* module, Ref<NewExpression> expression, LowerFunctionToIRState* state)
+void LowerToIRPass::LowerNewExpression(Ref<NewExpression> expression, LowerFunctionToIRState* state)
 {
 	Ref<DataType> dataType = expression->dataType;
-	LowerDataType(module, dataType);
+	LowerDataType(dataType, state->parent);
 
 	if (expression->allocationType == AllocationType::HEAP)
 	{
@@ -327,7 +327,7 @@ void LowerToIRPass::LowerNewExpression(llvm::Module* module, Ref<NewExpression> 
 		if (dataType->dataTypeType == DataTypeType::ARRAY)
 		{
 			Ref<PointerType> arrayType = std::dynamic_pointer_cast<PointerType>(dataType);
-			LowerExpression(module, arrayType->arrayLength, state);
+			LowerExpression(arrayType->arrayLength, state);
 			arrayLength = arrayType->arrayLength->expressionMeta.Load(*builder);
 			dataType = arrayType->value;
 		}
@@ -340,7 +340,7 @@ void LowerToIRPass::LowerNewExpression(llvm::Module* module, Ref<NewExpression> 
 		llvm::Value* sizePointer = builder->CreateGEP(dataType->dataTypeMeta.ir, null, {arrayLength});
 		llvm::Value* size = builder->CreatePtrToInt(sizePointer, llvm::Type::getInt64Ty(*context));
 
-		expression->expressionMeta.ir = builder->CreateCall(state->classDeclaration->classDeclarationMeta.malloc, {size});
+		expression->expressionMeta.ir = builder->CreateCall(state->parent->classDeclaration->classDeclarationMeta.malloc, {size});
 		// TODO: Handle multidimensional arrays
 	}
 	else
@@ -373,12 +373,12 @@ void LowerToIRPass::LowerNewExpression(llvm::Module* module, Ref<NewExpression> 
 			arguments.push_back(expression->expressionMeta.ir);
 			for (auto argument : expression->arguments)
 			{
-				LowerExpression(module, argument, state);
+				LowerExpression(argument, state);
 				arguments.push_back(argument->expressionMeta.Load(*builder));
 			}
 
-			LowerMethod(module, constructor, state->classDeclaration, nullptr);
-			builder->CreateCall(state->classDeclaration->classDeclarationMeta.methods.at(constructor.get()), arguments);
+			LowerMethod(constructor, nullptr, state->parent);
+			builder->CreateCall(state->parent->classDeclaration->classDeclarationMeta.methods.at(constructor.get()), arguments);
 		}
 		else
 		{
@@ -499,9 +499,9 @@ llvm::Value* LowerToIRPass::LowerFloatOperator(OperatorType type, llvm::Value* a
 	}
 }
 
-void LowerToIRPass::LowerOperatorExpression(llvm::Module* module, Ref<OperatorExpression> expression, LowerFunctionToIRState* state)
+void LowerToIRPass::LowerOperatorExpression(Ref<OperatorExpression> expression, LowerFunctionToIRState* state)
 {
-	LowerExpression(module, expression->a, state);
+	LowerExpression(expression->a, state);
 
 	bool keepPointer = (expression->operatorType == OperatorType::ACCESS) || (expression->operatorType == OperatorType::ASSIGN);
 
@@ -510,7 +510,7 @@ void LowerToIRPass::LowerOperatorExpression(llvm::Module* module, Ref<OperatorEx
 
 	if (expression->b && expression->b->expression)
 	{
-		LowerExpression(module, expression->b->expression, state);
+		LowerExpression(expression->b->expression, state);
 		b = expression->b->expression->expressionMeta.Load(*builder);
 	}
 
@@ -563,22 +563,22 @@ void LowerToIRPass::LowerOperatorExpression(llvm::Module* module, Ref<OperatorEx
 	}
 }
 
-void LowerToIRPass::LowerTernaryExpression(llvm::Module* module, Ref<TernaryExpression> expression, LowerFunctionToIRState* state)
+void LowerToIRPass::LowerTernaryExpression(Ref<TernaryExpression> expression, LowerFunctionToIRState* state)
 {
-	LowerExpression(module, expression->condition, state);
+	LowerExpression(expression->condition, state);
 
 	llvm::BasicBlock* entryBlock = state->currentBlock;
 
 	llvm::BasicBlock* thenBlock = llvm::BasicBlock::Create(*context, "then", state->function);
 	state->currentBlock = thenBlock;
 	builder->SetInsertPoint(thenBlock);
-	LowerExpression(module, expression->thenExpression, state);
+	LowerExpression(expression->thenExpression, state);
 	llvm::Value* thenValue = expression->thenExpression->expressionMeta.Load(*builder);
 
 	llvm::BasicBlock* elseBlock = llvm::BasicBlock::Create(*context, "else", state->function);
 	state->currentBlock = elseBlock;
 	builder->SetInsertPoint(elseBlock);
-	LowerExpression(module, expression->elseExpression, state);
+	LowerExpression(expression->elseExpression, state);
 	llvm::Value* elseValue = expression->elseExpression->expressionMeta.Load(*builder);
 
 	llvm::BasicBlock* mergeBlock = llvm::BasicBlock::Create(*context, "merge", state->function);
@@ -595,7 +595,7 @@ void LowerToIRPass::LowerTernaryExpression(llvm::Module* module, Ref<TernaryExpr
 	state->currentBlock = mergeBlock;
 	builder->SetInsertPoint(mergeBlock);
 
-	LowerDataType(module, expression->expressionMeta.dataType);
+	LowerDataType(expression->expressionMeta.dataType, state->parent);
 	auto phi = builder->CreatePHI(expression->expressionMeta.dataType->dataTypeMeta.ir, 2);
 	phi->addIncoming(thenValue, thenBlock);
 	phi->addIncoming(elseValue, elseBlock);
@@ -603,45 +603,45 @@ void LowerToIRPass::LowerTernaryExpression(llvm::Module* module, Ref<TernaryExpr
 	expression->expressionMeta.pointer = false;
 }
 
-void LowerToIRPass::LowerExpression(llvm::Module* module, Ref<Expression> expression, LowerFunctionToIRState* state)
+void LowerToIRPass::LowerExpression(Ref<Expression> expression, LowerFunctionToIRState* state)
 {
 	switch (expression->expressionType)
 	{
 	case ExpressionType::BRACKET:
-		LowerExpression(module, std::dynamic_pointer_cast<BracketExpression>(expression)->expression, state);
+		LowerExpression(std::dynamic_pointer_cast<BracketExpression>(expression)->expression, state);
 		break;
 	case ExpressionType::CALL:
-		LowerCallExpression(module, std::dynamic_pointer_cast<CallExpression>(expression), state);
+		LowerCallExpression(std::dynamic_pointer_cast<CallExpression>(expression), state);
 		break;
 	case ExpressionType::IDENTIFIER:
-		LowerIdentifierExpression(module, std::dynamic_pointer_cast<IdentifierExpression>(expression), state);
+		LowerIdentifierExpression(std::dynamic_pointer_cast<IdentifierExpression>(expression), state);
 		break;
 	case ExpressionType::LITERAL:
-		LowerLiteralExpression(module, std::dynamic_pointer_cast<LiteralExpression>(expression), state);
+		LowerLiteralExpression(std::dynamic_pointer_cast<LiteralExpression>(expression), state);
 		break;
 	case ExpressionType::NEW:
-		LowerNewExpression(module, std::dynamic_pointer_cast<NewExpression>(expression), state);
+		LowerNewExpression(std::dynamic_pointer_cast<NewExpression>(expression), state);
 		break;
 	case ExpressionType::OPERATOR:
-		LowerOperatorExpression(module, std::dynamic_pointer_cast<OperatorExpression>(expression), state);
+		LowerOperatorExpression(std::dynamic_pointer_cast<OperatorExpression>(expression), state);
 		break;
 	case ExpressionType::TERNARY:
-		LowerTernaryExpression(module, std::dynamic_pointer_cast<TernaryExpression>(expression), state);
+		LowerTernaryExpression(std::dynamic_pointer_cast<TernaryExpression>(expression), state);
 		break;
 	}
 }
 
-void LowerToIRPass::LowerBlockStatement(llvm::Module* module, Ref<BlockStatement> statement, LowerFunctionToIRState* state)
+void LowerToIRPass::LowerBlockStatement(Ref<BlockStatement> statement, LowerFunctionToIRState* state)
 {
 	for (auto subStatement : statement->statements)
 	{
-		LowerStatement(module, subStatement, state);
+		LowerStatement(subStatement, state);
 	}
 }
 
-void LowerToIRPass::LowerDeleteStatement(llvm::Module* module, Ref<DeleteStatement> statement, LowerFunctionToIRState* state)
+void LowerToIRPass::LowerDeleteStatement(Ref<DeleteStatement> statement, LowerFunctionToIRState* state)
 {
-	LowerExpression(module, statement->expression, state);
+	LowerExpression(statement->expression, state);
 }
 
 bool EndsWithJump(Ref<Statement> statement)
@@ -665,16 +665,16 @@ bool EndsWithJump(Ref<Statement> statement)
 	}
 }
 
-void LowerToIRPass::LowerForStatement(llvm::Module* module, Ref<ForStatement> statement, LowerFunctionToIRState* state)
+void LowerToIRPass::LowerForStatement(Ref<ForStatement> statement, LowerFunctionToIRState* state)
 {
-	LowerStatement(module, statement->startStatement, state);
+	LowerStatement(statement->startStatement, state);
 
 	llvm::BasicBlock* entryBlock = state->currentBlock;
 
 	llvm::BasicBlock* conditionBlock = llvm::BasicBlock::Create(*context, "condition", state->function);
 	state->currentBlock = conditionBlock;
 	builder->SetInsertPoint(conditionBlock);
-	LowerExpression(module, statement->condition, state);
+	LowerExpression(statement->condition, state);
 
 	state->currentBlock = entryBlock;
 	builder->SetInsertPoint(entryBlock);
@@ -683,12 +683,12 @@ void LowerToIRPass::LowerForStatement(llvm::Module* module, Ref<ForStatement> st
 	llvm::BasicBlock* bodyBlock = llvm::BasicBlock::Create(*context, "body", state->function);
 	state->currentBlock = bodyBlock;
 	builder->SetInsertPoint(bodyBlock);
-	LowerStatement(module, statement->bodyStatement, state);
+	LowerStatement(statement->bodyStatement, state);
 
 	llvm::BasicBlock* continueBlock = llvm::BasicBlock::Create(*context, "continue", state->function);
 	state->currentBlock = continueBlock;
 	builder->SetInsertPoint(continueBlock);
-	LowerExpression(module, statement->incrementExpression, state);
+	LowerExpression(statement->incrementExpression, state);
 	builder->CreateBr(conditionBlock);
 
 	llvm::BasicBlock* breakBlock = llvm::BasicBlock::Create(*context, "break", state->function);
@@ -706,9 +706,9 @@ void LowerToIRPass::LowerForStatement(llvm::Module* module, Ref<ForStatement> st
 	builder->SetInsertPoint(breakBlock);
 }
 
-void LowerToIRPass::LowerIfStatement(llvm::Module* module, Ref<IfStatement> statement, LowerFunctionToIRState* state)
+void LowerToIRPass::LowerIfStatement(Ref<IfStatement> statement, LowerFunctionToIRState* state)
 {
-	LowerExpression(module, statement->condition, state);
+	LowerExpression(statement->condition, state);
 
 	llvm::BasicBlock* entryBlock = state->currentBlock;
 
@@ -716,7 +716,7 @@ void LowerToIRPass::LowerIfStatement(llvm::Module* module, Ref<IfStatement> stat
 	llvm::BasicBlock* thenBlock2;
 	state->currentBlock = thenBlock;
 	builder->SetInsertPoint(thenBlock);
-	LowerStatement(module, statement->thenStatement, state);
+	LowerStatement(statement->thenStatement, state);
 	thenBlock2 = state->currentBlock;
 
 	llvm::BasicBlock* elseBlock = nullptr;
@@ -726,7 +726,7 @@ void LowerToIRPass::LowerIfStatement(llvm::Module* module, Ref<IfStatement> stat
 		elseBlock = llvm::BasicBlock::Create(*context, "else", state->function);
 		state->currentBlock = elseBlock;
 		builder->SetInsertPoint(elseBlock);
-		LowerStatement(module, statement->elseStatement, state);
+		LowerStatement(statement->elseStatement, state);
 		elseBlock2 = state->currentBlock;
 	}
 
@@ -751,9 +751,9 @@ void LowerToIRPass::LowerIfStatement(llvm::Module* module, Ref<IfStatement> stat
 	builder->SetInsertPoint(mergeBlock);
 }
 
-void LowerToIRPass::LowerVariableDeclarationStatement(llvm::Module* module, Ref<VariableDeclarationStatement> statement, LowerFunctionToIRState* state)
+void LowerToIRPass::LowerVariableDeclarationStatement(Ref<VariableDeclarationStatement> statement, LowerFunctionToIRState* state)
 {
-	LowerDataType(module, statement->declaration->dataType);
+	LowerDataType(statement->declaration->dataType, state->parent);
 
 	llvm::IRBuilder<> tmpBuilder(&state->function->getEntryBlock(), state->function->getEntryBlock().begin());
 
@@ -762,7 +762,7 @@ void LowerToIRPass::LowerVariableDeclarationStatement(llvm::Module* module, Ref<
 
 	if (statement->value)
 	{
-		LowerExpression(module, statement->value, state);
+		LowerExpression(statement->value, state);
 
 		builder->CreateStore(statement->value->expressionMeta.ir, variable);
 	}
@@ -777,19 +777,19 @@ void LowerToIRPass::LowerVariableDeclarationStatement(llvm::Module* module, Ref<
 		Ref<ConstructorDeclaration> defaultConstructor = classDeclaration->GetDefaultConstructor();
 		if (defaultConstructor)
 		{
-			LowerMethod(module, defaultConstructor, state->classDeclaration, nullptr);
-			builder->CreateCall(state->classDeclaration->classDeclarationMeta.methods.at(defaultConstructor.get()), variable);
+			LowerMethod(defaultConstructor, nullptr, state->parent);
+			builder->CreateCall(state->parent->classDeclaration->classDeclarationMeta.methods.at(defaultConstructor.get()), variable);
 		}
 	}
 }
 
-void LowerToIRPass::LowerWhileStatement(llvm::Module* module, Ref<WhileStatement> statement, LowerFunctionToIRState* state)
+void LowerToIRPass::LowerWhileStatement(Ref<WhileStatement> statement, LowerFunctionToIRState* state)
 {
 }
 
-void LowerToIRPass::LowerReturnStatement(llvm::Module* module, Ref<ReturnStatement> statement, LowerFunctionToIRState* state)
+void LowerToIRPass::LowerReturnStatement(Ref<ReturnStatement> statement, LowerFunctionToIRState* state)
 {
-	LowerExpression(module, statement->expression, state);
+	LowerExpression(statement->expression, state);
 	if (state->method->dataType->dataTypeType == DataTypeType::REFERENCE)
 	{
 		assert(statement->expression->expressionMeta.pointer);
@@ -801,12 +801,12 @@ void LowerToIRPass::LowerReturnStatement(llvm::Module* module, Ref<ReturnStateme
 	}
 }
 
-void LowerToIRPass::LowerStatement(llvm::Module* module, Ref<Statement> statement, LowerFunctionToIRState* state)
+void LowerToIRPass::LowerStatement(Ref<Statement> statement, LowerFunctionToIRState* state)
 {
 	switch (statement->statementType)
 	{
 	case StatementType::BLOCK:
-		LowerBlockStatement(module, std::dynamic_pointer_cast<BlockStatement>(statement), state);
+		LowerBlockStatement(std::dynamic_pointer_cast<BlockStatement>(statement), state);
 		break;
 	case StatementType::BREAK:
 		builder->CreateBr(state->breakBlock);
@@ -815,32 +815,32 @@ void LowerToIRPass::LowerStatement(llvm::Module* module, Ref<Statement> statemen
 		builder->CreateBr(state->continueBlock);
 		break;
 	case StatementType::DELETE:
-		LowerDeleteStatement(module, std::dynamic_pointer_cast<DeleteStatement>(statement), state);
+		LowerDeleteStatement(std::dynamic_pointer_cast<DeleteStatement>(statement), state);
 		break;
 	case StatementType::EXPRESSION:
-		LowerExpression(module, std::dynamic_pointer_cast<ExpressionStatement>(statement)->expression, state);
+		LowerExpression(std::dynamic_pointer_cast<ExpressionStatement>(statement)->expression, state);
 		break;
 	case StatementType::FOR:
-		LowerForStatement(module, std::dynamic_pointer_cast<ForStatement>(statement), state);
+		LowerForStatement(std::dynamic_pointer_cast<ForStatement>(statement), state);
 		break;
 	case StatementType::IF:
-		LowerIfStatement(module, std::dynamic_pointer_cast<IfStatement>(statement), state);
+		LowerIfStatement(std::dynamic_pointer_cast<IfStatement>(statement), state);
 		break;
 	case StatementType::RETURN:
-		LowerReturnStatement(module, std::dynamic_pointer_cast<ReturnStatement>(statement), state);
+		LowerReturnStatement(std::dynamic_pointer_cast<ReturnStatement>(statement), state);
 		break;
 	case StatementType::VARIABLE_DECLARATION:
-		LowerVariableDeclarationStatement(module, std::dynamic_pointer_cast<VariableDeclarationStatement>(statement), state);
+		LowerVariableDeclarationStatement(std::dynamic_pointer_cast<VariableDeclarationStatement>(statement), state);
 		break;
 	case StatementType::WHILE:
-		LowerWhileStatement(module, std::dynamic_pointer_cast<WhileStatement>(statement), state);
+		LowerWhileStatement(std::dynamic_pointer_cast<WhileStatement>(statement), state);
 		break;
 	}
 }
 
-llvm::Function* LowerToIRPass::CreateFunction(llvm::Module* module, Ref<MethodDeclaration> method)
+llvm::Function* LowerToIRPass::CreateFunction(Ref<MethodDeclaration> method, const LowerUnitToIRState* state)
 {
-	LowerDataType(module, method->dataType);
+	LowerDataType(method->dataType, state);
 
 	Array<llvm::Type*> parameters;
 
@@ -851,22 +851,21 @@ llvm::Function* LowerToIRPass::CreateFunction(llvm::Module* module, Ref<MethodDe
 
 	for (auto parameter : method->parameters)
 	{
-		LowerDataType(module, parameter->dataType);
+		LowerDataType(parameter->dataType, state);
 		parameters.push_back(parameter->dataType->dataTypeMeta.ir);
 	}
 
 	auto signature = llvm::FunctionType::get(method->dataType->dataTypeMeta.ir, parameters, false);
-	return llvm::Function::Create(signature, llvm::GlobalValue::LinkageTypes::ExternalLinkage, method->methodDeclarationMeta.name, *module);
+	return llvm::Function::Create(signature, llvm::GlobalValue::LinkageTypes::ExternalLinkage, method->methodDeclarationMeta.name, *state->module);
 }
 
-PassResultFlags LowerToIRPass::LowerMethod(llvm::Module* module, Ref<MethodDeclaration> method, Ref<ClassDeclaration> classDeclaration,
-                                           llvm::legacy::FunctionPassManager* fpm)
+PassResultFlags LowerToIRPass::LowerMethod(Ref<MethodDeclaration> method, llvm::legacy::FunctionPassManager* fpm, const LowerUnitToIRState* state)
 {
-	auto& methods = classDeclaration->classDeclarationMeta.methods;
+	auto& methods = state->classDeclaration->classDeclarationMeta.methods;
 
 	if (methods.find(method.get()) == methods.end())
 	{
-		methods[method.get()] = CreateFunction(module, method);
+		methods[method.get()] = CreateFunction(method, state);
 	}
 
 	if (method->body && fpm)
@@ -896,14 +895,14 @@ PassResultFlags LowerToIRPass::LowerMethod(llvm::Module* module, Ref<MethodDecla
 			method->parameters[parameterIndex]->variableDeclarationMeta.ir = argumentVariable;
 		}
 
-		LowerFunctionToIRState state;
-		state.currentBlock = block;
-		state.method = method.get();
-		state.classDeclaration = classDeclaration;
-		state.thisPointer = thisArgument;
-		state.function = function;
+		LowerFunctionToIRState functionState;
+		functionState.parent = state;
+		functionState.currentBlock = block;
+		functionState.method = method.get();
+		functionState.thisPointer = thisArgument;
+		functionState.function = function;
 
-		LowerStatement(module, method->body, &state);
+		LowerStatement(method->body, &functionState);
 
 		if (method->dataType->dataTypeType == DataTypeType::PRIMITIVE)
 		{
@@ -940,6 +939,10 @@ PassResultFlags LowerToIRPass::LowerClass(Ref<Module> parentModule, Ref<ClassDec
 
 	auto module = AllocateUnique<llvm::Module>(classDeclaration->name, *context);
 
+	LowerUnitToIRState state;
+	state.classDeclaration = classDeclaration;
+	state.module = module.get();
+
 	auto mallocSignature = llvm::FunctionType::get(llvm::Type::getInt8PtrTy(*context), {llvm::Type::getInt64Ty(*context)}, false);
 	classDeclaration->classDeclarationMeta.malloc =
 		llvm::Function::Create(mallocSignature, llvm::GlobalValue::LinkageTypes::ExternalLinkage, "malloc", *module);
@@ -947,7 +950,7 @@ PassResultFlags LowerToIRPass::LowerClass(Ref<Module> parentModule, Ref<ClassDec
 	auto freeSignature = llvm::FunctionType::get(llvm::Type::getVoidTy(*context), {llvm::Type::getInt8PtrTy(*context)}, false);
 	classDeclaration->classDeclarationMeta.free = llvm::Function::Create(freeSignature, llvm::GlobalValue::LinkageTypes::ExternalLinkage, "free", *module);
 
-	LowerDataType(module.get(), classDeclaration->unitDeclarationMeta.thisType);
+	LowerDataType(classDeclaration->unitDeclarationMeta.thisType, &state);
 
 	if (classDeclaration->isSingleton)
 	{
@@ -976,11 +979,11 @@ PassResultFlags LowerToIRPass::LowerClass(Ref<Module> parentModule, Ref<ClassDec
 
 	for (auto member : classDeclaration->members)
 	{
-		LowerDataType(module.get(), member->dataType);
+		LowerDataType(member->dataType, &state);
 
 		if (member->variableType == VariableDeclarationType::METHOD)
 		{
-			if (LowerMethod(module.get(), std::dynamic_pointer_cast<MethodDeclaration>(member), classDeclaration, &fpm) != PassResultFlags::SUCCESS)
+			if (LowerMethod(std::dynamic_pointer_cast<MethodDeclaration>(member), &fpm, &state) != PassResultFlags::SUCCESS)
 			{
 				return PassResultFlags::CRITICAL_ERROR;
 			}
@@ -990,7 +993,7 @@ PassResultFlags LowerToIRPass::LowerClass(Ref<Module> parentModule, Ref<ClassDec
 			Ref<MemberVariableDeclaration> memberVariableDeclaration = std::dynamic_pointer_cast<MemberVariableDeclaration>(member);
 			for (auto accessor : memberVariableDeclaration->accessors)
 			{
-				if (LowerMethod(module.get(), accessor, classDeclaration, &fpm) != PassResultFlags::SUCCESS)
+				if (LowerMethod(accessor, &fpm, &state) != PassResultFlags::SUCCESS)
 				{
 					return PassResultFlags::CRITICAL_ERROR;
 				}
@@ -1063,7 +1066,9 @@ void LowerToIRPass::InitializeSingleton(Ref<llvm::Module> entryModule, Ref<Class
 	Ref<ConstructorDeclaration> defaultConstructor = classDeclaration->GetDefaultConstructor();
 	if (defaultConstructor)
 	{
-		entryBuilder.CreateCall(CreateFunction(entryModule.get(), defaultConstructor), {instance});
+		LowerUnitToIRState state;
+		state.module = entryModule.get();
+		entryBuilder.CreateCall(CreateFunction(defaultConstructor, &state), {instance});
 	}
 }
 
