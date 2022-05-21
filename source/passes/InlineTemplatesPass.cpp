@@ -264,6 +264,7 @@ Ref<Unit> InlineTemplatesPass::GenerateSpecialization(const ObjectType& type)
 	resultClass->name = ReplaceChar(type.ToStrict(), ' ', '-');
 	resultUnit->name = resultClass->name;
 	resultClass->typeTemplate = nullptr;
+	resultClass->classDeclarationMeta.sourceClass = sourceClass.get();
 
 	for (UInt32 argumentIndex = 0; argumentIndex < sourceClass->typeTemplate->parameters.size(); argumentIndex++)
 	{

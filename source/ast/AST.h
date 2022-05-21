@@ -626,6 +626,9 @@ public:
 	HashMap<MethodDeclaration*, llvm::Function*> methods;
 	HashMap<ClassDeclaration*, llvm::Value*> singletons;
 	llvm::Value* typeId = nullptr;
+
+	// The templated class if this is a specialization.
+	ClassDeclaration* sourceClass = nullptr;
 };
 
 class ClassDeclaration : public TypeDeclaration
@@ -715,6 +718,7 @@ public:
 
 	HashMap<ObjectType, Ref<ClassDeclaration>> templateSpecializations;
 
+	String path;
 	String outputPath;
 };
 

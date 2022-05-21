@@ -328,6 +328,7 @@ void BuildContext::PropagateBuildFlagAndParse()
 
 		module.first.module = Allocate<Module>(module.first.type, module.first.name);
 		module.first.module->moduleMeta.outputPath = moduleOutputPath;
+		module.first.module->moduleMeta.path = module.first.canonicalPath;
 		modules.push_back(module.first.module);
 	}
 
