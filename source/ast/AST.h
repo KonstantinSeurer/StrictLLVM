@@ -5,6 +5,7 @@
 #include "../JSON.h"
 #include "../Lexer.h"
 
+#include "llvm/IR/DebugInfoMetadata.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Module.h"
@@ -65,6 +66,7 @@ class DataTypeMeta
 {
 public:
 	llvm::Type* ir = nullptr;
+	llvm::DIType* di = nullptr;
 };
 
 class DataType : public ASTItem

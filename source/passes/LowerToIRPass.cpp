@@ -53,6 +53,51 @@ void LowerToIRPass::LowerDataType(Ref<DataType> type, const LowerUnitToIRState* 
 		default:
 			STRICT_UNREACHABLE;
 		}
+
+		if (state->diBuilder)
+		{
+			switch (primitive->primitiveType)
+			{
+			case TokenType::VOID:
+				type->dataTypeMeta.di = state->diBuilder->createUnspecifiedType("void");
+				break;
+			case TokenType::BOOL:
+				type->dataTypeMeta.di = state->diBuilder->createBasicType("Bool", 1, llvm::dwarf::DW_ATE_boolean);
+				break;
+			case TokenType::INT8:
+				type->dataTypeMeta.di = state->diBuilder->createBasicType("Int8", 8, llvm::dwarf::DW_ATE_signed);
+				break;
+			case TokenType::UINT8:
+				type->dataTypeMeta.di = state->diBuilder->createBasicType("UInt8", 8, llvm::dwarf::DW_ATE_unsigned);
+				break;
+			case TokenType::INT16:
+				type->dataTypeMeta.di = state->diBuilder->createBasicType("Int16", 16, llvm::dwarf::DW_ATE_signed);
+				break;
+			case TokenType::UINT16:
+				type->dataTypeMeta.di = state->diBuilder->createBasicType("UInt16", 16, llvm::dwarf::DW_ATE_unsigned);
+				break;
+			case TokenType::INT32:
+				type->dataTypeMeta.di = state->diBuilder->createBasicType("Int32", 32, llvm::dwarf::DW_ATE_signed);
+				break;
+			case TokenType::UINT32:
+				type->dataTypeMeta.di = state->diBuilder->createBasicType("UInt32", 32, llvm::dwarf::DW_ATE_unsigned);
+				break;
+			case TokenType::INT64:
+				type->dataTypeMeta.di = state->diBuilder->createBasicType("Int64", 64, llvm::dwarf::DW_ATE_signed);
+				break;
+			case TokenType::UINT64:
+				type->dataTypeMeta.di = state->diBuilder->createBasicType("UInt64", 64, llvm::dwarf::DW_ATE_unsigned);
+				break;
+			case TokenType::FLOAT32:
+				type->dataTypeMeta.di = state->diBuilder->createBasicType("Float32", 32, llvm::dwarf::DW_ATE_float);
+				break;
+			case TokenType::FLOAT64:
+				type->dataTypeMeta.di = state->diBuilder->createBasicType("Float64", 64, llvm::dwarf::DW_ATE_float);
+				break;
+			default:
+				STRICT_UNREACHABLE;
+			}
+		}
 	}
 	else if (type->dataTypeType == DataTypeType::OBJECT)
 	{
@@ -64,13 +109,18 @@ void LowerToIRPass::LowerDataType(Ref<DataType> type, const LowerUnitToIRState* 
 
 		if (unitDeclaration->unitDeclarationMeta.thisType->dataTypeMeta.ir)
 		{
-			type->dataTypeMeta.ir = unitDeclaration->unitDeclarationMeta.thisType->dataTypeMeta.ir;
+			type->dataTypeMeta = unitDeclaration->unitDeclarationMeta.thisType->dataTypeMeta;
 			return;
 		}
 
 		if (unitDeclaration->declarationType == UnitDeclarationType::ERROR)
 		{
 			unitDeclaration->unitDeclarationMeta.thisType->dataTypeMeta.ir = llvm::Type::getInt32Ty(*context);
+
+			if (state->diBuilder)
+			{
+				type->dataTypeMeta.di = state->diBuilder->createBasicType(objectType->name, 32, llvm::dwarf::DW_ATE_signed);
+			}
 		}
 		else
 		{
@@ -92,15 +142,32 @@ void LowerToIRPass::LowerDataType(Ref<DataType> type, const LowerUnitToIRState* 
 				elements.push_back(member->dataType->dataTypeMeta.ir);
 			}
 			unitDeclaration->unitDeclarationMeta.thisType->dataTypeMeta.ir = llvm::StructType::create(*context, elements, objectType->name);
+
+			if (state->diBuilder)
+			{
+				// WIP
+				Unit* unit = unitDeclaration->unitDeclarationMeta.parent;
+				llvm::DIFile* diFile = state->diBuilder->createFile(unit->name + ".strict", unit->unitMeta.parent->moduleMeta.path);
+				UInt32 lineNumber = 0; // TODO: use characterIndex and source to determine (see ErrorStream)
+				llvm::DINodeArray diElements;
+				unitDeclaration->unitDeclarationMeta.thisType->dataTypeMeta.di = state->diBuilder->createClassType(
+					diFile, objectType->name, diFile, lineNumber, 0, 0, 0, llvm::DINode::DIFlags::FlagPublic, nullptr, diElements);
+			}
 		}
 
-		type->dataTypeMeta.ir = unitDeclaration->unitDeclarationMeta.thisType->dataTypeMeta.ir;
+		type->dataTypeMeta = unitDeclaration->unitDeclarationMeta.thisType->dataTypeMeta;
 	}
 	else if (type->dataTypeType == DataTypeType::POINTER || type->dataTypeType == DataTypeType::REFERENCE || type->dataTypeType == DataTypeType::ARRAY)
 	{
 		Ref<PointerType> pointerType = std::dynamic_pointer_cast<PointerType>(type);
+
 		LowerDataType(pointerType->value, state);
 		type->dataTypeMeta.ir = llvm::PointerType::get(pointerType->value->dataTypeMeta.ir, 0);
+
+		if (state->diBuilder)
+		{
+			type->dataTypeMeta.di = state->diBuilder->createPointerType(pointerType->value->dataTypeMeta.di, 64);
+		}
 	}
 	else
 	{
