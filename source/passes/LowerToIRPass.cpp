@@ -939,9 +939,25 @@ PassResultFlags LowerToIRPass::LowerClass(Ref<Module> parentModule, Ref<ClassDec
 
 	auto module = AllocateUnique<llvm::Module>(classDeclaration->name, *context);
 
+	llvm::DIBuilder* diBuilder = nullptr;
+	llvm::DIFile* diFile = nullptr;
+	llvm::DICompileUnit* diCU = nullptr;
+	if (buildContext.optimizationLevel == OptimizationLevel::DEBUGGING)
+	{
+		diBuilder = new llvm::DIBuilder(*module);
+
+		Unit* unit = classDeclaration->classDeclarationMeta.sourceClass ? classDeclaration->classDeclarationMeta.sourceClass->unitDeclarationMeta.parent
+		                                                                : classDeclaration->unitDeclarationMeta.parent;
+		diFile = diBuilder->createFile(unit->name + ".strict", unit->unitMeta.parent->moduleMeta.path);
+
+		diCU = diBuilder->createCompileUnit(llvm::dwarf::DW_LANG_C, diFile, "Strict LLVM Compiler", false, "", 0);
+	}
+
 	LowerUnitToIRState state;
 	state.classDeclaration = classDeclaration;
 	state.module = module.get();
+	state.diBuilder = diBuilder;
+	state.diCU = diCU;
 
 	auto mallocSignature = llvm::FunctionType::get(llvm::Type::getInt8PtrTy(*context), {llvm::Type::getInt64Ty(*context)}, false);
 	classDeclaration->classDeclarationMeta.malloc =
@@ -999,6 +1015,11 @@ PassResultFlags LowerToIRPass::LowerClass(Ref<Module> parentModule, Ref<ClassDec
 				}
 			}
 		}
+	}
+
+	if (diBuilder)
+	{
+		diBuilder->finalize();
 	}
 
 #ifdef DEBUG

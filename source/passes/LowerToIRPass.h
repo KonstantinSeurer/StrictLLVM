@@ -3,6 +3,7 @@
 #define SOURCE_PASSES_LOWERTOIR
 
 #include "../BuildContext.h"
+#include "llvm/IR/DIBuilder.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/LegacyPassManager.h"
 
@@ -11,6 +12,10 @@ class LowerUnitToIRState
 public:
 	Ref<ClassDeclaration> classDeclaration;
 	llvm::Module* module;
+	llvm::DIBuilder* diBuilder;
+	llvm::DIFile* diFile;
+	llvm::DICompileUnit* diCU;
+	Array<llvm::DIScope*> diStack;
 };
 
 class LowerFunctionToIRState
