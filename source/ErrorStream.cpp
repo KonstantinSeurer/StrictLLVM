@@ -35,18 +35,9 @@ void ErrorStream::PrintError(const UInt32& location, const String& message)
 		for (; lineEnd < source.length() && source[lineEnd] != '\n'; lineEnd++)
 			;
 
-		Int64 lineCount = 1;
-		for (Int64 characterIndex = 0; characterIndex <= location; characterIndex++)
-		{
-			if (source[characterIndex] == '\n')
-			{
-				lineCount++;
-			}
-		}
-
 		print(fileName);
 		print("(line ");
-		print(std::to_string(lineCount));
+		print(std::to_string(GetLineNumber(source, location, 1)));
 		print("):\n\t");
 
 		print(source.substr(lineStart, lineEnd - lineStart));

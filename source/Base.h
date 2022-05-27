@@ -46,6 +46,8 @@ using String = std::string;
 String ReplaceChar(const String& string, char character, char replacement);
 String RemoveChar(const String& string, char character);
 
+UInt32 GetLineNumber(const String& string, UInt32 characterIndex, UInt32 start);
+
 template <typename T> using Ref = std::shared_ptr<T>;
 
 template <typename T, typename... Args> inline Ref<T> Allocate(Args&&... args)

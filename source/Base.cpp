@@ -20,3 +20,16 @@ String RemoveChar(const String& string, char character)
 	result.erase(remove(result.begin(), result.end(), character), result.end());
 	return result;
 }
+
+UInt32 GetLineNumber(const String& string, UInt32 characterIndex, UInt32 start)
+{
+	UInt32 result = start;
+	for (Int64 i = 0; i <= characterIndex; i++)
+	{
+		if (string[i] == '\n')
+		{
+			result++;
+		}
+	}
+	return result;
+}
