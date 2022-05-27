@@ -962,6 +962,26 @@ PassResultFlags LowerToIRPass::LowerMethod(Ref<MethodDeclaration> method, llvm::
 			method->parameters[parameterIndex]->variableDeclarationMeta.ir = argumentVariable;
 		}
 
+		if (state->diBuilder)
+		{
+			Array<llvm::Metadata*> diParameters;
+			diParameters.push_back(method->dataType->dataTypeMeta.di);
+
+			for (auto parameter : method->parameters)
+			{
+				diParameters.push_back(parameter->dataType->dataTypeMeta.di);
+			}
+
+			auto diFunctionType = state->diBuilder->createSubroutineType(state->diBuilder->getOrCreateTypeArray(diParameters));
+
+			UInt32 lineNumber = GetLineNumber(state->classDeclaration->unitDeclarationMeta.parent->unitMeta.lexer.GetSource(), method->characterIndex, 1);
+
+			auto scope = state->diBuilder->createFile(state->diFile->getFilename(), state->diFile->getDirectory());
+			auto diFunction = state->diBuilder->createFunction(scope, method->name, llvm::StringRef(), state->diFile, lineNumber, diFunctionType, lineNumber,
+			                                                   llvm::DINode::FlagPrototyped, llvm::DISubprogram::SPFlagDefinition);
+			function->setSubprogram(diFunction);
+		}
+
 		LowerFunctionToIRState functionState;
 		functionState.parent = state;
 		functionState.currentBlock = block;
