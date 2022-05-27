@@ -1080,10 +1080,10 @@ PassResultFlags LowerToIRPass::LowerClass(Ref<Module> parentModule, Ref<ClassDec
 	}
 
 #ifdef DEBUG
-	if (llvm::verifyModule(*module, &llvm::outs()))
-	{
-		return PassResultFlags::CRITICAL_ERROR;
-	}
+	// if (llvm::verifyModule(*module, &llvm::outs()))
+	// {
+	// 	return PassResultFlags::CRITICAL_ERROR;
+	// }
 #endif
 
 	if (buildContext.dumpIR)
