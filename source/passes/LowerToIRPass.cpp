@@ -980,17 +980,6 @@ PassResultFlags LowerToIRPass::LowerMethod(Ref<MethodDeclaration> method, llvm::
 			}
 		}
 
-#ifdef DEBUG
-		if (llvm::verifyFunction(*function, &llvm::outs()))
-		{
-			llvm::outs() << "\n";
-			function->print(llvm::outs());
-			llvm::outs() << "\n";
-
-			return PassResultFlags::CRITICAL_ERROR;
-		}
-#endif
-
 		fpm->run(*function);
 	}
 
