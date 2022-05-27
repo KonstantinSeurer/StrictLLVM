@@ -24,7 +24,7 @@ String RemoveChar(const String& string, char character)
 UInt32 GetLineNumber(const String& string, UInt32 characterIndex, UInt32 start)
 {
 	UInt32 result = start;
-	for (Int64 i = 0; i <= characterIndex; i++)
+	for (Int64 i = 0; i <= characterIndex && i < string.length(); i++)
 	{
 		if (string[i] == '\n')
 		{
