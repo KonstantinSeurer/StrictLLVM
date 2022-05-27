@@ -75,7 +75,8 @@ PassResultFlags OutputModulesPass::Run(PrintFunction print, BuildContext& contex
 		}
 
 		llvm::legacy::PassManager passManager;
-		if (targetMachine->addPassesToEmitFile(passManager, outputStream, nullptr, llvm::CGFT_ObjectFile))
+		if (targetMachine->addPassesToEmitFile(passManager, outputStream, nullptr,
+		                                       llvm::CGFT_ObjectFile))
 		{
 			llvm::errs() << "TargetMachine can't emit a file of this type!\n";
 			return PassResultFlags::CRITICAL_ERROR;

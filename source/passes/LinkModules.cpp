@@ -49,7 +49,8 @@ PassResultFlags LinkModulesPass::Run(PrintFunction print, BuildContext& context)
 				continue;
 			}
 
-			Ref<ClassDeclaration> classDeclaration = std::dynamic_pointer_cast<ClassDeclaration>(unit->declaredType);
+			Ref<ClassDeclaration> classDeclaration =
+				std::dynamic_pointer_cast<ClassDeclaration>(unit->declaredType);
 			if (classDeclaration->typeTemplate)
 			{
 				continue;

@@ -12,13 +12,15 @@ InlineTemplatesPass::InlineTemplatesPass() : Pass("InlineTemplatesPass")
 	gatherAllInformationPass = Allocate<GatherInformationPass>(GatherInformationFlags::ALL);
 }
 
-void InlineTemplatesPass::InlineExpression(Ref<Expression>* target, const String& name, const TemplateArgument& argument)
+void InlineTemplatesPass::InlineExpression(Ref<Expression>* target, const String& name,
+                                           const TemplateArgument& argument)
 {
 	Ref<Expression> expression = *target;
 	switch (expression->expressionType)
 	{
 	case ExpressionType::BRACKET: {
-		Ref<BracketExpression> bracketExpression = std::dynamic_pointer_cast<BracketExpression>(expression);
+		Ref<BracketExpression> bracketExpression =
+			std::dynamic_pointer_cast<BracketExpression>(expression);
 		InlineExpression(&bracketExpression->expression, name, argument);
 		break;
 	}
@@ -32,7 +34,8 @@ void InlineTemplatesPass::InlineExpression(Ref<Expression>* target, const String
 		break;
 	}
 	case ExpressionType::IDENTIFIER: {
-		Ref<IdentifierExpression> identifierExpression = std::dynamic_pointer_cast<IdentifierExpression>(expression);
+		Ref<IdentifierExpression> identifierExpression =
+			std::dynamic_pointer_cast<IdentifierExpression>(expression);
 		if (identifierExpression->name == name)
 		{
 			*target = argument.expression;
@@ -49,7 +52,8 @@ void InlineTemplatesPass::InlineExpression(Ref<Expression>* target, const String
 		break;
 	}
 	case ExpressionType::OPERATOR: {
-		Ref<OperatorExpression> operatorExpression = std::dynamic_pointer_cast<OperatorExpression>(expression);
+		Ref<OperatorExpression> operatorExpression =
+			std::dynamic_pointer_cast<OperatorExpression>(expression);
 		InlineExpression(&operatorExpression->a, name, argument);
 		if (operatorExpression->b)
 		{
@@ -65,7 +69,8 @@ void InlineTemplatesPass::InlineExpression(Ref<Expression>* target, const String
 		break;
 	}
 	case ExpressionType::TERNARY: {
-		Ref<TernaryExpression> ternaryExpression = std::dynamic_pointer_cast<TernaryExpression>(expression);
+		Ref<TernaryExpression> ternaryExpression =
+			std::dynamic_pointer_cast<TernaryExpression>(expression);
 		InlineExpression(&ternaryExpression->condition, name, argument);
 		InlineExpression(&ternaryExpression->thenExpression, name, argument);
 		InlineExpression(&ternaryExpression->elseExpression, name, argument);
@@ -74,7 +79,8 @@ void InlineTemplatesPass::InlineExpression(Ref<Expression>* target, const String
 	}
 }
 
-void InlineTemplatesPass::InlineStatement(Ref<Statement> target, const String& name, const TemplateArgument& argument)
+void InlineTemplatesPass::InlineStatement(Ref<Statement> target, const String& name,
+                                          const TemplateArgument& argument)
 {
 	switch (target->statementType)
 	{
@@ -92,7 +98,8 @@ void InlineTemplatesPass::InlineStatement(Ref<Statement> target, const String& n
 		break;
 	}
 	case StatementType::EXPRESSION: {
-		Ref<ExpressionStatement> expressionStatement = std::dynamic_pointer_cast<ExpressionStatement>(target);
+		Ref<ExpressionStatement> expressionStatement =
+			std::dynamic_pointer_cast<ExpressionStatement>(target);
 		InlineExpression(&expressionStatement->expression, name, argument);
 		break;
 	}
@@ -120,7 +127,8 @@ void InlineTemplatesPass::InlineStatement(Ref<Statement> target, const String& n
 		break;
 	}
 	case StatementType::VARIABLE_DECLARATION: {
-		Ref<VariableDeclarationStatement> variableDeclarationStatement = std::dynamic_pointer_cast<VariableDeclarationStatement>(target);
+		Ref<VariableDeclarationStatement> variableDeclarationStatement =
+			std::dynamic_pointer_cast<VariableDeclarationStatement>(target);
 		InlineVariableDeclaration(variableDeclarationStatement->declaration, name, argument);
 		if (variableDeclarationStatement->value)
 		{
@@ -137,7 +145,8 @@ void InlineTemplatesPass::InlineStatement(Ref<Statement> target, const String& n
 	}
 }
 
-void InlineTemplatesPass::InlineMethodDeclaration(Ref<MethodDeclaration> target, const String& name, const TemplateArgument& argument)
+void InlineTemplatesPass::InlineMethodDeclaration(Ref<MethodDeclaration> target, const String& name,
+                                                  const TemplateArgument& argument)
 {
 	if (target->body)
 	{
@@ -150,7 +159,9 @@ void InlineTemplatesPass::InlineMethodDeclaration(Ref<MethodDeclaration> target,
 	}
 }
 
-void InlineTemplatesPass::InlineMemberVariableDeclaration(Ref<MemberVariableDeclaration> target, const String& name, const TemplateArgument& argument)
+void InlineTemplatesPass::InlineMemberVariableDeclaration(Ref<MemberVariableDeclaration> target,
+                                                          const String& name,
+                                                          const TemplateArgument& argument)
 {
 	if (target->value)
 	{
@@ -163,13 +174,16 @@ void InlineTemplatesPass::InlineMemberVariableDeclaration(Ref<MemberVariableDecl
 	}
 }
 
-void InlineTemplatesPass::InlineVariableDeclaration(Ref<VariableDeclaration> target, const String& name, const TemplateArgument& argument)
+void InlineTemplatesPass::InlineVariableDeclaration(Ref<VariableDeclaration> target,
+                                                    const String& name,
+                                                    const TemplateArgument& argument)
 {
 	InlineDataType(&target->dataType, name, argument);
 
 	if (target->variableType == VariableDeclarationType::MEMBER_VARIABLE)
 	{
-		Ref<MemberVariableDeclaration> memberVariable = std::dynamic_pointer_cast<MemberVariableDeclaration>(target);
+		Ref<MemberVariableDeclaration> memberVariable =
+			std::dynamic_pointer_cast<MemberVariableDeclaration>(target);
 		InlineMemberVariableDeclaration(memberVariable, name, argument);
 	}
 	else if (target->variableType == VariableDeclarationType::METHOD)
@@ -179,7 +193,8 @@ void InlineTemplatesPass::InlineVariableDeclaration(Ref<VariableDeclaration> tar
 	}
 }
 
-void InlineTemplatesPass::InlineDataType(Ref<DataType>* target, const String& name, const TemplateArgument& argument)
+void InlineTemplatesPass::InlineDataType(Ref<DataType>* target, const String& name,
+                                         const TemplateArgument& argument)
 {
 	Ref<DataType> type = *target;
 	if (type->dataTypeType == DataTypeType::OBJECT)
@@ -220,7 +235,8 @@ void InlineTemplatesPass::InlineDataType(Ref<DataType>* target, const String& na
 	}
 }
 
-void InlineTemplatesPass::InlineTemplateArgument(Ref<ClassDeclaration> target, const String& name, const TemplateArgument& argument)
+void InlineTemplatesPass::InlineTemplateArgument(Ref<ClassDeclaration> target, const String& name,
+                                                 const TemplateArgument& argument)
 {
 	for (auto& superType : target->superTypes)
 	{
@@ -249,32 +265,39 @@ Ref<Unit> InlineTemplatesPass::GenerateSpecialization(const ObjectType& type)
 
 		Ref<ObjectType> argumentObject = std::dynamic_pointer_cast<ObjectType>(argument.dataType);
 
-		if (argumentObject->objectTypeMeta.unit->declaredType->declarationType == UnitDeclarationType::TYPE)
+		if (argumentObject->objectTypeMeta.unit->declaredType->declarationType ==
+		    UnitDeclarationType::TYPE)
 		{
 			return nullptr;
 		}
 	}
 
 	Ref<Unit> sourceUnit = std::dynamic_pointer_cast<Unit>(type.objectTypeMeta.unit);
-	Ref<ClassDeclaration> sourceClass = std::dynamic_pointer_cast<ClassDeclaration>(sourceUnit->declaredType);
+	Ref<ClassDeclaration> sourceClass =
+		std::dynamic_pointer_cast<ClassDeclaration>(sourceUnit->declaredType);
 
 	Ref<Unit> resultUnit = std::dynamic_pointer_cast<Unit>(sourceUnit->Clone());
-	Ref<ClassDeclaration> resultClass = std::dynamic_pointer_cast<ClassDeclaration>(resultUnit->declaredType);
+	Ref<ClassDeclaration> resultClass =
+		std::dynamic_pointer_cast<ClassDeclaration>(resultUnit->declaredType);
 
 	resultClass->name = ReplaceChar(type.ToStrict(), ' ', '-');
 	resultUnit->name = resultClass->name;
 	resultClass->typeTemplate = nullptr;
 	resultClass->classDeclarationMeta.sourceClass = sourceClass.get();
 
-	for (UInt32 argumentIndex = 0; argumentIndex < sourceClass->typeTemplate->parameters.size(); argumentIndex++)
+	for (UInt32 argumentIndex = 0; argumentIndex < sourceClass->typeTemplate->parameters.size();
+	     argumentIndex++)
 	{
-		InlineTemplateArgument(resultClass, sourceClass->typeTemplate->parameters[argumentIndex]->name, type.typeTemplate->arguments[argumentIndex]);
+		InlineTemplateArgument(resultClass,
+		                       sourceClass->typeTemplate->parameters[argumentIndex]->name,
+		                       type.typeTemplate->arguments[argumentIndex]);
 	}
 
 	return resultUnit;
 }
 
-bool InlineTemplatesPass::GenerateSpecializations(PrintFunction print, BuildContext& context, Ref<Module> module,
+bool InlineTemplatesPass::GenerateSpecializations(PrintFunction print, BuildContext& context,
+                                                  Ref<Module> module,
                                                   HashMap<ObjectType, Array<ObjectType*>>& types)
 {
 	bool progress = false;
@@ -283,7 +306,8 @@ bool InlineTemplatesPass::GenerateSpecializations(PrintFunction print, BuildCont
 
 	for (const auto& type : types)
 	{
-		if (module->moduleMeta.templateSpecializations.find(type.first) != module->moduleMeta.templateSpecializations.end())
+		if (module->moduleMeta.templateSpecializations.find(type.first) !=
+		    module->moduleMeta.templateSpecializations.end())
 		{
 			continue;
 		}
@@ -296,7 +320,8 @@ bool InlineTemplatesPass::GenerateSpecializations(PrintFunction print, BuildCont
 			ResolveUnitIdentifiers(print, context, specialization);
 
 			progress = true;
-			Ref<ClassDeclaration> specializedClass = std::dynamic_pointer_cast<ClassDeclaration>(specialization->declaredType);
+			Ref<ClassDeclaration> specializedClass =
+				std::dynamic_pointer_cast<ClassDeclaration>(specialization->declaredType);
 			module->moduleMeta.templateSpecializations[type.first] = specializedClass;
 
 			for (auto typeRef : type.second)
@@ -336,7 +361,8 @@ PassResultFlags InlineTemplatesPass::Run(PrintFunction print, BuildContext& cont
 					continue;
 				}
 
-				auto& types = std::dynamic_pointer_cast<TypeDeclaration>(unit->declaredType)->typeDeclarationMeta.usedTemplateTypes;
+				auto& types = std::dynamic_pointer_cast<TypeDeclaration>(unit->declaredType)
+				                  ->typeDeclarationMeta.usedTemplateTypes;
 				GenerateSpecializations(print, context, module, types);
 			}
 

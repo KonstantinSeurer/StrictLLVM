@@ -3,8 +3,9 @@
 
 static HashSet<OperatorType> mutatingOperatorSet = {
 	// Mutating binary operators
-	OperatorType::PLUS_EQUAL, OperatorType::MINUS_EQUAL, OperatorType::MULTIPLY_EQUAL, OperatorType::DIVIDE_EQUAL, OperatorType::AND_EQUAL,
-	OperatorType::OR_EQUAL, OperatorType::XOR_EQUAL, OperatorType::SHIFT_LEFT_EQUAL, OperatorType::SHIFT_RIGHT_EQUAL,
+	OperatorType::PLUS_EQUAL, OperatorType::MINUS_EQUAL, OperatorType::MULTIPLY_EQUAL,
+	OperatorType::DIVIDE_EQUAL, OperatorType::AND_EQUAL, OperatorType::OR_EQUAL,
+	OperatorType::XOR_EQUAL, OperatorType::SHIFT_LEFT_EQUAL, OperatorType::SHIFT_RIGHT_EQUAL,
 	// Mutating unary operators
 	OperatorType::INCREMENT, OperatorType::DECREMENT};
 
@@ -17,12 +18,14 @@ void LowerImpliedDeclarationFlags(Ref<MethodDeclaration> method, bool isVirtualT
 		method->flags = method->flags | DeclarationFlags::MUT;
 		break;
 	case MethodType::DESTRUCTOR:
-		method->flags =
-			method->flags | DeclarationFlags::MUT | DeclarationFlags::PUBLIC | (isVirtualType ? DeclarationFlags::VIRTUAL : DeclarationFlags::PRIVATE);
+		method->flags = method->flags | DeclarationFlags::MUT | DeclarationFlags::PUBLIC |
+		                (isVirtualType ? DeclarationFlags::VIRTUAL : DeclarationFlags::PRIVATE);
 		break;
 	case MethodType::OPERATOR: {
-		Ref<OperatorDeclaration> operatorDeclaration = std::dynamic_pointer_cast<OperatorDeclaration>(method);
-		if (mutatingOperatorSet.find(operatorDeclaration->operatorType) != mutatingOperatorSet.end())
+		Ref<OperatorDeclaration> operatorDeclaration =
+			std::dynamic_pointer_cast<OperatorDeclaration>(method);
+		if (mutatingOperatorSet.find(operatorDeclaration->operatorType) !=
+		    mutatingOperatorSet.end())
 		{
 			method->flags = method->flags | DeclarationFlags::MUT;
 		}
@@ -46,7 +49,8 @@ void LowerImpliedDeclarationFlags(Ref<TypeDeclaration> type)
 	for (auto superType : type->superTypes)
 	{
 		assert(superType->objectTypeMeta.unit);
-		if ((superType->objectTypeMeta.unit->declaredType->flags & DeclarationFlags::VIRTUAL) == DeclarationFlags::VIRTUAL)
+		if ((superType->objectTypeMeta.unit->declaredType->flags & DeclarationFlags::VIRTUAL) ==
+		    DeclarationFlags::VIRTUAL)
 		{
 			type->flags = type->flags | DeclarationFlags::VIRTUAL;
 		}
@@ -56,12 +60,15 @@ void LowerImpliedDeclarationFlags(Ref<TypeDeclaration> type)
 	{
 		if (member->variableType == VariableDeclarationType::MEMBER_VARIABLE)
 		{
-			LowerImpliedDeclarationFlags(std::dynamic_pointer_cast<MemberVariableDeclaration>(member));
+			LowerImpliedDeclarationFlags(
+				std::dynamic_pointer_cast<MemberVariableDeclaration>(member));
 		}
 		else if (member->variableType == VariableDeclarationType::METHOD)
 		{
-			const bool isVirtualType = (type->flags & DeclarationFlags::VIRTUAL) == DeclarationFlags::VIRTUAL;
-			LowerImpliedDeclarationFlags(std::dynamic_pointer_cast<MethodDeclaration>(member), isVirtualType);
+			const bool isVirtualType =
+				(type->flags & DeclarationFlags::VIRTUAL) == DeclarationFlags::VIRTUAL;
+			LowerImpliedDeclarationFlags(std::dynamic_pointer_cast<MethodDeclaration>(member),
+			                             isVirtualType);
 		}
 	}
 }
@@ -74,7 +81,8 @@ PassResultFlags LowerImpliedDeclarationFlagsPass::Run(PrintFunction print, Build
 		{
 			if (unit->declaredType->IsType())
 			{
-				LowerImpliedDeclarationFlags(std::dynamic_pointer_cast<TypeDeclaration>(unit->declaredType));
+				LowerImpliedDeclarationFlags(
+					std::dynamic_pointer_cast<TypeDeclaration>(unit->declaredType));
 			}
 		}
 	}

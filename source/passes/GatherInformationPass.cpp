@@ -3,7 +3,8 @@
 
 #include <iostream>
 
-void GatherInformationPass::TryToInsertTemplatedObjectType(HashMap<ObjectType, Array<ObjectType*>>& target, DataType& dataType)
+void GatherInformationPass::TryToInsertTemplatedObjectType(
+	HashMap<ObjectType, Array<ObjectType*>>& target, DataType& dataType)
 {
 	if ((flags & GatherInformationFlags::USED_TEMPLATES) != GatherInformationFlags::USED_TEMPLATES)
 	{
@@ -35,7 +36,8 @@ void GatherInformationPass::TryToInsertTemplatedObjectType(HashMap<ObjectType, A
 	}
 }
 
-void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type, Ref<Expression> expression, Statement* parentStatement)
+void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type, Ref<Expression> expression,
+                                              Statement* parentStatement)
 {
 	if (!expression)
 	{
@@ -50,11 +52,13 @@ void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type, Ref<Exp
 	switch (expression->expressionType)
 	{
 	case ExpressionType::BRACKET: {
-		Ref<BracketExpression> bracketExpression = std::dynamic_pointer_cast<BracketExpression>(expression);
+		Ref<BracketExpression> bracketExpression =
+			std::dynamic_pointer_cast<BracketExpression>(expression);
 		GatherInformation(type, bracketExpression->expression, parentStatement);
 		if ((flags & GatherInformationFlags::PARENT) == GatherInformationFlags::PARENT)
 		{
-			bracketExpression->expression->expressionMeta.parentExpression = bracketExpression.get();
+			bracketExpression->expression->expressionMeta.parentExpression =
+				bracketExpression.get();
 		}
 		break;
 	}
@@ -77,7 +81,8 @@ void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type, Ref<Exp
 	}
 	case ExpressionType::NEW: {
 		Ref<NewExpression> newExpression = std::dynamic_pointer_cast<NewExpression>(expression);
-		TryToInsertTemplatedObjectType(type->typeDeclarationMeta.usedTemplateTypes, *newExpression->dataType);
+		TryToInsertTemplatedObjectType(type->typeDeclarationMeta.usedTemplateTypes,
+		                               *newExpression->dataType);
 		for (auto argument : newExpression->arguments)
 		{
 			GatherInformation(type, argument, parentStatement);
@@ -92,7 +97,8 @@ void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type, Ref<Exp
 		break;
 	}
 	case ExpressionType::OPERATOR: {
-		Ref<OperatorExpression> operatorExpression = std::dynamic_pointer_cast<OperatorExpression>(expression);
+		Ref<OperatorExpression> operatorExpression =
+			std::dynamic_pointer_cast<OperatorExpression>(expression);
 
 		GatherInformation(type, operatorExpression->a, parentStatement);
 		operatorExpression->a->expressionMeta.parentExpression = operatorExpression.get();
@@ -101,27 +107,32 @@ void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type, Ref<Exp
 		{
 			if (operatorExpression->b->dataType)
 			{
-				TryToInsertTemplatedObjectType(type->typeDeclarationMeta.usedTemplateTypes, *operatorExpression->b->dataType);
+				TryToInsertTemplatedObjectType(type->typeDeclarationMeta.usedTemplateTypes,
+				                               *operatorExpression->b->dataType);
 			}
 			if (operatorExpression->b->expression)
 			{
 				GatherInformation(type, operatorExpression->b->expression, parentStatement);
-				operatorExpression->b->expression->expressionMeta.parentExpression = operatorExpression.get();
+				operatorExpression->b->expression->expressionMeta.parentExpression =
+					operatorExpression.get();
 			}
 		}
 		break;
 	}
 	case ExpressionType::TERNARY: {
-		Ref<TernaryExpression> ternaryExpression = std::dynamic_pointer_cast<TernaryExpression>(expression);
+		Ref<TernaryExpression> ternaryExpression =
+			std::dynamic_pointer_cast<TernaryExpression>(expression);
 
 		GatherInformation(type, ternaryExpression->condition, parentStatement);
 		ternaryExpression->condition->expressionMeta.parentExpression = ternaryExpression.get();
 
 		GatherInformation(type, ternaryExpression->thenExpression, parentStatement);
-		ternaryExpression->thenExpression->expressionMeta.parentExpression = ternaryExpression.get();
+		ternaryExpression->thenExpression->expressionMeta.parentExpression =
+			ternaryExpression.get();
 
 		GatherInformation(type, ternaryExpression->elseExpression, parentStatement);
-		ternaryExpression->elseExpression->expressionMeta.parentExpression = ternaryExpression.get();
+		ternaryExpression->elseExpression->expressionMeta.parentExpression =
+			ternaryExpression.get();
 		break;
 	}
 	default:
@@ -129,7 +140,8 @@ void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type, Ref<Exp
 	}
 }
 
-void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type, Ref<Statement> statement, Statement* parent)
+void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type, Ref<Statement> statement,
+                                              Statement* parent)
 {
 	if (!statement)
 	{
@@ -152,12 +164,14 @@ void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type, Ref<Sta
 		break;
 	}
 	case StatementType::DELETE: {
-		Ref<DeleteStatement> deleteStatement = std::dynamic_pointer_cast<DeleteStatement>(statement);
+		Ref<DeleteStatement> deleteStatement =
+			std::dynamic_pointer_cast<DeleteStatement>(statement);
 		GatherInformation(type, deleteStatement->expression, statement.get());
 		break;
 	}
 	case StatementType::EXPRESSION: {
-		Ref<ExpressionStatement> deleteStatement = std::dynamic_pointer_cast<ExpressionStatement>(statement);
+		Ref<ExpressionStatement> deleteStatement =
+			std::dynamic_pointer_cast<ExpressionStatement>(statement);
 		GatherInformation(type, deleteStatement->expression, statement.get());
 		break;
 	}
@@ -183,14 +197,17 @@ void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type, Ref<Sta
 		break;
 	}
 	case StatementType::RETURN: {
-		Ref<ReturnStatement> returnStatement = std::dynamic_pointer_cast<ReturnStatement>(statement);
+		Ref<ReturnStatement> returnStatement =
+			std::dynamic_pointer_cast<ReturnStatement>(statement);
 		GatherInformation(type, returnStatement->expression, statement.get());
 		break;
 	}
 	case StatementType::VARIABLE_DECLARATION: {
-		Ref<VariableDeclarationStatement> variableDeclarationStatement = std::dynamic_pointer_cast<VariableDeclarationStatement>(statement);
+		Ref<VariableDeclarationStatement> variableDeclarationStatement =
+			std::dynamic_pointer_cast<VariableDeclarationStatement>(statement);
 		GatherInformation(type, variableDeclarationStatement->value, statement.get());
-		TryToInsertTemplatedObjectType(type->typeDeclarationMeta.usedTemplateTypes, *variableDeclarationStatement->declaration->dataType);
+		TryToInsertTemplatedObjectType(type->typeDeclarationMeta.usedTemplateTypes,
+		                               *variableDeclarationStatement->declaration->dataType);
 		break;
 	}
 	default:
@@ -198,7 +215,8 @@ void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type, Ref<Sta
 	}
 }
 
-void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type, Ref<MethodDeclaration> method)
+void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type,
+                                              Ref<MethodDeclaration> method)
 {
 	if ((flags & GatherInformationFlags::PARENT) == GatherInformationFlags::PARENT)
 	{
@@ -207,7 +225,8 @@ void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type, Ref<Met
 
 	if ((flags & GatherInformationFlags::METHOD_NAME) == GatherInformationFlags::METHOD_NAME)
 	{
-		const bool isExternal = (method->flags & DeclarationFlags::EXTERNAL) == DeclarationFlags::EXTERNAL;
+		const bool isExternal =
+			(method->flags & DeclarationFlags::EXTERNAL) == DeclarationFlags::EXTERNAL;
 		String name = type->name + (isExternal ? "_" : ".");
 		switch (method->methodType)
 		{
@@ -224,7 +243,8 @@ void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type, Ref<Met
 			name += method->name;
 			break;
 		case MethodType::OPERATOR: {
-			Ref<OperatorDeclaration> operatorDeclaration = std::dynamic_pointer_cast<OperatorDeclaration>(method);
+			Ref<OperatorDeclaration> operatorDeclaration =
+				std::dynamic_pointer_cast<OperatorDeclaration>(method);
 			name += ToString(operatorDeclaration->operatorType);
 			break;
 		}
@@ -243,7 +263,8 @@ void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type, Ref<Met
 	}
 }
 
-void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type, Ref<MemberVariableDeclaration> variable, UInt32 index)
+void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type,
+                                              Ref<MemberVariableDeclaration> variable, UInt32 index)
 {
 	if ((flags & GatherInformationFlags::MEMBER_INDEX) == GatherInformationFlags::MEMBER_INDEX)
 	{
@@ -272,11 +293,13 @@ void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type)
 			member->variableDeclarationMeta.parentType = type.get();
 		}
 
-		TryToInsertTemplatedObjectType(type->typeDeclarationMeta.usedTemplateTypes, *member->dataType);
+		TryToInsertTemplatedObjectType(type->typeDeclarationMeta.usedTemplateTypes,
+		                               *member->dataType);
 
 		if (member->variableType == VariableDeclarationType::MEMBER_VARIABLE)
 		{
-			GatherInformation(type, std::dynamic_pointer_cast<MemberVariableDeclaration>(member), memberIndex);
+			GatherInformation(type, std::dynamic_pointer_cast<MemberVariableDeclaration>(member),
+			                  memberIndex);
 			memberIndex++;
 		}
 		else if (member->variableType == VariableDeclarationType::METHOD)
@@ -290,17 +313,20 @@ void GatherInformationPass::GatherInformation(Ref<TypeDeclaration> type)
 		TryToInsertTemplatedObjectType(type->typeDeclarationMeta.usedTemplateTypes, *superType);
 	}
 
-	if (type->declarationType == UnitDeclarationType::CLASS && (flags & GatherInformationFlags::THIS) == GatherInformationFlags::THIS)
+	if (type->declarationType == UnitDeclarationType::CLASS &&
+	    (flags & GatherInformationFlags::THIS) == GatherInformationFlags::THIS)
 	{
 		Ref<ClassDeclaration> classDeclaration = std::dynamic_pointer_cast<ClassDeclaration>(type);
 
 		classDeclaration->classDeclarationMeta.thisDeclaration = Allocate<VariableDeclaration>();
-		classDeclaration->classDeclarationMeta.thisDeclaration->dataType = type->unitDeclarationMeta.thisType;
+		classDeclaration->classDeclarationMeta.thisDeclaration->dataType =
+			type->unitDeclarationMeta.thisType;
 		classDeclaration->classDeclarationMeta.thisDeclaration->name = "this";
 	}
 }
 
-void GatherInformationPass::GatherInformation(BuildContext& context, Ref<Module> module, Ref<Unit> unit)
+void GatherInformationPass::GatherInformation(BuildContext& context, Ref<Module> module,
+                                              Ref<Unit> unit)
 {
 	if ((flags & GatherInformationFlags::THIS) == GatherInformationFlags::THIS)
 	{

@@ -16,7 +16,8 @@
 #include <filesystem>
 #include <iostream>
 
-// TODO: What happend when source files get deleted -> add cache cleanup pass for deleted/renamed files
+// TODO: What happend when source files get deleted -> add cache cleanup pass for deleted/renamed
+// files
 
 void UnitTask::InitFileName()
 {
@@ -34,9 +35,11 @@ bool operator==(const ModuleTask& a, const ModuleTask& b)
 	return a.name == b.name;
 }
 
-BuildContext::BuildContext(const Array<String>& modulePath, const String& outputPath, const String& cachePath, const Optional<String>& logFile,
+BuildContext::BuildContext(const Array<String>& modulePath, const String& outputPath,
+                           const String& cachePath, const Optional<String>& logFile,
                            TargetFlags target, bool dumpIR, OptimizationLevel optimizationLevel)
-	: modulePath(modulePath), outputPath(outputPath), cachePath(cachePath), target(target), errorCount(0), dumpIR(dumpIR), optimizationLevel(optimizationLevel)
+	: modulePath(modulePath), outputPath(outputPath), cachePath(cachePath), target(target),
+	  errorCount(0), dumpIR(dumpIR), optimizationLevel(optimizationLevel)
 {
 	if (!std::filesystem::exists(outputPath))
 	{
@@ -56,8 +59,9 @@ BuildContext::BuildContext(const Array<String>& modulePath, const String& output
 
 	// Add required passes
 	AddPass(Allocate<ValidateStructurePass>());
-	AddPass(Allocate<GatherInformationPass>(GatherInformationFlags::PARENT | GatherInformationFlags::THIS | GatherInformationFlags::MEMBER_INDEX |
-	                                        GatherInformationFlags::METHOD_NAME));
+	AddPass(Allocate<GatherInformationPass>(
+		GatherInformationFlags::PARENT | GatherInformationFlags::THIS |
+		GatherInformationFlags::MEMBER_INDEX | GatherInformationFlags::METHOD_NAME));
 	AddPass(Allocate<ResolveIdentifiersPass>());
 	AddPass(Allocate<LowerImpliedDeclarationFlagsPass>());
 	AddPass(Allocate<InlineTemplatesPass>());
@@ -108,7 +112,8 @@ Pair<String, String> BuildContext::ResolveUnitIdentifier(const String& identifie
 	{
 		if (identifier.find(module.first.name) == 0)
 		{
-			return Pair<String, String>(module.first.name, identifier.substr(module.first.name.length() + 1));
+			return Pair<String, String>(module.first.name,
+			                            identifier.substr(module.first.name.length() + 1));
 		}
 	}
 
@@ -144,7 +149,8 @@ UInt32 BuildContext::AddModule(const String& name)
 	const String moduleFile = modulePath + "/module.json";
 
 	std::ifstream moduleFileStream(moduleFile);
-	const String moduleFileContent = String(std::istreambuf_iterator<char>(moduleFileStream), std::istreambuf_iterator<char>());
+	const String moduleFileContent =
+		String(std::istreambuf_iterator<char>(moduleFileStream), std::istreambuf_iterator<char>());
 
 	const JSON moduleJSON = JSON::parse(moduleFileContent);
 
@@ -205,7 +211,8 @@ void BuildContext::Build()
 
 	for (const auto& pass : passes)
 	{
-		if ((pass->Run(PRINT_FUNCTION, *this) & PassResultFlags::CRITICAL_ERROR) == PassResultFlags::CRITICAL_ERROR)
+		if ((pass->Run(PRINT_FUNCTION, *this) & PassResultFlags::CRITICAL_ERROR) ==
+		    PassResultFlags::CRITICAL_ERROR)
 		{
 			Print(pass->name + " failed!\n");
 			break;
@@ -238,7 +245,8 @@ void BuildContext::MarkChangedUnits(bool& build)
 	if (std::filesystem::exists(lastWriteTimesFile))
 	{
 		std::ifstream lastWriteTimesStream(lastWriteTimesFile);
-		const String lastWriteTimesContent = String(std::istreambuf_iterator<char>(lastWriteTimesStream), std::istreambuf_iterator<char>());
+		const String lastWriteTimesContent = String(
+			std::istreambuf_iterator<char>(lastWriteTimesStream), std::istreambuf_iterator<char>());
 
 		lastWriteTimesJSON = JSON::parse(lastWriteTimesContent);
 	}
@@ -256,9 +264,11 @@ void BuildContext::MarkChangedUnits(bool& build)
 
 		for (auto& unit : module.second)
 		{
-			std::filesystem::file_time_type lastWrite = std::filesystem::last_write_time(module.first.canonicalPath + "/" + unit.baseFileName + ".strict");
+			std::filesystem::file_time_type lastWrite = std::filesystem::last_write_time(
+				module.first.canonicalPath + "/" + unit.baseFileName + ".strict");
 
-			if (moduleJSON.find(unit.name) == moduleJSON.end() || (lastWrite.time_since_epoch().count() != (int64_t)moduleJSON[unit.name]))
+			if (moduleJSON.find(unit.name) == moduleJSON.end() ||
+			    (lastWrite.time_since_epoch().count() != (int64_t)moduleJSON[unit.name]))
 			{
 				build = true;
 				unit.build = true;
@@ -285,7 +295,8 @@ void BuildContext::AddModuleToLastWriteJSON(Pair<ModuleTask, Array<UnitTask>>& m
 		auto& unit = module.second[unitIndex];
 		unit.build = true;
 
-		std::filesystem::file_time_type lastWrite = std::filesystem::last_write_time(module.first.canonicalPath + "/" + unit.baseFileName + ".strict");
+		std::filesystem::file_time_type lastWrite = std::filesystem::last_write_time(
+			module.first.canonicalPath + "/" + unit.baseFileName + ".strict");
 		moduleJSON[unit.name] = lastWrite.time_since_epoch().count();
 	}
 
@@ -376,7 +387,9 @@ void BuildContext::PropagateBuildFlagAndParse()
 			else
 			{
 				std::ifstream unitCacheStream(unitCachePath);
-				const String unitCacheContent = String(std::istreambuf_iterator<char>(unitCacheStream), std::istreambuf_iterator<char>());
+				const String unitCacheContent =
+					String(std::istreambuf_iterator<char>(unitCacheStream),
+				           std::istreambuf_iterator<char>());
 
 				unit.unit = Allocate<Unit>(JSON::parse(unitCacheContent));
 
@@ -405,7 +418,8 @@ void BuildContext::CompileUnit(const ModuleTask& module, UnitTask& unit)
 	const String unitBasePath = module.canonicalPath + "/" + unit.baseFileName;
 
 	std::ifstream unitSourceStream(unitBasePath + ".strict");
-	const String unitSource = String(std::istreambuf_iterator<char>(unitSourceStream), std::istreambuf_iterator<char>());
+	const String unitSource =
+		String(std::istreambuf_iterator<char>(unitSourceStream), std::istreambuf_iterator<char>());
 
 	Ref<Lexer> lexer = Lexer::Create(unitSource);
 	lexerCache[unitBasePath] = lexer;
@@ -423,7 +437,8 @@ void BuildContext::CompileUnit(const ModuleTask& module, UnitTask& unit)
 	const String unitCSourcePath = unitBasePath + ".c";
 	if (std::filesystem::exists(unitCSourcePath))
 	{
-		const String unitCOutputPath = module.module->moduleMeta.outputPath + "/" + unit.baseFileName + ".o";
+		const String unitCOutputPath =
+			module.module->moduleMeta.outputPath + "/" + unit.baseFileName + ".o";
 		InvokeCompiler(unitCSourcePath, unitCOutputPath);
 
 		unit.unit->unitMeta.hasExternals = true;
@@ -456,7 +471,8 @@ UInt64 BuildContext::FindUnit(UInt64 moduleIndex, const String& name) const
 		}
 	}
 
-	std::cerr << "Could not find unit '" << name << "' in module '" << taskList[moduleIndex].first.name << "'!" << std::endl;
+	std::cerr << "Could not find unit '" << name << "' in module '"
+			  << taskList[moduleIndex].first.name << "'!" << std::endl;
 	return 0;
 }
 

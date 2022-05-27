@@ -11,7 +11,8 @@ bool Token::operator==(const Token& other) const
 		return false;
 	}
 
-	// The characterIndex is ignored since it is only relevant for printing error messages and has nothing to do with the functionality of the compiler.
+	// The characterIndex is ignored since it is only relevant for printing error messages and has
+	// nothing to do with the functionality of the compiler.
 
 	switch (type)
 	{
@@ -95,11 +96,14 @@ static HashMap<String, TokenType> keyWordTable = {
 	{"delete", TokenType::DELETE}};
 
 static HashMap<char, TokenType> singleCharacterTokenTable = {
-	{'(', TokenType::ROUND_OB},  {')', TokenType::ROUND_CB}, {'{', TokenType::CURLY_OB},     {'}', TokenType::CURLY_CB}, {'[', TokenType::SQUARE_OB},
-	{']', TokenType::SQUARE_CB}, {'.', TokenType::PERIOD},   {';', TokenType::SEMICOLON},    {':', TokenType::COLON},    {',', TokenType::COMMA},
-	{'+', TokenType::PLUS},      {'-', TokenType::MINUS},    {'*', TokenType::STAR},         {'/', TokenType::SLASH},    {'&', TokenType::AND},
-	{'|', TokenType::OR},        {'!', TokenType::NOT},      {'?', TokenType::QUESTIONMARK}, {'=', TokenType::EQUALS},   {'<', TokenType::LESS},
-	{'>', TokenType::GREATER},   {'~', TokenType::TILDE},    {'^', TokenType::POWER}};
+	{'(', TokenType::ROUND_OB}, {')', TokenType::ROUND_CB},  {'{', TokenType::CURLY_OB},
+	{'}', TokenType::CURLY_CB}, {'[', TokenType::SQUARE_OB}, {']', TokenType::SQUARE_CB},
+	{'.', TokenType::PERIOD},   {';', TokenType::SEMICOLON}, {':', TokenType::COLON},
+	{',', TokenType::COMMA},    {'+', TokenType::PLUS},      {'-', TokenType::MINUS},
+	{'*', TokenType::STAR},     {'/', TokenType::SLASH},     {'&', TokenType::AND},
+	{'|', TokenType::OR},       {'!', TokenType::NOT},       {'?', TokenType::QUESTIONMARK},
+	{'=', TokenType::EQUALS},   {'<', TokenType::LESS},      {'>', TokenType::GREATER},
+	{'~', TokenType::TILDE},    {'^', TokenType::POWER}};
 
 static HashMap<TokenType, String> keyWordToStrictTable = InverseMap(keyWordTable);
 
@@ -115,7 +119,9 @@ const String& ToStrict(TokenType token)
 	return space;
 }
 
-static HashMap<char, char> escapeSequenceTable = {{'\\', '\\'}, {'a', '\a'}, {'b', '\b'}, {'f', '\f'}, {'n', '\n'}, {'r', '\r'}, {'t', '\t'}, {'v', '\v'}};
+static HashMap<char, char> escapeSequenceTable = {{'\\', '\\'}, {'a', '\a'}, {'b', '\b'},
+                                                  {'f', '\f'},  {'n', '\n'}, {'r', '\r'},
+                                                  {'t', '\t'},  {'v', '\v'}};
 
 static char convertEscapeSequence(char character, char quote)
 {
@@ -168,7 +174,8 @@ Ref<Lexer> Lexer::Create(const String& source)
 			token.characterIndex = index;
 
 			const UInt64 startIndex = index;
-			for (; index < source.length() && (isalnum(source[index]) || source[index] == '.'); index++)
+			for (; index < source.length() && (isalnum(source[index]) || source[index] == '.');
+			     index++)
 				;
 			String string = source.substr(startIndex, index - startIndex);
 
@@ -194,7 +201,8 @@ Ref<Lexer> Lexer::Create(const String& source)
 							base = 2;
 							break;
 						default:
-							std::cerr << "Unexpected character '" << string[1] << "' for the base of an integer literal!" << std::endl;
+							std::cerr << "Unexpected character '" << string[1]
+									  << "' for the base of an integer literal!" << std::endl;
 							break;
 						}
 
@@ -280,7 +288,8 @@ Ref<Lexer> Lexer::Create(const String& source)
 
 			if (source[index] != '\'')
 			{
-				std::cerr << "Unexpected character '" << source[index] << "', expected '''!" << std::endl;
+				std::cerr << "Unexpected character '" << source[index] << "', expected '''!"
+						  << std::endl;
 			}
 			index++;
 

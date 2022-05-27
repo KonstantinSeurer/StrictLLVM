@@ -70,7 +70,8 @@ void ErrorStream::Try()
 {
 	if (errorOccured)
 	{
-		print("Compiler bug: Uncaught error (the error flag was set when calling ErrorStream::Try)!");
+		print(
+			"Compiler bug: Uncaught error (the error flag was set when calling ErrorStream::Try)!");
 	}
 
 	errorOccured = false;

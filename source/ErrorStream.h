@@ -20,7 +20,8 @@ private:
 
 public:
 	ErrorStream(const String& fileName, PrintFunction print, const Lexer* lexer)
-		: fileName(fileName), print(print), lexer(lexer), errorOccured(false), tryCatchLexel(0), errorCount(0)
+		: fileName(fileName), print(print), lexer(lexer), errorOccured(false), tryCatchLexel(0),
+		  errorCount(0)
 	{
 	}
 

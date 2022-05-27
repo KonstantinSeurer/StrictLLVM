@@ -49,11 +49,13 @@ public:
 	{
 	}
 
-	ModuleTask(const String& name, const String& canonicalPath) : name(name), canonicalPath(canonicalPath), build(false)
+	ModuleTask(const String& name, const String& canonicalPath)
+		: name(name), canonicalPath(canonicalPath), build(false)
 	{
 	}
 
-	ModuleTask(const String& name, const String& canonicalPath, bool build) : name(name), canonicalPath(canonicalPath), build(build)
+	ModuleTask(const String& name, const String& canonicalPath, bool build)
+		: name(name), canonicalPath(canonicalPath), build(build)
 	{
 	}
 };
@@ -110,8 +112,9 @@ public:
 	OptimizationLevel optimizationLevel;
 
 public:
-	BuildContext(const Array<String>& modulePath, const String& outputPath, const String& cachePath, const Optional<String>& logFile, TargetFlags target,
-	             bool dumpIR, OptimizationLevel optimizationLevel);
+	BuildContext(const Array<String>& modulePath, const String& outputPath, const String& cachePath,
+	             const Optional<String>& logFile, TargetFlags target, bool dumpIR,
+	             OptimizationLevel optimizationLevel);
 
 	String ResolveModulePath(const String& moduleName) const;
 	Pair<String, String> ResolveUnitIdentifier(const String& identifier) const;

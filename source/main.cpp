@@ -31,20 +31,30 @@ public:
 
 public:
 	FlagData(char shortName, String longName, String description, Flag flag, bool hasValue)
-		: shortName(shortName), longName(longName), description(description), flag(flag), hasValue(hasValue)
+		: shortName(shortName), longName(longName), description(description), flag(flag),
+		  hasValue(hasValue)
 	{
 	}
 };
 
 static FlagData flagData[(UInt64)Flag::COUNT] = {
 	{'h', "help", "Print this help output.", Flag::HELP, false},
-	{'p', "module-path", "Semicolon seperated list of every caconical path that contains modules. (-p /path/to/module)", Flag::MODULE_PATH, true},
+	{'p', "module-path",
+     "Semicolon seperated list of every caconical path that contains modules. (-p /path/to/module)",
+     Flag::MODULE_PATH, true},
 	{'c', "clean", "Clear the output directory before building.", Flag::CLEAN, false},
-	{'C', "cache-path", "Directory where the cache files will be written to. (-C /path/to/cache)", Flag::CACHE_PATH, true},
-	{'o', "output-path", "Directory where the output files will be written to. (-o /path/to/output)", Flag::OUTPUT_PATH, true},
-	{'O', "optimization-level", "Indicates what optimizations should be done. Can be debug, performance or size. (-O size)", Flag::OPTIMIZATION_LEVEL, true},
+	{'C', "cache-path", "Directory where the cache files will be written to. (-C /path/to/cache)",
+     Flag::CACHE_PATH, true},
+	{'o', "output-path",
+     "Directory where the output files will be written to. (-o /path/to/output)", Flag::OUTPUT_PATH,
+     true},
+	{'O', "optimization-level",
+     "Indicates what optimizations should be done. Can be debug, performance or size. (-O size)",
+     Flag::OPTIMIZATION_LEVEL, true},
 	{'d', "dump-ir", "Dump generated IR into the output directory.", Flag::DUMP_IR, false},
-	{'l', "log-file", "File to log the compiler output (stdout, stderr) to. (-l /path/to/logfile.log)", Flag::LOG_FILE, true}};
+	{'l', "log-file",
+     "File to log the compiler output (stdout, stderr) to. (-l /path/to/logfile.log)",
+     Flag::LOG_FILE, true}};
 
 static void PrintHelp()
 {
@@ -179,7 +189,8 @@ int main(int argc, const char** args)
 
 					if (!found)
 					{
-						std::cerr << "Undefines argument flag '" << argument[characterIndex] << "'!" << std::endl;
+						std::cerr << "Undefines argument flag '" << argument[characterIndex] << "'!"
+								  << std::endl;
 					}
 				}
 			}
@@ -252,7 +263,8 @@ int main(int argc, const char** args)
 
 	const TargetFlags target = TargetFlags::BIT64 | TargetFlags::LINUX | TargetFlags::X86;
 
-	BuildContext context(modulePath, outputPath, cachePath, logFile, target, dumpIR, optimizationLevel);
+	BuildContext context(modulePath, outputPath, cachePath, logFile, target, dumpIR,
+	                     optimizationLevel);
 
 	std::cout << "Scanning modules...";
 	Time scanStart;

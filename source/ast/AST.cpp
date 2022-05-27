@@ -68,18 +68,22 @@ static String ToString(const Token& token)
 	return result;
 }
 
-#define ENUM_VAR(indentation, name) Indentation(indentation) + #name + " = " + ::ToString(name) + "\n"
+#define ENUM_VAR(indentation, name)                                                                \
+	Indentation(indentation) + #name + " = " + ::ToString(name) + "\n"
 #define STRING_VAR(indentation, name) Indentation(indentation) + #name + " = " + name + "\n"
-#define AST_VAR(indentation, name) Indentation(indentation) + #name + " = " + (name ? name->ToString(indentation) : "null\n")
-#define PRIMITIVE_VAR(indentation, name) Indentation(indentation) + #name + " = " + std::to_string(name)
-#define TOKEN_VAR(indentation, name) Indentation(indentation) + #name + " = " + ::ToString(name) + "\n"
+#define AST_VAR(indentation, name)                                                                 \
+	Indentation(indentation) + #name + " = " + (name ? name->ToString(indentation) : "null\n")
+#define PRIMITIVE_VAR(indentation, name)                                                           \
+	Indentation(indentation) + #name + " = " + std::to_string(name)
+#define TOKEN_VAR(indentation, name)                                                               \
+	Indentation(indentation) + #name + " = " + ::ToString(name) + "\n"
 
-#define CLONE_METHOD(Type, ...)                                                                                                                                \
-	Ref<ASTItem> Type::Clone() const                                                                                                                           \
-	{                                                                                                                                                          \
-		Ref<Type> result = Allocate<Type>(__VA_ARGS__);                                                                                                        \
-		Type::CloneImplementation(result);                                                                                                                     \
-		return result;                                                                                                                                         \
+#define CLONE_METHOD(Type, ...)                                                                    \
+	Ref<ASTItem> Type::Clone() const                                                               \
+	{                                                                                              \
+		Ref<Type> result = Allocate<Type>(__VA_ARGS__);                                            \
+		Type::CloneImplementation(result);                                                         \
+		return result;                                                                             \
 	}
 
 static String ToStrict(DeclarationFlags flags)
@@ -135,7 +139,8 @@ void DataType::CloneImplementation(Ref<DataType> target) const
 	target->flags = flags;
 }
 
-DEFINE_HASH_WITH_SUPER(DataType, ASTItem, HASH_VALUE(DataTypeType, dataTypeType) HASH_VALUE(DeclarationFlags, flags))
+DEFINE_HASH_WITH_SUPER(DataType, ASTItem,
+                       HASH_VALUE(DataTypeType, dataTypeType) HASH_VALUE(DeclarationFlags, flags))
 
 bool DataType::operator==(const DataType& other) const
 {
@@ -225,7 +230,8 @@ String ObjectType::ToStrict() const
 
 String ObjectType::ToStringImplementation(UInt32 indentation) const
 {
-	return DataType::ToStringImplementation(indentation) + STRING_VAR(indentation, name) + AST_VAR(indentation, typeTemplate);
+	return DataType::ToStringImplementation(indentation) + STRING_VAR(indentation, name) +
+	       AST_VAR(indentation, typeTemplate);
 }
 
 CLONE_METHOD(ObjectType)
@@ -241,7 +247,8 @@ void ObjectType::CloneImplementation(Ref<ObjectType> target) const
 	}
 }
 
-DEFINE_HASH_WITH_SUPER(ObjectType, DataType, HASH_VALUE(String, name) HASH_REF(Template, typeTemplate))
+DEFINE_HASH_WITH_SUPER(ObjectType, DataType,
+                       HASH_VALUE(String, name) HASH_REF(Template, typeTemplate))
 
 bool ObjectType::operator==(const ObjectType& other) const
 {
@@ -257,7 +264,8 @@ bool ObjectType::operator==(const ObjectType& other) const
 
 String PointerType::ToStrict() const
 {
-	return DataType::ToStrict() + "(" + value->ToStrict() + (arrayLength ? "[" + arrayLength->ToStrict() + "]" : "") + ")";
+	return DataType::ToStrict() + "(" + value->ToStrict() +
+	       (arrayLength ? "[" + arrayLength->ToStrict() + "]" : "") + ")";
 }
 
 String PointerType::ToStringImplementation(UInt32 indentation) const
@@ -283,7 +291,8 @@ void PointerType::CloneImplementation(Ref<PointerType> target) const
 	}
 }
 
-DEFINE_HASH_WITH_SUPER(PointerType, DataType, HASH_REF(DataType, value) HASH_REF(Expression, arrayLength))
+DEFINE_HASH_WITH_SUPER(PointerType, DataType,
+                       HASH_REF(DataType, value) HASH_REF(Expression, arrayLength))
 
 bool PointerType::operator==(const PointerType& other) const
 {
@@ -363,7 +372,9 @@ bool CanCast(const DataType* source, const DataType* destination)
 		return *sourceObject == *destinationObject;
 	}
 
-	if (source->dataTypeType == DataTypeType::REFERENCE || source->dataTypeType == DataTypeType::POINTER || source->dataTypeType == DataTypeType::ARRAY)
+	if (source->dataTypeType == DataTypeType::REFERENCE ||
+	    source->dataTypeType == DataTypeType::POINTER ||
+	    source->dataTypeType == DataTypeType::ARRAY)
 	{
 		const PointerType* sourcePointer = (const PointerType*)source;
 		const PointerType* destinationPointer = (const PointerType*)destination;
@@ -371,7 +382,8 @@ bool CanCast(const DataType* source, const DataType* destination)
 		if (sourcePointer->value->dataTypeType == DataTypeType::PRIMITIVE)
 		{
 			const PrimitiveType* sourcePrimitive = (const PrimitiveType*)sourcePointer->value.get();
-			const PrimitiveType* destinationPrimitive = (const PrimitiveType*)destinationPointer->value.get();
+			const PrimitiveType* destinationPrimitive =
+				(const PrimitiveType*)destinationPointer->value.get();
 
 			return sourcePrimitive->primitiveType == destinationPrimitive->primitiveType;
 		}
@@ -462,8 +474,9 @@ DEFINE_HASH_WITH_SUPER(IdentifierExpression, Expression, HASH_VALUE(String, name
 
 String OperatorExpression::ToStringImplementation(UInt32 indentation) const
 {
-	String result =
-		Expression::ToStringImplementation(indentation) + ENUM_VAR(indentation, operatorType) + AST_VAR(indentation, a) + Indentation(indentation) + "b:\n";
+	String result = Expression::ToStringImplementation(indentation) +
+	                ENUM_VAR(indentation, operatorType) + AST_VAR(indentation, a) +
+	                Indentation(indentation) + "b:\n";
 	if (b)
 	{
 		result += AST_VAR(indentation + 1, b->expression) + AST_VAR(indentation + 1, b->dataType);
@@ -499,11 +512,14 @@ void OperatorExpression::CloneImplementation(Ref<OperatorExpression> target) con
 
 DEFINE_HASH(SecondOperand, HASH_REF(Expression, expression) HASH_REF(DataType, dataType))
 
-DEFINE_HASH_WITH_SUPER(OperatorExpression, Expression, HASH_VALUE(OperatorType, operatorType) HASH_REF(Expression, a) HASH_REF(SecondOperand, b))
+DEFINE_HASH_WITH_SUPER(OperatorExpression, Expression,
+                       HASH_VALUE(OperatorType, operatorType) HASH_REF(Expression, a)
+                           HASH_REF(SecondOperand, b))
 
 String CallExpression::ToStringImplementation(UInt32 indentation) const
 {
-	String result = Expression::ToStringImplementation(indentation) + AST_VAR(indentation, method) + Indentation(indentation) + "arguments = [\n";
+	String result = Expression::ToStringImplementation(indentation) + AST_VAR(indentation, method) +
+	                Indentation(indentation) + "arguments = [\n";
 	for (const auto& argument : arguments)
 	{
 		result += Indentation(indentation + 1) + argument->ToString(indentation + 1);
@@ -521,18 +537,20 @@ void CallExpression::CloneImplementation(Ref<CallExpression> target) const
 	target->arguments.resize(arguments.size());
 	for (UInt64 argumentIndex = 0; argumentIndex < arguments.size(); argumentIndex++)
 	{
-		target->arguments[argumentIndex] = std::dynamic_pointer_cast<Expression>(arguments[argumentIndex]->Clone());
+		target->arguments[argumentIndex] =
+			std::dynamic_pointer_cast<Expression>(arguments[argumentIndex]->Clone());
 	}
 }
 
 DEFINE_HASH_WITH_SUPER(CallExpression, Expression,
-                       HASH_REF(Expression, method) for (UInt64 argumentIndex = 0; argumentIndex < HASH_ACCESS(arguments).size();
-                                                         argumentIndex++){HASH_REF(Expression, arguments[argumentIndex])})
+                       HASH_REF(Expression, method) for (
+						   UInt64 argumentIndex = 0; argumentIndex < HASH_ACCESS(arguments).size();
+						   argumentIndex++){HASH_REF(Expression, arguments[argumentIndex])})
 
 String TernaryExpression::ToStringImplementation(UInt32 indentation) const
 {
-	return Expression::ToStringImplementation(indentation) + AST_VAR(indentation, condition) + AST_VAR(indentation, thenExpression) +
-	       AST_VAR(indentation, elseExpression);
+	return Expression::ToStringImplementation(indentation) + AST_VAR(indentation, condition) +
+	       AST_VAR(indentation, thenExpression) + AST_VAR(indentation, elseExpression);
 }
 
 CLONE_METHOD(TernaryExpression)
@@ -546,11 +564,14 @@ void TernaryExpression::CloneImplementation(Ref<TernaryExpression> target) const
 	target->elseExpression = std::dynamic_pointer_cast<Expression>(elseExpression->Clone());
 }
 
-DEFINE_HASH_WITH_SUPER(TernaryExpression, Expression, HASH_REF(Expression, condition) HASH_REF(Expression, thenExpression) HASH_REF(Expression, elseExpression))
+DEFINE_HASH_WITH_SUPER(TernaryExpression, Expression,
+                       HASH_REF(Expression, condition) HASH_REF(Expression, thenExpression)
+                           HASH_REF(Expression, elseExpression))
 
 String NewExpression::ToStringImplementation(UInt32 indentation) const
 {
-	String result = Expression::ToStringImplementation(indentation) + AST_VAR(indentation, dataType) + Indentation(indentation) + "arguments = [\n";
+	String result = Expression::ToStringImplementation(indentation) +
+	                AST_VAR(indentation, dataType) + Indentation(indentation) + "arguments = [\n";
 	for (const auto& argument : arguments)
 	{
 		result += Indentation(indentation + 1) + argument->ToString(indentation + 1);
@@ -568,14 +589,18 @@ void NewExpression::CloneImplementation(Ref<NewExpression> target) const
 	target->arguments.resize(arguments.size());
 	for (UInt64 argumentIndex = 0; argumentIndex < arguments.size(); argumentIndex++)
 	{
-		target->arguments[argumentIndex] = std::dynamic_pointer_cast<Expression>(arguments[argumentIndex]->Clone());
+		target->arguments[argumentIndex] =
+			std::dynamic_pointer_cast<Expression>(arguments[argumentIndex]->Clone());
 	}
 	target->allocationType = allocationType;
 }
 
-DEFINE_HASH_WITH_SUPER(NewExpression, Expression,
-                       HASH_REF(DataType, dataType) for (UInt64 argumentIndex = 0; argumentIndex < HASH_ACCESS(arguments).size(); argumentIndex++){
-						   HASH_REF(Expression, arguments[argumentIndex])} HASH_VALUE(AllocationType, allocationType))
+DEFINE_HASH_WITH_SUPER(
+	NewExpression, Expression,
+	HASH_REF(DataType, dataType) for (UInt64 argumentIndex = 0;
+                                      argumentIndex < HASH_ACCESS(arguments).size();
+                                      argumentIndex++){
+		HASH_REF(Expression, arguments[argumentIndex])} HASH_VALUE(AllocationType, allocationType))
 
 String Statement::ToStringImplementation(UInt32 indentation) const
 {
@@ -594,7 +619,8 @@ DEFINE_HASH_WITH_SUPER(Statement, ASTItem, HASH_VALUE(StatementType, statementTy
 
 String BlockStatement::ToStringImplementation(UInt32 indentation) const
 {
-	String result = Statement::ToStringImplementation(indentation) + Indentation(indentation) + "statements = [\n";
+	String result = Statement::ToStringImplementation(indentation) + Indentation(indentation) +
+	                "statements = [\n";
 	for (const auto& statement : statements)
 	{
 		result += Indentation(indentation + 1) + statement->ToString(indentation + 1);
@@ -611,12 +637,14 @@ void BlockStatement::CloneImplementation(Ref<BlockStatement> target) const
 	target->statements.resize(statements.size());
 	for (UInt64 statementIndex = 0; statementIndex < statements.size(); statementIndex++)
 	{
-		target->statements[statementIndex] = std::dynamic_pointer_cast<Statement>(statements[statementIndex]->Clone());
+		target->statements[statementIndex] =
+			std::dynamic_pointer_cast<Statement>(statements[statementIndex]->Clone());
 	}
 }
 
 DEFINE_HASH_WITH_SUPER(BlockStatement, Statement,
-                       for (UInt64 statementIndex = 0; statementIndex < HASH_ACCESS(statements).size();
+                       for (UInt64 statementIndex = 0;
+                            statementIndex < HASH_ACCESS(statements).size();
                             statementIndex++){HASH_REF(Statement, statements[statementIndex])})
 
 String ExpressionStatement::ToStringImplementation(UInt32 indentation) const
@@ -637,8 +665,8 @@ DEFINE_HASH_WITH_SUPER(ExpressionStatement, Statement, HASH_REF(Expression, expr
 
 String IfStatement::ToStringImplementation(UInt32 indentation) const
 {
-	return Statement::ToStringImplementation(indentation) + AST_VAR(indentation, condition) + AST_VAR(indentation, thenStatement) +
-	       AST_VAR(indentation, elseStatement);
+	return Statement::ToStringImplementation(indentation) + AST_VAR(indentation, condition) +
+	       AST_VAR(indentation, thenStatement) + AST_VAR(indentation, elseStatement);
 }
 
 CLONE_METHOD(IfStatement)
@@ -655,12 +683,15 @@ void IfStatement::CloneImplementation(Ref<IfStatement> target) const
 	}
 }
 
-DEFINE_HASH_WITH_SUPER(IfStatement, Statement, HASH_REF(Expression, condition) HASH_REF(Statement, thenStatement) HASH_REF(Statement, elseStatement))
+DEFINE_HASH_WITH_SUPER(IfStatement, Statement,
+                       HASH_REF(Expression, condition) HASH_REF(Statement, thenStatement)
+                           HASH_REF(Statement, elseStatement))
 
 String ForStatement::ToStringImplementation(UInt32 indentation) const
 {
-	return Statement::ToStringImplementation(indentation) + AST_VAR(indentation, startStatement) + AST_VAR(indentation, condition) +
-	       AST_VAR(indentation, incrementExpression) + AST_VAR(indentation, bodyStatement);
+	return Statement::ToStringImplementation(indentation) + AST_VAR(indentation, startStatement) +
+	       AST_VAR(indentation, condition) + AST_VAR(indentation, incrementExpression) +
+	       AST_VAR(indentation, bodyStatement);
 }
 
 CLONE_METHOD(ForStatement)
@@ -671,18 +702,20 @@ void ForStatement::CloneImplementation(Ref<ForStatement> target) const
 	target->forStatementMeta = forStatementMeta;
 	target->startStatement = std::dynamic_pointer_cast<Statement>(startStatement->Clone());
 	target->condition = std::dynamic_pointer_cast<Expression>(condition->Clone());
-	target->incrementExpression = std::dynamic_pointer_cast<Expression>(incrementExpression->Clone());
+	target->incrementExpression =
+		std::dynamic_pointer_cast<Expression>(incrementExpression->Clone());
 	target->bodyStatement = std::dynamic_pointer_cast<Statement>(bodyStatement->Clone());
 }
 
 DEFINE_HASH_WITH_SUPER(ForStatement, Statement,
-                       HASH_REF(Statement, startStatement) HASH_REF(Expression, condition) HASH_REF(Expression, incrementExpression)
-                           HASH_REF(Statement, bodyStatement))
+                       HASH_REF(Statement, startStatement) HASH_REF(Expression, condition)
+                           HASH_REF(Expression, incrementExpression)
+                               HASH_REF(Statement, bodyStatement))
 
 String WhileStatement::ToStringImplementation(UInt32 indentation) const
 {
-	return Statement::ToStringImplementation(indentation) + AST_VAR(indentation, condition) + AST_VAR(indentation, bodyStatement) +
-	       PRIMITIVE_VAR(indentation, checkAfterBody);
+	return Statement::ToStringImplementation(indentation) + AST_VAR(indentation, condition) +
+	       AST_VAR(indentation, bodyStatement) + PRIMITIVE_VAR(indentation, checkAfterBody);
 }
 
 CLONE_METHOD(WhileStatement)
@@ -696,7 +729,9 @@ void WhileStatement::CloneImplementation(Ref<WhileStatement> target) const
 	target->checkAfterBody = checkAfterBody;
 }
 
-DEFINE_HASH_WITH_SUPER(WhileStatement, Statement, HASH_REF(Expression, condition) HASH_REF(Statement, bodyStatement) HASH_VALUE(bool, checkAfterBody))
+DEFINE_HASH_WITH_SUPER(WhileStatement, Statement,
+                       HASH_REF(Expression, condition) HASH_REF(Statement, bodyStatement)
+                           HASH_VALUE(bool, checkAfterBody))
 
 String ReturnStatement::ToStringImplementation(UInt32 indentation) const
 {
@@ -716,12 +751,14 @@ DEFINE_HASH_WITH_SUPER(ReturnStatement, Statement, HASH_REF(Expression, expressi
 
 String VariableDeclarationStatement::ToStringImplementation(UInt32 indentation) const
 {
-	return Statement::ToStringImplementation(indentation) + AST_VAR(indentation, declaration) + AST_VAR(indentation, value);
+	return Statement::ToStringImplementation(indentation) + AST_VAR(indentation, declaration) +
+	       AST_VAR(indentation, value);
 }
 
 CLONE_METHOD(VariableDeclarationStatement)
 
-void VariableDeclarationStatement::CloneImplementation(Ref<VariableDeclarationStatement> target) const
+void VariableDeclarationStatement::CloneImplementation(
+	Ref<VariableDeclarationStatement> target) const
 {
 	Statement::CloneImplementation(target);
 	target->variableDeclarationStatementMeta = variableDeclarationStatementMeta;
@@ -729,7 +766,8 @@ void VariableDeclarationStatement::CloneImplementation(Ref<VariableDeclarationSt
 	target->value = std::dynamic_pointer_cast<Expression>(value->Clone());
 }
 
-DEFINE_HASH_WITH_SUPER(VariableDeclarationStatement, Statement, HASH_REF(VariableDeclaration, declaration) HASH_REF(Expression, value))
+DEFINE_HASH_WITH_SUPER(VariableDeclarationStatement, Statement,
+                       HASH_REF(VariableDeclaration, declaration) HASH_REF(Expression, value))
 
 String DeleteStatement::ToStringImplementation(UInt32 indentation) const
 {
@@ -809,18 +847,21 @@ void Template::CloneImplementation(Ref<Template> target) const
 	{
 		if (arguments[argumentIndex].dataType)
 		{
-			target->arguments[argumentIndex].dataType = std::dynamic_pointer_cast<DataType>(arguments[argumentIndex].dataType->Clone());
+			target->arguments[argumentIndex].dataType =
+				std::dynamic_pointer_cast<DataType>(arguments[argumentIndex].dataType->Clone());
 		}
 		if (arguments[argumentIndex].expression)
 		{
-			target->arguments[argumentIndex].expression = std::dynamic_pointer_cast<Expression>(arguments[argumentIndex].expression->Clone());
+			target->arguments[argumentIndex].expression =
+				std::dynamic_pointer_cast<Expression>(arguments[argumentIndex].expression->Clone());
 		}
 	}
 }
 
 DEFINE_HASH_WITH_SUPER(Template, ASTItem,
                        for (UInt64 argumentIndex = 0; argumentIndex < HASH_ACCESS(arguments).size();
-                            argumentIndex++){HASH_VALUE(TemplateArgument, arguments[argumentIndex])})
+                            argumentIndex++){
+						   HASH_VALUE(TemplateArgument, arguments[argumentIndex])})
 
 bool Template::operator==(const Template& other) const
 {
@@ -856,11 +897,14 @@ void UnitDeclaration::CloneImplementation(Ref<UnitDeclaration> target) const
 	target->name = name;
 }
 
-DEFINE_HASH_WITH_SUPER(UnitDeclaration, ASTItem, HASH_VALUE(DeclarationFlags, flags) HASH_VALUE(UnitDeclarationType, declarationType))
+DEFINE_HASH_WITH_SUPER(UnitDeclaration, ASTItem,
+                       HASH_VALUE(DeclarationFlags, flags)
+                           HASH_VALUE(UnitDeclarationType, declarationType))
 
 String ErrorDeclaration::ToStringImplementation(UInt32 indentation) const
 {
-	return UnitDeclaration::ToStringImplementation(indentation) + (hasValue ? PRIMITIVE_VAR(indentation, value) : "");
+	return UnitDeclaration::ToStringImplementation(indentation) +
+	       (hasValue ? PRIMITIVE_VAR(indentation, value) : "");
 }
 
 CLONE_METHOD(ErrorDeclaration)
@@ -873,11 +917,13 @@ void ErrorDeclaration::CloneImplementation(Ref<ErrorDeclaration> target) const
 	target->hasValue = hasValue;
 }
 
-DEFINE_HASH_WITH_SUPER(ErrorDeclaration, UnitDeclaration, HASH_VALUE(bool, hasValue) HASH_VALUE(Int32, value))
+DEFINE_HASH_WITH_SUPER(ErrorDeclaration, UnitDeclaration,
+                       HASH_VALUE(bool, hasValue) HASH_VALUE(Int32, value))
 
 String VariableDeclaration::ToStringImplementation(UInt32 indentation) const
 {
-	return ENUM_VAR(indentation, flags) + ENUM_VAR(indentation, variableType) + STRING_VAR(indentation, name) + AST_VAR(indentation, dataType);
+	return ENUM_VAR(indentation, flags) + ENUM_VAR(indentation, variableType) +
+	       STRING_VAR(indentation, name) + AST_VAR(indentation, dataType);
 }
 
 CLONE_METHOD(VariableDeclaration)
@@ -893,13 +939,15 @@ void VariableDeclaration::CloneImplementation(Ref<VariableDeclaration> target) c
 }
 
 DEFINE_HASH_WITH_SUPER(VariableDeclaration, ASTItem,
-                       HASH_VALUE(DeclarationFlags, flags) HASH_VALUE(VariableDeclarationType, variableType) HASH_VALUE(String, name)
-                           HASH_REF(DataType, dataType))
+                       HASH_VALUE(DeclarationFlags, flags)
+                           HASH_VALUE(VariableDeclarationType, variableType)
+                               HASH_VALUE(String, name) HASH_REF(DataType, dataType))
 
 String MethodDeclaration::ToStringImplementation(UInt32 indentation) const
 {
-	String result =
-		VariableDeclaration::ToStringImplementation(indentation) + ENUM_VAR(indentation, methodType) + Indentation(indentation) + "parameters = [\n";
+	String result = VariableDeclaration::ToStringImplementation(indentation) +
+	                ENUM_VAR(indentation, methodType) + Indentation(indentation) +
+	                "parameters = [\n";
 	for (const auto& parameter : parameters)
 	{
 		result += Indentation(indentation + 1) + parameter->ToString(indentation + 1);
@@ -917,7 +965,8 @@ void MethodDeclaration::CloneImplementation(Ref<MethodDeclaration> target) const
 	target->parameters.resize(parameters.size());
 	for (UInt64 parameterIndex = 0; parameterIndex < parameters.size(); parameterIndex++)
 	{
-		target->parameters[parameterIndex] = std::dynamic_pointer_cast<VariableDeclaration>(parameters[parameterIndex]->Clone());
+		target->parameters[parameterIndex] =
+			std::dynamic_pointer_cast<VariableDeclaration>(parameters[parameterIndex]->Clone());
 	}
 	if (body)
 	{
@@ -926,18 +975,21 @@ void MethodDeclaration::CloneImplementation(Ref<MethodDeclaration> target) const
 }
 
 DEFINE_HASH_WITH_SUPER(MethodDeclaration, VariableDeclaration,
-                       for (UInt64 parameterIndex = 0; parameterIndex < HASH_ACCESS(parameters).size(); parameterIndex++) //
-                       {HASH_REF(VariableDeclaration, parameters[parameterIndex])}                                        //
+                       for (UInt64 parameterIndex = 0;
+                            parameterIndex < HASH_ACCESS(parameters).size(); parameterIndex++) //
+                       {HASH_REF(VariableDeclaration, parameters[parameterIndex])}             //
                        HASH_VALUE(MethodType, methodType) HASH_REF(Statement, body))
 
 DEFINE_HASH(ConstructorInitializer, HASH_VALUE(String, name) HASH_REF(Expression, value))
 
 String ConstructorDeclaration::ToStringImplementation(UInt32 indentation) const
 {
-	String result = MethodDeclaration::ToStringImplementation(indentation) + Indentation(indentation) + "initializers = [\n";
+	String result = MethodDeclaration::ToStringImplementation(indentation) +
+	                Indentation(indentation) + "initializers = [\n";
 	for (const auto& initializer : initializers)
 	{
-		result += Indentation(indentation + 1) + initializer.name + ": " + (initializer.value ? initializer.value->ToString(indentation + 1) : "null\n");
+		result += Indentation(indentation + 1) + initializer.name + ": " +
+		          (initializer.value ? initializer.value->ToString(indentation + 1) : "null\n");
 	}
 	return result + Indentation(indentation) + "]\n";
 }
@@ -952,17 +1004,21 @@ void ConstructorDeclaration::CloneImplementation(Ref<ConstructorDeclaration> tar
 	for (UInt64 initializerIndex = 0; initializerIndex < initializers.size(); initializerIndex++)
 	{
 		target->initializers[initializerIndex].name = initializers[initializerIndex].name;
-		target->initializers[initializerIndex].value = std::dynamic_pointer_cast<Expression>(initializers[initializerIndex].value->Clone());
+		target->initializers[initializerIndex].value =
+			std::dynamic_pointer_cast<Expression>(initializers[initializerIndex].value->Clone());
 	}
 }
 
 DEFINE_HASH_WITH_SUPER(ConstructorDeclaration, MethodDeclaration,
-                       for (UInt64 initializerIndex = 0; initializerIndex < HASH_ACCESS(initializers).size(); initializerIndex++) //
+                       for (UInt64 initializerIndex = 0;
+                            initializerIndex < HASH_ACCESS(initializers).size();
+                            initializerIndex++) //
                        {HASH_VALUE(ConstructorInitializer, initializers[initializerIndex])})
 
 String OperatorDeclaration::ToStringImplementation(UInt32 indentation) const
 {
-	return MethodDeclaration::ToStringImplementation(indentation) + ENUM_VAR(indentation, operatorType);
+	return MethodDeclaration::ToStringImplementation(indentation) +
+	       ENUM_VAR(indentation, operatorType);
 }
 
 CLONE_METHOD(OperatorDeclaration)
@@ -974,11 +1030,13 @@ void OperatorDeclaration::CloneImplementation(Ref<OperatorDeclaration> target) c
 	target->operatorType = operatorType;
 }
 
-DEFINE_HASH_WITH_SUPER(OperatorDeclaration, MethodDeclaration, HASH_VALUE(OperatorType, operatorType))
+DEFINE_HASH_WITH_SUPER(OperatorDeclaration, MethodDeclaration,
+                       HASH_VALUE(OperatorType, operatorType))
 
 String MemberVariableDeclaration::ToStringImplementation(UInt32 indentation) const
 {
-	String result = VariableDeclaration::ToStringImplementation(indentation) + AST_VAR(indentation, value) + Indentation(indentation) + "accessors = [\n";
+	String result = VariableDeclaration::ToStringImplementation(indentation) +
+	                AST_VAR(indentation, value) + Indentation(indentation) + "accessors = [\n";
 	for (const auto& accessor : accessors)
 	{
 		result += Indentation(indentation + 1) + accessor->ToString(indentation + 1);
@@ -995,7 +1053,8 @@ void MemberVariableDeclaration::CloneImplementation(Ref<MemberVariableDeclaratio
 	target->accessors.resize(accessors.size());
 	for (UInt64 accessorIndex = 0; accessorIndex < accessors.size(); accessorIndex++)
 	{
-		target->accessors[accessorIndex] = std::dynamic_pointer_cast<MethodDeclaration>(accessors[accessorIndex]->Clone());
+		target->accessors[accessorIndex] =
+			std::dynamic_pointer_cast<MethodDeclaration>(accessors[accessorIndex]->Clone());
 	}
 	if (value)
 	{
@@ -1004,8 +1063,9 @@ void MemberVariableDeclaration::CloneImplementation(Ref<MemberVariableDeclaratio
 }
 
 DEFINE_HASH_WITH_SUPER(MemberVariableDeclaration, VariableDeclaration,
-                       for (UInt64 accessorIndex = 0; accessorIndex < HASH_ACCESS(accessors).size(); accessorIndex++) //
-                       {HASH_REF(MethodDeclaration, accessors[accessorIndex])}                                        //
+                       for (UInt64 accessorIndex = 0; accessorIndex < HASH_ACCESS(accessors).size();
+                            accessorIndex++)                                   //
+                       {HASH_REF(MethodDeclaration, accessors[accessorIndex])} //
                        HASH_REF(Expression, value))
 
 String TemplateDeclaration::ToStringImplementation(UInt32 indentation) const
@@ -1027,12 +1087,14 @@ void TemplateDeclaration::CloneImplementation(Ref<TemplateDeclaration> target) c
 	target->parameters.resize(parameters.size());
 	for (UInt64 parameterIndex = 0; parameterIndex < parameters.size(); parameterIndex++)
 	{
-		target->parameters[parameterIndex] = std::dynamic_pointer_cast<VariableDeclaration>(parameters[parameterIndex]->Clone());
+		target->parameters[parameterIndex] =
+			std::dynamic_pointer_cast<VariableDeclaration>(parameters[parameterIndex]->Clone());
 	}
 }
 
 DEFINE_HASH_WITH_SUPER(TemplateDeclaration, ASTItem,
-                       for (UInt64 parameterIndex = 0; parameterIndex < HASH_ACCESS(parameters).size(); parameterIndex++) //
+                       for (UInt64 parameterIndex = 0;
+                            parameterIndex < HASH_ACCESS(parameters).size(); parameterIndex++) //
                        {HASH_REF(VariableDeclaration, parameters[parameterIndex])})
 
 String TypeDeclaration::ToStringImplementation(UInt32 indentation) const
@@ -1042,7 +1104,8 @@ String TypeDeclaration::ToStringImplementation(UInt32 indentation) const
 	{
 		result += Indentation(indentation + 1) + member->ToString(indentation + 1);
 	}
-	result += Indentation(indentation) + "]\n" + AST_VAR(indentation, typeTemplate) + Indentation(indentation) + "superTypes = [\n";
+	result += Indentation(indentation) + "]\n" + AST_VAR(indentation, typeTemplate) +
+	          Indentation(indentation) + "superTypes = [\n";
 	for (const auto& superType : superTypes)
 	{
 		result += Indentation(indentation + 1) + superType->ToString(indentation + 1);
@@ -1059,24 +1122,29 @@ void TypeDeclaration::CloneImplementation(Ref<TypeDeclaration> target) const
 	target->members.resize(members.size());
 	for (UInt64 memberIndex = 0; memberIndex < members.size(); memberIndex++)
 	{
-		target->members[memberIndex] = std::dynamic_pointer_cast<VariableDeclaration>(members[memberIndex]->Clone());
+		target->members[memberIndex] =
+			std::dynamic_pointer_cast<VariableDeclaration>(members[memberIndex]->Clone());
 	}
 	if (typeTemplate)
 	{
-		target->typeTemplate = std::dynamic_pointer_cast<TemplateDeclaration>(typeTemplate->Clone());
+		target->typeTemplate =
+			std::dynamic_pointer_cast<TemplateDeclaration>(typeTemplate->Clone());
 	}
 	target->superTypes.resize(superTypes.size());
 	for (UInt64 superTypeIndex = 0; superTypeIndex < superTypes.size(); superTypeIndex++)
 	{
-		target->superTypes[superTypeIndex] = std::dynamic_pointer_cast<ObjectType>(superTypes[superTypeIndex]->Clone());
+		target->superTypes[superTypeIndex] =
+			std::dynamic_pointer_cast<ObjectType>(superTypes[superTypeIndex]->Clone());
 	}
 }
 
 DEFINE_HASH_WITH_SUPER(TypeDeclaration, UnitDeclaration,
-                       for (UInt64 memberIndex = 0; memberIndex < HASH_ACCESS(members).size(); memberIndex++)             //
-                       {HASH_REF(VariableDeclaration, members[memberIndex])}                                              //
-                       HASH_REF(TemplateDeclaration, typeTemplate)                                                        //
-                       for (UInt64 superTypeIndex = 0; superTypeIndex < HASH_ACCESS(superTypes).size(); superTypeIndex++) //
+                       for (UInt64 memberIndex = 0; memberIndex < HASH_ACCESS(members).size();
+                            memberIndex++)                                   //
+                       {HASH_REF(VariableDeclaration, members[memberIndex])} //
+                       HASH_REF(TemplateDeclaration, typeTemplate)           //
+                       for (UInt64 superTypeIndex = 0;
+                            superTypeIndex < HASH_ACCESS(superTypes).size(); superTypeIndex++) //
                        {HASH_REF(ObjectType, superTypes[superTypeIndex])})
 
 Ref<ConstructorDeclaration> TypeDeclaration::GetDefaultConstructor() const
@@ -1087,7 +1155,8 @@ Ref<ConstructorDeclaration> TypeDeclaration::GetDefaultConstructor() const
 Ref<ConstructorDeclaration> TypeDeclaration::GetCopyConstructor() const
 {
 	Array<DataType*> parameters = {unitDeclarationMeta.thisType.get()};
-	return std::dynamic_pointer_cast<ConstructorDeclaration>(FindMethod(MethodType::CONSTRUCTOR, &parameters));
+	return std::dynamic_pointer_cast<ConstructorDeclaration>(
+		FindMethod(MethodType::CONSTRUCTOR, &parameters));
 }
 
 Ref<MethodDeclaration> TypeDeclaration::GetDestructor() const
@@ -1095,7 +1164,9 @@ Ref<MethodDeclaration> TypeDeclaration::GetDestructor() const
 	return FindMethod(MethodType::DESTRUCTOR);
 }
 
-Ref<MethodDeclaration> TypeDeclaration::FindMethod(MethodType methodType, Array<DataType*>* parameters, const String& name) const
+Ref<MethodDeclaration> TypeDeclaration::FindMethod(MethodType methodType,
+                                                   Array<DataType*>* parameters,
+                                                   const String& name) const
 {
 	for (auto member : members)
 	{
@@ -1120,7 +1191,8 @@ Ref<MethodDeclaration> TypeDeclaration::FindMethod(MethodType methodType, Array<
 			bool select = true;
 			for (UInt32 parameterIndex = 0; parameterIndex < parameters->size(); parameterIndex++)
 			{
-				DataType* destination = GetReferencedType(method->parameters[parameterIndex]->dataType.get());
+				DataType* destination =
+					GetReferencedType(method->parameters[parameterIndex]->dataType.get());
 				DataType* source = GetReferencedType((*parameters)[parameterIndex]);
 				if (!CanCast(source, destination))
 				{
@@ -1145,7 +1217,8 @@ Ref<MethodDeclaration> TypeDeclaration::FindMethod(MethodType methodType, Array<
 
 String ClassDeclaration::ToStringImplementation(UInt32 indentation) const
 {
-	return TypeDeclaration::ToStringImplementation(indentation) + PRIMITIVE_VAR(indentation, isSingleton);
+	return TypeDeclaration::ToStringImplementation(indentation) +
+	       PRIMITIVE_VAR(indentation, isSingleton);
 }
 
 CLONE_METHOD(ClassDeclaration)
@@ -1191,7 +1264,8 @@ String Unit::ToStringImplementation(UInt32 indentation) const
 	{
 		result += Indentation(indentation + 1) + dependencyName + "\n";
 	}
-	return result + Indentation(indentation) + "]\n" + STRING_VAR(indentation, name) + AST_VAR(indentation, declaredType);
+	return result + Indentation(indentation) + "]\n" + STRING_VAR(indentation, name) +
+	       AST_VAR(indentation, declaredType);
 }
 
 CLONE_METHOD(Unit)
@@ -1256,7 +1330,8 @@ void Module::CloneImplementation(Ref<Module> target) const
 	target->dependencies.resize(dependencies.size());
 	for (UInt64 dependencyIndex = 0; dependencyIndex < dependencies.size(); dependencyIndex++)
 	{
-		target->dependencies[dependencyIndex] = std::dynamic_pointer_cast<Module>(dependencies[dependencyIndex]->Clone());
+		target->dependencies[dependencyIndex] =
+			std::dynamic_pointer_cast<Module>(dependencies[dependencyIndex]->Clone());
 	}
 }
 

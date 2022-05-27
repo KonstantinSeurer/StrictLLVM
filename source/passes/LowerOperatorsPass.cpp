@@ -34,9 +34,11 @@ static bool IsMutatingUnaryOperator(OperatorType op)
 	return false;
 }
 
-void LowerOperatorsPass::LowerOperatorExpression(Ref<MethodDeclaration> method, Ref<Expression>* pExpression)
+void LowerOperatorsPass::LowerOperatorExpression(Ref<MethodDeclaration> method,
+                                                 Ref<Expression>* pExpression)
 {
-	Ref<OperatorExpression> expression = std::dynamic_pointer_cast<OperatorExpression>(*pExpression);
+	Ref<OperatorExpression> expression =
+		std::dynamic_pointer_cast<OperatorExpression>(*pExpression);
 	LowerExpression(method, &expression->a);
 	if (expression->b && expression->b->expression)
 	{
@@ -55,10 +57,12 @@ void LowerOperatorsPass::LowerOperatorExpression(Ref<MethodDeclaration> method, 
 
 		if (expression->a->expressionType == ExpressionType::OPERATOR)
 		{
-			Ref<OperatorExpression> op = std::dynamic_pointer_cast<OperatorExpression>(expression->a);
+			Ref<OperatorExpression> op =
+				std::dynamic_pointer_cast<OperatorExpression>(expression->a);
 			if (op->operatorType == OperatorType::ACCESS)
 			{
-				identifier = std::dynamic_pointer_cast<IdentifierExpression>(expression->b->expression);
+				identifier =
+					std::dynamic_pointer_cast<IdentifierExpression>(expression->b->expression);
 				context = expression->a;
 			}
 		}
@@ -66,16 +70,19 @@ void LowerOperatorsPass::LowerOperatorExpression(Ref<MethodDeclaration> method, 
 		if (identifier)
 		{
 			assert(identifier->identifierExpressionMeta.destination);
-			assert(identifier->identifierExpressionMeta.destination->type == ASTItemType::VARIABLE_DECLARATION);
+			assert(identifier->identifierExpressionMeta.destination->type ==
+			       ASTItemType::VARIABLE_DECLARATION);
 
-			Ref<VariableDeclaration> destination = std::dynamic_pointer_cast<VariableDeclaration>(identifier->identifierExpressionMeta.destination);
+			Ref<VariableDeclaration> destination = std::dynamic_pointer_cast<VariableDeclaration>(
+				identifier->identifierExpressionMeta.destination);
 
 			if (destination->variableType != VariableDeclarationType::MEMBER_VARIABLE)
 			{
 				return;
 			}
 
-			Ref<MemberVariableDeclaration> memberVariable = std::dynamic_pointer_cast<MemberVariableDeclaration>(destination);
+			Ref<MemberVariableDeclaration> memberVariable =
+				std::dynamic_pointer_cast<MemberVariableDeclaration>(destination);
 			for (auto accessor : memberVariable->accessors)
 			{
 				if (accessor->methodType != MethodType::SETTER)
@@ -207,13 +214,15 @@ void LowerOperatorsPass::LowerOperatorExpression(Ref<MethodDeclaration> method, 
 	}
 }
 
-void LowerOperatorsPass::LowerExpression(Ref<MethodDeclaration> method, Ref<Expression>* pExpression)
+void LowerOperatorsPass::LowerExpression(Ref<MethodDeclaration> method,
+                                         Ref<Expression>* pExpression)
 {
 	Ref<Expression> expression = *pExpression;
 	switch (expression->expressionType)
 	{
 	case ExpressionType::BRACKET: {
-		Ref<BracketExpression> bracketExpression = std::dynamic_pointer_cast<BracketExpression>(expression);
+		Ref<BracketExpression> bracketExpression =
+			std::dynamic_pointer_cast<BracketExpression>(expression);
 		LowerExpression(method, &bracketExpression->expression);
 		break;
 	}
@@ -239,7 +248,8 @@ void LowerOperatorsPass::LowerExpression(Ref<MethodDeclaration> method, Ref<Expr
 		break;
 	}
 	case ExpressionType::TERNARY: {
-		Ref<TernaryExpression> ternaryExpression = std::dynamic_pointer_cast<TernaryExpression>(expression);
+		Ref<TernaryExpression> ternaryExpression =
+			std::dynamic_pointer_cast<TernaryExpression>(expression);
 		LowerExpression(method, &ternaryExpression->condition);
 		LowerExpression(method, &ternaryExpression->thenExpression);
 		LowerExpression(method, &ternaryExpression->elseExpression);
@@ -261,12 +271,14 @@ void LowerOperatorsPass::LowerStatement(Ref<MethodDeclaration> method, Ref<State
 		break;
 	}
 	case StatementType::DELETE: {
-		Ref<DeleteStatement> deleteStatement = std::dynamic_pointer_cast<DeleteStatement>(statement);
+		Ref<DeleteStatement> deleteStatement =
+			std::dynamic_pointer_cast<DeleteStatement>(statement);
 		LowerExpression(method, &deleteStatement->expression);
 		break;
 	}
 	case StatementType::EXPRESSION: {
-		Ref<ExpressionStatement> expressionStatement = std::dynamic_pointer_cast<ExpressionStatement>(statement);
+		Ref<ExpressionStatement> expressionStatement =
+			std::dynamic_pointer_cast<ExpressionStatement>(statement);
 		LowerExpression(method, &expressionStatement->expression);
 		break;
 	}
@@ -289,7 +301,8 @@ void LowerOperatorsPass::LowerStatement(Ref<MethodDeclaration> method, Ref<State
 		break;
 	}
 	case StatementType::RETURN: {
-		Ref<ReturnStatement> returnStatement = std::dynamic_pointer_cast<ReturnStatement>(statement);
+		Ref<ReturnStatement> returnStatement =
+			std::dynamic_pointer_cast<ReturnStatement>(statement);
 		if (returnStatement->expression)
 		{
 			LowerExpression(method, &returnStatement->expression);
@@ -297,7 +310,8 @@ void LowerOperatorsPass::LowerStatement(Ref<MethodDeclaration> method, Ref<State
 		break;
 	}
 	case StatementType::VARIABLE_DECLARATION: {
-		Ref<VariableDeclarationStatement> variableDeclarationStatement = std::dynamic_pointer_cast<VariableDeclarationStatement>(statement);
+		Ref<VariableDeclarationStatement> variableDeclarationStatement =
+			std::dynamic_pointer_cast<VariableDeclarationStatement>(statement);
 		if (variableDeclarationStatement->value)
 		{
 			LowerExpression(method, &variableDeclarationStatement->value);
@@ -333,7 +347,8 @@ void LowerOperatorsPass::LowerVariableDeclaration(Ref<VariableDeclaration> varia
 {
 	if (variable->variableType == VariableDeclarationType::MEMBER_VARIABLE)
 	{
-		LowerMemberVariableDeclaration(std::dynamic_pointer_cast<MemberVariableDeclaration>(variable));
+		LowerMemberVariableDeclaration(
+			std::dynamic_pointer_cast<MemberVariableDeclaration>(variable));
 	}
 	else if (variable->variableType == VariableDeclarationType::METHOD)
 	{

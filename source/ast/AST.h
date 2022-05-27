@@ -18,7 +18,8 @@ class Expression;
 class Statement;
 class Module;
 
-STRICT_ENUM(ASTItemType, NONE, MODULE, UNIT, UNIT_DECLARATION, TEMPLATE_DECLARATION, TEMPLATE, VARIABLE_DECLARATION, DATA_TYPE, EXPRESSION, STATEMENT)
+STRICT_ENUM(ASTItemType, NONE, MODULE, UNIT, UNIT_DECLARATION, TEMPLATE_DECLARATION, TEMPLATE,
+            VARIABLE_DECLARATION, DATA_TYPE, EXPRESSION, STATEMENT)
 
 class ASTItemMeta
 {
@@ -58,7 +59,8 @@ protected:
 
 DECLARE_HASH(ASTItem)
 
-STRICT_FLAGS(DeclarationFlags, PRIVATE = 0, INTERNAL = 1, PROTECTED = 2, PUBLIC = 7, MUT = 8, IMPURE = 16, VIRTUAL = 32, EXTERNAL = 64)
+STRICT_FLAGS(DeclarationFlags, PRIVATE = 0, INTERNAL = 1, PROTECTED = 2, PUBLIC = 7, MUT = 8,
+             IMPURE = 16, VIRTUAL = 32, EXTERNAL = 64)
 
 STRICT_ENUM(DataTypeType, TYPE, PRIMITIVE, OBJECT, REFERENCE, POINTER, ARRAY)
 
@@ -92,7 +94,8 @@ public:
 
 	bool IsPointer() const
 	{
-		return dataTypeType == DataTypeType::POINTER || dataTypeType == DataTypeType::REFERENCE || dataTypeType == DataTypeType::ARRAY;
+		return dataTypeType == DataTypeType::POINTER || dataTypeType == DataTypeType::REFERENCE ||
+		       dataTypeType == DataTypeType::ARRAY;
 	}
 
 	virtual String ToStrict() const;
@@ -285,7 +288,8 @@ public:
 	UnitDeclarationType declarationType;
 
 public:
-	UnitDeclaration(UnitDeclarationType declarationType) : ASTItem(ASTItemType::UNIT_DECLARATION), declarationType(declarationType)
+	UnitDeclaration(UnitDeclarationType declarationType)
+		: ASTItem(ASTItemType::UNIT_DECLARATION), declarationType(declarationType)
 	{
 	}
 
@@ -297,7 +301,8 @@ public:
 
 	bool IsType() const
 	{
-		return declarationType == UnitDeclarationType::TYPE || declarationType == UnitDeclarationType::CLASS;
+		return declarationType == UnitDeclarationType::TYPE ||
+		       declarationType == UnitDeclarationType::CLASS;
 	}
 
 	virtual Ref<ASTItem> Clone() const;
@@ -363,7 +368,9 @@ public:
 	Ref<DataType> dataType;
 
 public:
-	VariableDeclaration() : ASTItem(ASTItemType::VARIABLE_DECLARATION), variableType(VariableDeclarationType::VARIABLE), flags(DeclarationFlags::PRIVATE)
+	VariableDeclaration()
+		: ASTItem(ASTItemType::VARIABLE_DECLARATION),
+		  variableType(VariableDeclarationType::VARIABLE), flags(DeclarationFlags::PRIVATE)
 	{
 	}
 
@@ -470,9 +477,11 @@ DECLARE_HASH(ConstructorDeclaration)
 
 STRICT_ENUM(OperatorType, NONE,
             // Non mutating binary operators
-            PLUS, MINUS, MULTIPLY, DIVIDE, AND, AND_AND, OR, OR_OR, XOR, SHIFT_LEFT, SHIFT_RIGHT, GREATER, LESS, EQUAL, NOT_EQUAL, GREATER_EQUAL, LESS_EQUAL,
+            PLUS, MINUS, MULTIPLY, DIVIDE, AND, AND_AND, OR, OR_OR, XOR, SHIFT_LEFT, SHIFT_RIGHT,
+            GREATER, LESS, EQUAL, NOT_EQUAL, GREATER_EQUAL, LESS_EQUAL,
             // Mutating binary operators
-            PLUS_EQUAL, MINUS_EQUAL, MULTIPLY_EQUAL, DIVIDE_EQUAL, AND_EQUAL, OR_EQUAL, XOR_EQUAL, SHIFT_LEFT_EQUAL, SHIFT_RIGHT_EQUAL, ASSIGN,
+            PLUS_EQUAL, MINUS_EQUAL, MULTIPLY_EQUAL, DIVIDE_EQUAL, AND_EQUAL, OR_EQUAL, XOR_EQUAL,
+            SHIFT_LEFT_EQUAL, SHIFT_RIGHT_EQUAL, ASSIGN,
             // Misc binary operators
             ARRAY_ACCESS,
             // Non mutating unary operators
@@ -605,7 +614,8 @@ public:
 
 	Ref<MethodDeclaration> GetDestructor() const;
 
-	Ref<MethodDeclaration> FindMethod(MethodType methodType, Array<DataType*>* parameters = nullptr, const String& name = "") const;
+	Ref<MethodDeclaration> FindMethod(MethodType methodType, Array<DataType*>* parameters = nullptr,
+	                                  const String& name = "") const;
 
 protected:
 	virtual String ToStringImplementation(UInt32 indentation) const;
@@ -644,7 +654,8 @@ public:
 	{
 	}
 
-	ClassDeclaration(bool isSingleton) : TypeDeclaration(UnitDeclarationType::CLASS), isSingleton(isSingleton)
+	ClassDeclaration(bool isSingleton)
+		: TypeDeclaration(UnitDeclarationType::CLASS), isSingleton(isSingleton)
 	{
 	}
 
@@ -734,7 +745,8 @@ public:
 	Array<Ref<Module>> dependencies;
 
 public:
-	Module(ModuleType moduleType, const String& name) : ASTItem(ASTItemType::MODULE), moduleType(moduleType), name(name)
+	Module(ModuleType moduleType, const String& name)
+		: ASTItem(ASTItemType::MODULE), moduleType(moduleType), name(name)
 	{
 	}
 
@@ -785,7 +797,8 @@ public:
 	ExpressionType expressionType;
 
 public:
-	Expression(ExpressionType expressionType) : ASTItem(ASTItemType::EXPRESSION), expressionType(expressionType)
+	Expression(ExpressionType expressionType)
+		: ASTItem(ASTItemType::EXPRESSION), expressionType(expressionType)
 	{
 	}
 
@@ -1040,7 +1053,8 @@ protected:
 
 DECLARE_HASH(NewExpression)
 
-STRICT_ENUM(StatementType, NOP, BLOCK, EXPRESSION, IF, FOR, WHILE, RETURN, BREAK, CONTINUE, VARIABLE_DECLARATION, DELETE)
+STRICT_ENUM(StatementType, NOP, BLOCK, EXPRESSION, IF, FOR, WHILE, RETURN, BREAK, CONTINUE,
+            VARIABLE_DECLARATION, DELETE)
 
 class StatementMeta
 {
@@ -1055,7 +1069,8 @@ public:
 	StatementType statementType;
 
 public:
-	Statement(StatementType statementType) : ASTItem(ASTItemType::STATEMENT), statementType(statementType)
+	Statement(StatementType statementType)
+		: ASTItem(ASTItemType::STATEMENT), statementType(statementType)
 	{
 	}
 

@@ -19,14 +19,16 @@ STRICT_ENUM(TokenType,
             IF, ELSE, FOR, WHILE, DO, BREAK, CONTINUE, TRY, CATCH, THROW, RETURN,
 
             // Structure
-            PUBLIC, PRIVATE, PROTECTED, INTERNAL, EXTERNAL, INLINE, MUT, IMPURE, VIRTUAL, CLASS, SINGLETON, TYPE, ERROR, USING, GET, SET, OPERATOR,
+            PUBLIC, PRIVATE, PROTECTED, INTERNAL, EXTERNAL, INLINE, MUT, IMPURE, VIRTUAL, CLASS,
+            SINGLETON, TYPE, ERROR, USING, GET, SET, OPERATOR,
 
             // Literals
             INT_LITERAL, UINT_LITERAL, FLOAT_LITERAL, STRING_LITERAL,
 
             // Other symbols
-            IDENTIFIER, NEW, DELETE, ROUND_OB, ROUND_CB, CURLY_OB, CURLY_CB, SQUARE_OB, SQUARE_CB, PERIOD, SEMICOLON, COLON, COMMA, PLUS, MINUS, STAR, SLASH,
-            AND, OR, NOT, QUESTIONMARK, EQUALS, LESS, GREATER, TILDE, POWER);
+            IDENTIFIER, NEW, DELETE, ROUND_OB, ROUND_CB, CURLY_OB, CURLY_CB, SQUARE_OB, SQUARE_CB,
+            PERIOD, SEMICOLON, COLON, COMMA, PLUS, MINUS, STAR, SLASH, AND, OR, NOT, QUESTIONMARK,
+            EQUALS, LESS, GREATER, TILDE, POWER);
 
 const String& ToString(TokenType type);
 
@@ -59,12 +61,14 @@ public:
 	{
 	}
 
-	Lexer(Ref<const String> source, Ref<const Array<Token>> tokens) : source(source), tokens(tokens), offset(0), length(tokens->size())
+	Lexer(Ref<const String> source, Ref<const Array<Token>> tokens)
+		: source(source), tokens(tokens), offset(0), length(tokens->size())
 	{
 	}
 
 	Lexer(const Lexer& source, Int64 position, Int64 length)
-		: source(source.source), tokens(source.tokens), offset(position), length(std::min(position + length, (Int64)tokens->size()))
+		: source(source.source), tokens(source.tokens), offset(position),
+		  length(std::min(position + length, (Int64)tokens->size()))
 	{
 	}
 

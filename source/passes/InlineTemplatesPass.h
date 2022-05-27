@@ -16,21 +16,29 @@ public:
 	virtual PassResultFlags Run(PrintFunction print, BuildContext& context);
 
 private:
-	void InlineExpression(Ref<Expression>* target, const String& name, const TemplateArgument& argument);
+	void InlineExpression(Ref<Expression>* target, const String& name,
+	                      const TemplateArgument& argument);
 
-	void InlineStatement(Ref<Statement> target, const String& name, const TemplateArgument& argument);
+	void InlineStatement(Ref<Statement> target, const String& name,
+	                     const TemplateArgument& argument);
 
-	void InlineMethodDeclaration(Ref<MethodDeclaration> target, const String& name, const TemplateArgument& argument);
+	void InlineMethodDeclaration(Ref<MethodDeclaration> target, const String& name,
+	                             const TemplateArgument& argument);
 
-	void InlineMemberVariableDeclaration(Ref<MemberVariableDeclaration> target, const String& name, const TemplateArgument& argument);
+	void InlineMemberVariableDeclaration(Ref<MemberVariableDeclaration> target, const String& name,
+	                                     const TemplateArgument& argument);
 
-	void InlineVariableDeclaration(Ref<VariableDeclaration> target, const String& name, const TemplateArgument& argument);
+	void InlineVariableDeclaration(Ref<VariableDeclaration> target, const String& name,
+	                               const TemplateArgument& argument);
 
-	void InlineDataType(Ref<DataType>* target, const String& name, const TemplateArgument& argument);
+	void InlineDataType(Ref<DataType>* target, const String& name,
+	                    const TemplateArgument& argument);
 
-	void InlineTemplateArgument(Ref<ClassDeclaration> target, const String& name, const TemplateArgument& argument);
+	void InlineTemplateArgument(Ref<ClassDeclaration> target, const String& name,
+	                            const TemplateArgument& argument);
 
-	bool GenerateSpecializations(PrintFunction print, BuildContext& context, Ref<Module> module, HashMap<ObjectType, Array<ObjectType*>>& types);
+	bool GenerateSpecializations(PrintFunction print, BuildContext& context, Ref<Module> module,
+	                             HashMap<ObjectType, Array<ObjectType*>>& types);
 
 	Ref<Unit> GenerateSpecialization(const ObjectType& type);
 };

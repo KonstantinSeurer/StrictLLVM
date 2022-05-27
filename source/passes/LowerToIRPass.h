@@ -47,7 +47,8 @@ private:
 
 	void LowerCallExpression(Ref<CallExpression> expression, LowerFunctionToIRState* state);
 
-	void LowerIdentifierExpression(Ref<IdentifierExpression> expression, LowerFunctionToIRState* state);
+	void LowerIdentifierExpression(Ref<IdentifierExpression> expression,
+	                               LowerFunctionToIRState* state);
 
 	void LowerLiteralExpression(Ref<LiteralExpression> expression, LowerFunctionToIRState* state);
 
@@ -71,7 +72,8 @@ private:
 
 	void LowerIfStatement(Ref<IfStatement> statement, LowerFunctionToIRState* state);
 
-	void LowerVariableDeclarationStatement(Ref<VariableDeclarationStatement> statement, LowerFunctionToIRState* state);
+	void LowerVariableDeclarationStatement(Ref<VariableDeclarationStatement> statement,
+	                                       LowerFunctionToIRState* state);
 
 	void LowerWhileStatement(Ref<WhileStatement> statement, LowerFunctionToIRState* state);
 
@@ -81,13 +83,19 @@ private:
 
 	llvm::Function* CreateFunction(Ref<MethodDeclaration> method, const LowerUnitToIRState* state);
 
-	PassResultFlags LowerMethod(Ref<MethodDeclaration> method, llvm::legacy::FunctionPassManager* fpm, const LowerUnitToIRState* state);
+	PassResultFlags LowerMethod(Ref<MethodDeclaration> method,
+	                            llvm::legacy::FunctionPassManager* fpm,
+	                            const LowerUnitToIRState* state);
 
-	PassResultFlags LowerClass(Ref<Module> parentModule, Ref<ClassDeclaration> classDeclaration, BuildContext& context);
+	PassResultFlags LowerClass(Ref<Module> parentModule, Ref<ClassDeclaration> classDeclaration,
+	                           BuildContext& context);
 
-	void InitializeSingleton(Ref<llvm::Module> entryModule, Ref<Unit> unit, llvm::IRBuilder<>& entryBuilder, HashSet<UnitDeclaration*> initializedUnits);
+	void InitializeSingleton(Ref<llvm::Module> entryModule, Ref<Unit> unit,
+	                         llvm::IRBuilder<>& entryBuilder,
+	                         HashSet<UnitDeclaration*> initializedUnits);
 
-	void InitializeSingleton(Ref<llvm::Module> entryModule, Ref<ClassDeclaration> classDeclaration, llvm::IRBuilder<>& entryBuilder,
+	void InitializeSingleton(Ref<llvm::Module> entryModule, Ref<ClassDeclaration> classDeclaration,
+	                         llvm::IRBuilder<>& entryBuilder,
 	                         HashSet<UnitDeclaration*> initializedUnits);
 
 	PassResultFlags LowerModule(Ref<Module> module, BuildContext& context);

@@ -20,7 +20,8 @@ private:
 	TraversalLevel requiredTraversalLevel;
 
 public:
-	ResolveContext(BuildContext* context, const String& fileName, PrintFunction print, const Lexer* lexer)
+	ResolveContext(BuildContext* context, const String& fileName, PrintFunction print,
+	               const Lexer* lexer)
 		: context(context), err(fileName, print, lexer), pass(ResolvePass::NONE)
 	{
 	}
@@ -38,21 +39,29 @@ private:
 
 	PassResultFlags ResolveSuperTypes();
 
-	PassResultFlags ResolveOperatorExpression(Ref<MethodDeclaration> method, Ref<OperatorExpression> expression);
+	PassResultFlags ResolveOperatorExpression(Ref<MethodDeclaration> method,
+	                                          Ref<OperatorExpression> expression);
 
-	PassResultFlags ResolveIdentifierExpression(Ref<ObjectType> context, Ref<MethodDeclaration> method, Ref<IdentifierExpression> expression, bool required);
+	PassResultFlags ResolveIdentifierExpression(Ref<ObjectType> context,
+	                                            Ref<MethodDeclaration> method,
+	                                            Ref<IdentifierExpression> expression,
+	                                            bool required);
 
 	void ResolveLiteralExpression(Ref<LiteralExpression> expression);
 
-	PassResultFlags ResolveBracketExpression(Ref<MethodDeclaration> method, Ref<BracketExpression> expression);
+	PassResultFlags ResolveBracketExpression(Ref<MethodDeclaration> method,
+	                                         Ref<BracketExpression> expression);
 
 	Ref<DataType> ConvertExpressionToDataType(Ref<Expression> expression);
 
-	PassResultFlags ResolveCallExpression(Ref<MethodDeclaration> method, Ref<Expression>* expression);
+	PassResultFlags ResolveCallExpression(Ref<MethodDeclaration> method,
+	                                      Ref<Expression>* expression);
 
-	PassResultFlags ResolveNewExpression(Ref<MethodDeclaration> method, Ref<NewExpression> expression);
+	PassResultFlags ResolveNewExpression(Ref<MethodDeclaration> method,
+	                                     Ref<NewExpression> expression);
 
-	PassResultFlags ResolveTernaryExpression(Ref<MethodDeclaration> method, Ref<TernaryExpression> expression);
+	PassResultFlags ResolveTernaryExpression(Ref<MethodDeclaration> method,
+	                                         Ref<TernaryExpression> expression);
 
 	PassResultFlags ResolveExpression(Ref<MethodDeclaration> method, Ref<Expression>* expression);
 
