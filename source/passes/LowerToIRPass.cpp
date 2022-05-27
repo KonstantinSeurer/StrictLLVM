@@ -1013,6 +1013,7 @@ PassResultFlags LowerToIRPass::LowerClass(Ref<Module> parentModule, Ref<ClassDec
 	state.classDeclaration = classDeclaration;
 	state.module = module.get();
 	state.diBuilder = diBuilder;
+	state.diFile = diFile;
 	state.diCU = diCU;
 
 	auto mallocSignature = llvm::FunctionType::get(llvm::Type::getInt8PtrTy(*context), {llvm::Type::getInt64Ty(*context)}, false);
