@@ -33,6 +33,7 @@ void ASTItem::CloneImplementation(Ref<ASTItem> target) const
 {
 	target->type = type;
 	target->itemMeta = itemMeta;
+	target->characterIndex = characterIndex;
 }
 
 DEFINE_HASH(ASTItem, HASH_VALUE(ASTItemType, type))
