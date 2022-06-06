@@ -1070,6 +1070,7 @@ PassResultFlags LowerToIRPass::LowerMethod(Ref<MethodDeclaration> method,
 		functionState.thisPointer = thisArgument;
 		functionState.function = function;
 
+		UInt32 lineNumber;
 		if (state->diBuilder)
 		{
 			Array<llvm::Metadata*> diParameters;
@@ -1084,15 +1085,14 @@ PassResultFlags LowerToIRPass::LowerMethod(Ref<MethodDeclaration> method,
 				state->diBuilder->getOrCreateTypeArray(diParameters));
 
 			assert(method->characterIndex != CHARACTER_INDEX_NONE);
-			UInt32 lineNumber = GetLineNumber(
+			lineNumber = GetLineNumber(
 				state->classDeclaration->unitDeclarationMeta.parent->unitMeta.lexer.GetSource(),
 				method->characterIndex, 1);
 
-			auto scope = state->diBuilder->createFile(state->diFile->getFilename(),
-			                                          state->diFile->getDirectory());
 			auto diFunction = state->diBuilder->createFunction(
-				scope, method->name, llvm::StringRef(), state->diFile, lineNumber, diFunctionType,
-				lineNumber, llvm::DINode::FlagPrototyped, llvm::DISubprogram::SPFlagDefinition);
+				state->diFile, method->name, llvm::StringRef(), state->diFile, lineNumber,
+				diFunctionType, lineNumber, llvm::DINode::FlagPrototyped,
+				llvm::DISubprogram::SPFlagDefinition);
 
 			function->setSubprogram(diFunction);
 			functionState.diFunction = diFunction;
@@ -1104,15 +1104,31 @@ PassResultFlags LowerToIRPass::LowerMethod(Ref<MethodDeclaration> method,
 		for (UInt32 parameterIndex = 0; parameterIndex < method->parameters.size();
 		     parameterIndex++)
 		{
+			const String& argumentName = method->parameters[parameterIndex]->name;
+
 			auto argument = function->getArg(parameterIndex + 1);
 #ifdef DEBUG
-			argument->setName(method->parameters[parameterIndex]->name);
+			argument->setName(argumentName);
 #endif
 			llvm::IRBuilder<> tmpBuilder(&function->getEntryBlock(),
 			                             function->getEntryBlock().begin());
 			auto argumentVariable = tmpBuilder.CreateAlloca(argument->getType());
+
+			if (state->diBuilder)
+			{
+				llvm::DILocalVariable* diArgument = state->diBuilder->createParameterVariable(
+					functionState.diFunction, argumentName, parameterIndex + 1, state->diFile,
+					lineNumber, method->parameters[parameterIndex]->dataType->dataTypeMeta.di,
+					true);
+
+				state->diBuilder->insertDeclare(
+					argumentVariable, diArgument, state->diBuilder->createExpression(),
+					llvm::DILocation::get(*context, lineNumber, 0, functionState.diFunction),
+					tmpBuilder.GetInsertBlock());
+			}
+
 #ifdef DEBUG
-			argumentVariable->setName("p_" + method->parameters[parameterIndex]->name);
+			argumentVariable->setName("p_" + argumentName);
 #endif
 			builder->CreateStore(argument, argumentVariable);
 			method->parameters[parameterIndex]->variableDeclarationMeta.ir = argumentVariable;
