@@ -966,6 +966,18 @@ void LowerToIRPass::LowerReturnStatement(Ref<ReturnStatement> statement,
 
 void LowerToIRPass::LowerStatement(Ref<Statement> statement, LowerFunctionToIRState* state)
 {
+	if (state->parent->diBuilder)
+	{
+		assert(statement->characterIndex != CHARACTER_INDEX_NONE);
+		UInt32 lineNumber = GetLineNumber(
+			state->parent->classDeclaration->unitDeclarationMeta.parent->unitMeta.lexer.GetSource(),
+			statement->characterIndex, 1);
+
+		// TODO: Calculate the character index.
+		builder->SetCurrentDebugLocation(
+			llvm::DILocation::get(*context, lineNumber, 0, state->diFunction));
+	}
+
 	switch (statement->statementType)
 	{
 	case StatementType::BLOCK:
@@ -1068,6 +1080,13 @@ PassResultFlags LowerToIRPass::LowerMethod(Ref<MethodDeclaration> method,
 			method->parameters[parameterIndex]->variableDeclarationMeta.ir = argumentVariable;
 		}
 
+		LowerFunctionToIRState functionState;
+		functionState.parent = state;
+		functionState.currentBlock = block;
+		functionState.method = method.get();
+		functionState.thisPointer = thisArgument;
+		functionState.function = function;
+
 		if (state->diBuilder)
 		{
 			Array<llvm::Metadata*> diParameters;
@@ -1081,6 +1100,7 @@ PassResultFlags LowerToIRPass::LowerMethod(Ref<MethodDeclaration> method,
 			auto diFunctionType = state->diBuilder->createSubroutineType(
 				state->diBuilder->getOrCreateTypeArray(diParameters));
 
+			assert(method->characterIndex != CHARACTER_INDEX_NONE);
 			UInt32 lineNumber = GetLineNumber(
 				state->classDeclaration->unitDeclarationMeta.parent->unitMeta.lexer.GetSource(),
 				method->characterIndex, 1);
@@ -1090,15 +1110,13 @@ PassResultFlags LowerToIRPass::LowerMethod(Ref<MethodDeclaration> method,
 			auto diFunction = state->diBuilder->createFunction(
 				scope, method->name, llvm::StringRef(), state->diFile, lineNumber, diFunctionType,
 				lineNumber, llvm::DINode::FlagPrototyped, llvm::DISubprogram::SPFlagDefinition);
-			function->setSubprogram(diFunction);
-		}
 
-		LowerFunctionToIRState functionState;
-		functionState.parent = state;
-		functionState.currentBlock = block;
-		functionState.method = method.get();
-		functionState.thisPointer = thisArgument;
-		functionState.function = function;
+			function->setSubprogram(diFunction);
+			functionState.diFunction = diFunction;
+
+			builder->SetCurrentDebugLocation(
+				llvm::DILocation::get(*context, lineNumber, 0, diFunction));
+		}
 
 		LowerStatement(method->body, &functionState);
 
@@ -1226,10 +1244,10 @@ PassResultFlags LowerToIRPass::LowerClass(Ref<Module> parentModule,
 	}
 
 #ifdef DEBUG
-	// if (llvm::verifyModule(*module, &llvm::outs()))
-	// {
-	// 	return PassResultFlags::CRITICAL_ERROR;
-	// }
+	if (llvm::verifyModule(*module, &llvm::outs()))
+	{
+		return PassResultFlags::CRITICAL_ERROR;
+	}
 #endif
 
 	if (buildContext.dumpIR)

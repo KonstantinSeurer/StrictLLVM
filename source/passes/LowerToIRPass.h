@@ -15,7 +15,6 @@ public:
 	llvm::DIBuilder* diBuilder;
 	llvm::DIFile* diFile;
 	llvm::DICompileUnit* diCU;
-	Array<llvm::DIScope*> diStack;
 };
 
 class LowerFunctionToIRState
@@ -28,6 +27,7 @@ public:
 	llvm::BasicBlock* continueBlock;
 	llvm::Value* thisPointer;
 	llvm::Function* function;
+	llvm::DISubprogram* diFunction;
 };
 
 class LowerToIRPass : public Pass
