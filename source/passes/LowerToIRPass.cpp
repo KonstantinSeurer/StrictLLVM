@@ -312,6 +312,17 @@ void LowerToIRPass::LowerCallExpression(Ref<CallExpression> expression,
 	}
 }
 
+llvm::Value* LowerToIRPass::GetMemberPointer(Ref<MemberVariableDeclaration> member,
+                                             LowerFunctionToIRState* state)
+{
+	Array<llvm::Value*> index = {
+		llvm::ConstantInt::get(llvm::Type::getInt32Ty(*context), 0),
+		llvm::ConstantInt::get(llvm::Type::getInt32Ty(*context),
+	                           member->memberVariableDeclarationMeta.index)};
+	return builder->CreateGEP(state->thisPointer->getType()->getPointerElementType(),
+	                          state->thisPointer, index, member->name);
+}
+
 void LowerToIRPass::LowerIdentifierExpression(Ref<IdentifierExpression> expression,
                                               LowerFunctionToIRState* state)
 {
@@ -328,13 +339,8 @@ void LowerToIRPass::LowerIdentifierExpression(Ref<IdentifierExpression> expressi
 		{
 			Ref<MemberVariableDeclaration> memberVariable =
 				std::dynamic_pointer_cast<MemberVariableDeclaration>(destination);
-			Array<llvm::Value*> index = {
-				llvm::ConstantInt::get(llvm::Type::getInt32Ty(*context), 0),
-				llvm::ConstantInt::get(llvm::Type::getInt32Ty(*context),
-			                           memberVariable->memberVariableDeclarationMeta.index)};
-			expression->expressionMeta.ir =
-				builder->CreateGEP(state->thisPointer->getType()->getPointerElementType(),
-			                       state->thisPointer, index, memberVariable->name);
+
+			expression->expressionMeta.ir = GetMemberPointer(memberVariable, state);
 			expression->expressionMeta.pointer = true;
 		}
 		else
@@ -1132,6 +1138,26 @@ PassResultFlags LowerToIRPass::LowerMethod(Ref<MethodDeclaration> method,
 #endif
 			builder->CreateStore(argument, argumentVariable);
 			method->parameters[parameterIndex]->variableDeclarationMeta.ir = argumentVariable;
+		}
+
+		if (method->methodType == MethodType::CONSTRUCTOR)
+		{
+			for (auto member : state->classDeclaration->members)
+			{
+				if (member->variableType != VariableDeclarationType::MEMBER_VARIABLE)
+				{
+					continue;
+				}
+
+				Ref<MemberVariableDeclaration> memberVariable =
+					std::dynamic_pointer_cast<MemberVariableDeclaration>(member);
+
+				auto memberPointer = GetMemberPointer(memberVariable, &functionState);
+
+				llvm::Constant* initializer =
+					llvm::Constant::getNullValue(memberVariable->dataType->dataTypeMeta.ir);
+				builder->CreateStore(initializer, memberPointer);
+			}
 		}
 
 		LowerStatement(method->body, &functionState);

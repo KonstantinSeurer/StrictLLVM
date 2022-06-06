@@ -47,6 +47,9 @@ private:
 
 	void LowerCallExpression(Ref<CallExpression> expression, LowerFunctionToIRState* state);
 
+	llvm::Value* GetMemberPointer(Ref<MemberVariableDeclaration> member,
+	                              LowerFunctionToIRState* state);
+
 	void LowerIdentifierExpression(Ref<IdentifierExpression> expression,
 	                               LowerFunctionToIRState* state);
 
