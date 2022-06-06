@@ -1063,23 +1063,6 @@ PassResultFlags LowerToIRPass::LowerMethod(Ref<MethodDeclaration> method,
 		thisArgument->setName("this");
 #endif
 
-		for (UInt32 parameterIndex = 0; parameterIndex < method->parameters.size();
-		     parameterIndex++)
-		{
-			auto argument = function->getArg(parameterIndex + 1);
-#ifdef DEBUG
-			argument->setName(method->parameters[parameterIndex]->name);
-#endif
-			llvm::IRBuilder<> tmpBuilder(&function->getEntryBlock(),
-			                             function->getEntryBlock().begin());
-			auto argumentVariable = tmpBuilder.CreateAlloca(argument->getType());
-#ifdef DEBUG
-			argumentVariable->setName("p_" + method->parameters[parameterIndex]->name);
-#endif
-			builder->CreateStore(argument, argumentVariable);
-			method->parameters[parameterIndex]->variableDeclarationMeta.ir = argumentVariable;
-		}
-
 		LowerFunctionToIRState functionState;
 		functionState.parent = state;
 		functionState.currentBlock = block;
@@ -1116,6 +1099,23 @@ PassResultFlags LowerToIRPass::LowerMethod(Ref<MethodDeclaration> method,
 
 			builder->SetCurrentDebugLocation(
 				llvm::DILocation::get(*context, lineNumber, 0, diFunction));
+		}
+
+		for (UInt32 parameterIndex = 0; parameterIndex < method->parameters.size();
+		     parameterIndex++)
+		{
+			auto argument = function->getArg(parameterIndex + 1);
+#ifdef DEBUG
+			argument->setName(method->parameters[parameterIndex]->name);
+#endif
+			llvm::IRBuilder<> tmpBuilder(&function->getEntryBlock(),
+			                             function->getEntryBlock().begin());
+			auto argumentVariable = tmpBuilder.CreateAlloca(argument->getType());
+#ifdef DEBUG
+			argumentVariable->setName("p_" + method->parameters[parameterIndex]->name);
+#endif
+			builder->CreateStore(argument, argumentVariable);
+			method->parameters[parameterIndex]->variableDeclarationMeta.ir = argumentVariable;
 		}
 
 		LowerStatement(method->body, &functionState);
