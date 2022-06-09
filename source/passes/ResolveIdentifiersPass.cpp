@@ -679,6 +679,29 @@ PassResultFlags ResolveContext::ResolveNewExpression(Ref<MethodDeclaration> meth
 		expression->expressionMeta.dataType = expression->dataType;
 	}
 
+	if (expression->dataType->dataTypeType == DataTypeType::OBJECT)
+	{
+		Ref<ObjectType> objectType = std::dynamic_pointer_cast<ObjectType>(expression->dataType);
+		assert(objectType->objectTypeMeta.unit);
+		assert(objectType->objectTypeMeta.unit->declaredType->declarationType ==
+		       UnitDeclarationType::CLASS);
+
+		Ref<ClassDeclaration> classDeclaration = std::dynamic_pointer_cast<ClassDeclaration>(
+			objectType->objectTypeMeta.unit->declaredType);
+
+		Array<DataType*> parameters(expression->arguments.size());
+		for (UInt32 parameterIndex = 0; parameterIndex < expression->arguments.size();
+		     parameterIndex++)
+		{
+			parameters[parameterIndex] =
+				expression->arguments[parameterIndex]->expressionMeta.dataType.get();
+		}
+
+		expression->newExpressionMeta.destination =
+			std::dynamic_pointer_cast<ConstructorDeclaration>(
+				classDeclaration->FindMethod(MethodType::CONSTRUCTOR, &parameters));
+	}
+
 	return result;
 }
 

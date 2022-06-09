@@ -1025,6 +1025,7 @@ STRICT_ENUM(AllocationType, STACK, HEAP)
 class NewExpressionMeta
 {
 public:
+	Ref<ConstructorDeclaration> destination;
 };
 
 class NewExpression : public Expression
