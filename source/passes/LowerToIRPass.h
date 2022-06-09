@@ -61,6 +61,9 @@ private:
 
 	llvm::Value* LowerFloatOperator(OperatorType type, llvm::Value* a, llvm::Value* b);
 
+	llvm::Value* LowerPrimitiveCast(llvm::Value* a, Ref<PrimitiveType> sourceType,
+	                                Ref<PrimitiveType> primitiveType);
+
 	void LowerOperatorExpression(Ref<OperatorExpression> expression, LowerFunctionToIRState* state);
 
 	void LowerTernaryExpression(Ref<TernaryExpression> expression, LowerFunctionToIRState* state);

@@ -609,6 +609,8 @@ llvm::Value* LowerToIRPass::LowerIntOperator(OperatorType type, llvm::Value* a, 
 		return builder->CreateLShr(a, b);
 	case OperatorType::XOR:
 		return builder->CreateXor(a, b);
+	case OperatorType::EXPLICIT_CAST:
+		return a;
 	default:
 		STRICT_UNREACHABLE;
 	}
@@ -638,6 +640,87 @@ llvm::Value* LowerToIRPass::LowerFloatOperator(OperatorType type, llvm::Value* a
 		return builder->CreateNeg(a);
 	case OperatorType::PLUS:
 		return builder->CreateAdd(a, b);
+	case OperatorType::EXPLICIT_CAST:
+		return a;
+	default:
+		STRICT_UNREACHABLE;
+	}
+}
+
+llvm::Value* LowerToIRPass::LowerPrimitiveCast(llvm::Value* a, Ref<PrimitiveType> sourceType,
+                                               Ref<PrimitiveType> primitiveType)
+{
+	switch (primitiveType->primitiveType)
+	{
+	case TokenType::INT8:
+	case TokenType::INT16:
+	case TokenType::INT32:
+	case TokenType::INT64: {
+		if (sourceType->IsFloat())
+		{
+			return builder->CreateCast(llvm::Instruction::CastOps::FPToSI, a,
+			                           primitiveType->dataTypeMeta.ir);
+		}
+
+		if (sourceType->GetSize() < primitiveType->GetSize())
+		{
+			return builder->CreateCast(llvm::Instruction::CastOps::SExt, a,
+			                           primitiveType->dataTypeMeta.ir);
+		}
+		else
+		{
+			return builder->CreateCast(llvm::Instruction::CastOps::Trunc, a,
+			                           primitiveType->dataTypeMeta.ir);
+		}
+	}
+	case TokenType::UINT8:
+	case TokenType::UINT16:
+	case TokenType::UINT32:
+	case TokenType::UINT64: {
+		if (sourceType->IsFloat())
+		{
+			return builder->CreateCast(llvm::Instruction::CastOps::FPToUI, a,
+			                           primitiveType->dataTypeMeta.ir);
+		}
+
+		if (sourceType->GetSize() < primitiveType->GetSize())
+		{
+			return builder->CreateCast(llvm::Instruction::CastOps::ZExt, a,
+			                           primitiveType->dataTypeMeta.ir);
+		}
+		else
+		{
+			return builder->CreateCast(llvm::Instruction::CastOps::Trunc, a,
+			                           primitiveType->dataTypeMeta.ir);
+		}
+	}
+	case TokenType::FLOAT32:
+	case TokenType::FLOAT64: {
+		if (!sourceType->IsFloat())
+		{
+			if (sourceType->IsSigned())
+			{
+				return builder->CreateCast(llvm::Instruction::CastOps::SIToFP, a,
+				                           primitiveType->dataTypeMeta.ir);
+			}
+			else
+			{
+				return builder->CreateCast(llvm::Instruction::CastOps::UIToFP, a,
+				                           primitiveType->dataTypeMeta.ir);
+			}
+		}
+
+		if (sourceType->GetSize() < primitiveType->GetSize())
+		{
+			return builder->CreateCast(llvm::Instruction::CastOps::FPExt, a,
+			                           primitiveType->dataTypeMeta.ir);
+		}
+		else
+		{
+			return builder->CreateCast(llvm::Instruction::CastOps::FPTrunc, a,
+			                           primitiveType->dataTypeMeta.ir);
+		}
+	}
 	default:
 		STRICT_UNREACHABLE;
 	}
@@ -709,6 +792,17 @@ void LowerToIRPass::LowerOperatorExpression(Ref<OperatorExpression> expression,
 		}
 		default:
 			STRICT_UNREACHABLE;
+		}
+
+		if (expression->operatorType == OperatorType::EXPLICIT_CAST)
+		{
+			assert(expression->b->dataType);
+			assert(expression->b->dataType->dataTypeType == DataTypeType::PRIMITIVE);
+
+			LowerDataType(primitiveType, state->parent);
+			expression->expressionMeta.ir = LowerPrimitiveCast(
+				a, std::dynamic_pointer_cast<PrimitiveType>(expression->a->expressionMeta.dataType),
+				std::dynamic_pointer_cast<PrimitiveType>(expression->b->dataType));
 		}
 	}
 }
