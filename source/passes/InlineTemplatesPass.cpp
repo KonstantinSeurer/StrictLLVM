@@ -343,15 +343,18 @@ bool InlineTemplatesPass::GenerateSpecializations(PrintFunction print, BuildCont
 	return progress;
 }
 
+// TODO: FIX! All usedTemplateTypes need to be merged.
 PassResultFlags InlineTemplatesPass::Run(PrintFunction print, BuildContext& context)
 {
 	PassResultFlags result = PassResultFlags::SUCCESS;
 
 	for (auto module : context.GetModules())
 	{
-		bool progress = false;
+		bool progress;
 		do
 		{
+			progress = false;
+
 			result = result | gatherInformationPass->Run(print, context);
 
 			for (auto unit : module->units)
@@ -363,13 +366,13 @@ PassResultFlags InlineTemplatesPass::Run(PrintFunction print, BuildContext& cont
 
 				auto& types = std::dynamic_pointer_cast<TypeDeclaration>(unit->declaredType)
 				                  ->typeDeclarationMeta.usedTemplateTypes;
-				GenerateSpecializations(print, context, module, types);
+				progress |= GenerateSpecializations(print, context, module, types);
 			}
 
 			for (auto specialization : module->moduleMeta.templateSpecializations)
 			{
 				auto& types = specialization.second->typeDeclarationMeta.usedTemplateTypes;
-				GenerateSpecializations(print, context, module, types);
+				progress |= GenerateSpecializations(print, context, module, types);
 			}
 		} while (progress);
 	}
