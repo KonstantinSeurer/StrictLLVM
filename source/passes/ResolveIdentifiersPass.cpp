@@ -171,7 +171,7 @@ static Ref<PrimitiveType> GetPrecedingPrimitiveType(Ref<PrimitiveType> a, Ref<Pr
 	const bool aFloat = a->IsFloat();
 	const bool bFloat = b->IsFloat();
 
-	if ((aFloat && !bFloat) || (!aFloat && !bFloat))
+	if (aFloat && !bFloat)
 	{
 		return a;
 	}
