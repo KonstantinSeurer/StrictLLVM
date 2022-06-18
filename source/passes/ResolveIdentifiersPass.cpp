@@ -412,11 +412,43 @@ void ResolveContext::ResolveLiteralExpression(Ref<LiteralExpression> expression)
 {
 	if (expression->data.type == TokenType::INT_LITERAL)
 	{
-		expression->expressionMeta.dataType = Allocate<PrimitiveType>(TokenType::INT64);
+		if (expression->data.data.intData >= INT8_MIN && expression->data.data.intData <= INT8_MAX)
+		{
+			expression->expressionMeta.dataType = Allocate<PrimitiveType>(TokenType::INT8);
+		}
+		else if (expression->data.data.intData >= INT16_MIN &&
+		         expression->data.data.intData <= INT16_MAX)
+		{
+			expression->expressionMeta.dataType = Allocate<PrimitiveType>(TokenType::INT16);
+		}
+		else if (expression->data.data.intData >= INT32_MIN &&
+		         expression->data.data.intData <= INT32_MAX)
+		{
+			expression->expressionMeta.dataType = Allocate<PrimitiveType>(TokenType::INT32);
+		}
+		else
+		{
+			expression->expressionMeta.dataType = Allocate<PrimitiveType>(TokenType::INT64);
+		}
 	}
 	else if (expression->data.type == TokenType::UINT_LITERAL)
 	{
-		expression->expressionMeta.dataType = Allocate<PrimitiveType>(TokenType::UINT64);
+		if (expression->data.data.uintData <= UINT8_MAX)
+		{
+			expression->expressionMeta.dataType = Allocate<PrimitiveType>(TokenType::UINT8);
+		}
+		else if (expression->data.data.uintData <= UINT16_MAX)
+		{
+			expression->expressionMeta.dataType = Allocate<PrimitiveType>(TokenType::UINT16);
+		}
+		else if (expression->data.data.uintData <= UINT32_MAX)
+		{
+			expression->expressionMeta.dataType = Allocate<PrimitiveType>(TokenType::UINT32);
+		}
+		else
+		{
+			expression->expressionMeta.dataType = Allocate<PrimitiveType>(TokenType::UINT64);
+		}
 	}
 	else if (expression->data.type == TokenType::FLOAT_LITERAL)
 	{
