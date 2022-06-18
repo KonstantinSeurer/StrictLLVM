@@ -131,9 +131,9 @@ void LowerOperatorsPass::LowerOperatorExpression(Ref<MethodDeclaration> method,
 		if (IsMutatingUnaryOperator(expression->operatorType))
 		{
 			Ref<LiteralExpression> one = Allocate<LiteralExpression>();
-			one->data.type = TokenType::UINT64;
+			one->data.type = TokenType::UINT_LITERAL;
 			one->data.data.uintData = 1;
-			one->expressionMeta.dataType = Allocate<PrimitiveType>(TokenType::UINT64);
+			one->expressionMeta.dataType = expression->expressionMeta.dataType;
 
 			Ref<OperatorExpression> replacement = Allocate<OperatorExpression>();
 			replacement->expressionMeta = expression->expressionMeta;
