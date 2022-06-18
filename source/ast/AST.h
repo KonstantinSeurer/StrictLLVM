@@ -186,6 +186,8 @@ DECLARE_HASH(ObjectType)
 
 bool CanCast(const DataType* source, const DataType* destination);
 
+bool TypeEquals(const DataType* a, const DataType* b);
+
 class PointerTypeMeta
 {
 public:

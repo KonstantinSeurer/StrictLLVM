@@ -395,6 +395,41 @@ bool CanCast(const DataType* source, const DataType* destination)
 	STRICT_UNREACHABLE;
 }
 
+bool TypeEquals(const DataType* a, const DataType* b)
+{
+	if (a == b)
+	{
+		return true;
+	}
+
+	if (!a || !b)
+	{
+		return false;
+	}
+
+	if (!(*a == *b))
+	{
+		return false;
+	}
+
+	switch (a->dataTypeType)
+	{
+	case DataTypeType::ARRAY:
+	case DataTypeType::POINTER:
+	case DataTypeType::REFERENCE:
+		return *(const PointerType*)a == *(const PointerType*)b;
+	case DataTypeType::OBJECT:
+		return *(const ObjectType*)a == *(const ObjectType*)b;
+	case DataTypeType::PRIMITIVE:
+		return *(const PrimitiveType*)a == *(const PrimitiveType*)b;
+	case DataTypeType::TYPE:
+		return true;
+	default:
+		STRICT_UNREACHABLE;
+		return false;
+	}
+}
+
 llvm::Value* ExpressionMeta::Load(llvm::IRBuilder<>& builder) const
 {
 	return pointer ? builder.CreateLoad(dataType->dataTypeMeta.ir, ir) : ir;
