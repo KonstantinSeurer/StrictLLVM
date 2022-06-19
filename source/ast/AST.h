@@ -587,6 +587,7 @@ class TypeDeclarationMeta
 {
 public:
 	HashMap<ObjectType, Array<ObjectType*>> usedTemplateTypes;
+	Array<Ref<Unit>> specializations;
 };
 
 class TypeDeclaration : public UnitDeclaration
