@@ -85,8 +85,11 @@ PassResultFlags ResolveUnitIdentifiers(PrintFunction print, BuildContext& contex
 
 class ResolveIdentifiersPass : public Pass
 {
+private:
+	ResolvePass pass;
+
 public:
-	ResolveIdentifiersPass() : Pass("ResolveIdentifiersPass")
+	ResolveIdentifiersPass(ResolvePass pass) : Pass("ResolveIdentifiersPass"), pass(pass)
 	{
 	}
 

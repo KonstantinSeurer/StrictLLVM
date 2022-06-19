@@ -62,9 +62,11 @@ BuildContext::BuildContext(const Array<String>& modulePath, const String& output
 	AddPass(Allocate<GatherInformationPass>(
 		GatherInformationFlags::PARENT | GatherInformationFlags::THIS |
 		GatherInformationFlags::MEMBER_INDEX | GatherInformationFlags::METHOD_NAME));
-	AddPass(Allocate<ResolveIdentifiersPass>());
-	AddPass(Allocate<LowerImpliedDeclarationFlagsPass>());
+	AddPass(Allocate<ResolveIdentifiersPass>(ResolvePass::DATA_TYPES));
 	AddPass(Allocate<InlineTemplatesPass>());
+	AddPass(Allocate<LowerImpliedDeclarationFlagsPass>());
+	AddPass(Allocate<ResolveIdentifiersPass>(ResolvePass::EXPRESSION));
+	AddPass(Allocate<ResolveIdentifiersPass>(ResolvePass::NEW));
 	AddPass(Allocate<LowerOperatorsPass>());
 	AddPass(Allocate<LowerToIRPass>());
 	AddPass(Allocate<LinkModulesPass>());

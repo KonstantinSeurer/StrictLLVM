@@ -1042,7 +1042,17 @@ PassResultFlags ResolveIdentifiersPass::Run(PrintFunction print, BuildContext& c
 	{
 		for (auto unit : module->units)
 		{
-			result = result | ResolveUnitIdentifiers(print, context, unit);
+			if (!unit->declaredType->IsType())
+			{
+				continue;
+			}
+
+			ResolveContext resolve(&context, unit->name, print, &unit->unitMeta.lexer);
+			resolve.unit = unit;
+			resolve.type = std::dynamic_pointer_cast<TypeDeclaration>(unit->declaredType);
+			resolve.SetPass(pass);
+
+			result = result | resolve.ResolveIdentifiers();
 		}
 	}
 
