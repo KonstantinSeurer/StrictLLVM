@@ -57,11 +57,24 @@ Ref<Unit> ResolveContext::ResolveType(const String& name, bool optional, UInt32 
 		}
 	}
 
-	for (const auto& dependency : unit->dependencyNames)
+	for (const auto& dependency : unit->unitMeta.dependencies)
 	{
-		if (HasEnding(dependency, "." + name))
+		if (dependency->name == name)
 		{
-			return context->ResolveUnit(dependency);
+			return dependency;
+		}
+
+		if (dependency->declaredType->IsType())
+		{
+			Ref<TypeDeclaration> typeDeclaration =
+				std::dynamic_pointer_cast<TypeDeclaration>(dependency->declaredType);
+			for (auto specialization : typeDeclaration->typeDeclarationMeta.specializations)
+			{
+				if (specialization->name == name)
+				{
+					return specialization;
+				}
+			}
 		}
 	}
 
