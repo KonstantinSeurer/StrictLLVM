@@ -299,7 +299,6 @@ Ref<Unit> InlineTemplatesPass::GenerateSpecialization(const ObjectType& type)
 }
 
 bool InlineTemplatesPass::GenerateSpecializations(PrintFunction print, BuildContext& context,
-                                                  Ref<Module> module,
                                                   HashMap<ObjectType, Array<ObjectType*>>& types)
 {
 	bool progress = false;
@@ -308,6 +307,8 @@ bool InlineTemplatesPass::GenerateSpecializations(PrintFunction print, BuildCont
 
 	for (const auto& type : types)
 	{
+		Module* module = type.first.objectTypeMeta.unit->unitMeta.parent;
+
 		if (module->moduleMeta.templateSpecializations.find(type.first) !=
 		    module->moduleMeta.templateSpecializations.end())
 		{
@@ -345,20 +346,39 @@ bool InlineTemplatesPass::GenerateSpecializations(PrintFunction print, BuildCont
 	return progress;
 }
 
+static void MergeTemplateMaps(const HashMap<ObjectType, Array<ObjectType*>>& source,
+                              HashMap<ObjectType, Array<ObjectType*>>& destination)
+{
+	for (const auto& type : source)
+	{
+		if (destination.find(type.first) == destination.end())
+		{
+			destination.insert(type);
+		}
+		else
+		{
+			auto references = destination.at(type.first);
+			for (auto reference : type.second)
+			{
+				references.push_back(reference);
+			}
+		}
+	}
+}
+
 // TODO: FIX! All usedTemplateTypes need to be merged.
 PassResultFlags InlineTemplatesPass::Run(PrintFunction print, BuildContext& context)
 {
 	PassResultFlags result = PassResultFlags::SUCCESS;
-
-	for (auto module : context.GetModules())
+	bool progress;
+	do
 	{
-		bool progress;
-		do
+		result = result | gatherInformationPass->Run(print, context);
+
+		HashMap<ObjectType, Array<ObjectType*>> usedTemplateTypes;
+
+		for (auto module : context.GetModules())
 		{
-			progress = false;
-
-			result = result | gatherInformationPass->Run(print, context);
-
 			for (auto unit : module->units)
 			{
 				if (!unit->declaredType->IsType())
@@ -368,16 +388,18 @@ PassResultFlags InlineTemplatesPass::Run(PrintFunction print, BuildContext& cont
 
 				auto& types = std::dynamic_pointer_cast<TypeDeclaration>(unit->declaredType)
 				                  ->typeDeclarationMeta.usedTemplateTypes;
-				progress |= GenerateSpecializations(print, context, module, types);
+				MergeTemplateMaps(types, usedTemplateTypes);
 			}
 
 			for (auto specialization : module->moduleMeta.templateSpecializations)
 			{
 				auto& types = specialization.second->typeDeclarationMeta.usedTemplateTypes;
-				progress |= GenerateSpecializations(print, context, module, types);
+				MergeTemplateMaps(types, usedTemplateTypes);
 			}
-		} while (progress);
-	}
+		}
+
+		progress = GenerateSpecializations(print, context, usedTemplateTypes);
+	} while (progress);
 
 	return result;
 }

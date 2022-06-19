@@ -37,7 +37,7 @@ private:
 	void InlineTemplateArgument(Ref<ClassDeclaration> target, const String& name,
 	                            const TemplateArgument& argument);
 
-	bool GenerateSpecializations(PrintFunction print, BuildContext& context, Ref<Module> module,
+	bool GenerateSpecializations(PrintFunction print, BuildContext& context,
 	                             HashMap<ObjectType, Array<ObjectType*>>& types);
 
 	Ref<Unit> GenerateSpecialization(const ObjectType& type);
