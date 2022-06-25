@@ -1488,7 +1488,10 @@ PassResultFlags LowerToIRPass::LowerModule(Ref<Module> module, BuildContext& bui
 
 	for (auto& specialization : module->moduleMeta.templateSpecializations)
 	{
-		if (LowerClass(module, specialization.second, buildContext) != PassResultFlags::SUCCESS)
+		if (LowerClass(
+				module,
+				std::dynamic_pointer_cast<ClassDeclaration>(specialization.second->declaredType),
+				buildContext) != PassResultFlags::SUCCESS)
 		{
 			return PassResultFlags::CRITICAL_ERROR;
 		}
@@ -1512,12 +1515,15 @@ PassResultFlags LowerToIRPass::LowerModule(Ref<Module> module, BuildContext& bui
 
 	for (auto& specialization : module->moduleMeta.templateSpecializations)
 	{
-		if (!specialization.second->isSingleton)
+		auto classDeclaration =
+			std::dynamic_pointer_cast<ClassDeclaration>(specialization.second->declaredType);
+
+		if (!classDeclaration->isSingleton)
 		{
 			continue;
 		}
 
-		InitializeSingleton(entryModule, specialization.second, entryBuilder, initializedUnits);
+		InitializeSingleton(entryModule, classDeclaration, entryBuilder, initializedUnits);
 	}
 
 	for (auto unit : module->units)

@@ -323,13 +323,11 @@ bool InlineTemplatesPass::GenerateSpecializations(PrintFunction print, BuildCont
 			ResolveUnitIdentifiers(print, context, specialization, ResolvePass::DATA_TYPES);
 
 			progress = true;
-			Ref<ClassDeclaration> specializedClass =
-				std::dynamic_pointer_cast<ClassDeclaration>(specialization->declaredType);
-			module->moduleMeta.templateSpecializations[type.first] = specializedClass;
+			module->moduleMeta.templateSpecializations[type.first] = specialization;
 
 			for (auto typeRef : type.second)
 			{
-				typeRef->name = specializedClass->name;
+				typeRef->name = specialization->name;
 				typeRef->typeTemplate = nullptr;
 				typeRef->objectTypeMeta.unit = specialization;
 			}
@@ -393,7 +391,9 @@ PassResultFlags InlineTemplatesPass::Run(PrintFunction print, BuildContext& cont
 
 			for (auto specialization : module->moduleMeta.templateSpecializations)
 			{
-				auto& types = specialization.second->typeDeclarationMeta.usedTemplateTypes;
+				auto& types =
+					std::dynamic_pointer_cast<ClassDeclaration>(specialization.second->declaredType)
+						->typeDeclarationMeta.usedTemplateTypes;
 				MergeTemplateMaps(types, usedTemplateTypes);
 			}
 		}

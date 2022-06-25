@@ -36,7 +36,9 @@ PassResultFlags LinkModulesPass::Run(PrintFunction print, BuildContext& context)
 
 		for (auto& specialization : module->moduleMeta.templateSpecializations)
 		{
-			if (linker.linkInModule(std::move(specialization.second->classDeclarationMeta.module)))
+			if (linker.linkInModule(std::move(
+					std::dynamic_pointer_cast<ClassDeclaration>(specialization.second->declaredType)
+						->classDeclarationMeta.module)))
 			{
 				return PassResultFlags::CRITICAL_ERROR;
 			}

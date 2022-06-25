@@ -377,7 +377,8 @@ PassResultFlags LowerOperatorsPass::Run(PrintFunction print, BuildContext& conte
 	{
 		for (auto& specialization : module->moduleMeta.templateSpecializations)
 		{
-			LowerClass(specialization.second);
+			LowerClass(
+				std::dynamic_pointer_cast<ClassDeclaration>(specialization.second->declaredType));
 		}
 
 		for (auto unit : module->units)

@@ -732,7 +732,7 @@ public:
 	llvm::Value* virtualTable = nullptr;
 	llvm::Value* typeId = nullptr;
 
-	HashMap<ObjectType, Ref<ClassDeclaration>> templateSpecializations;
+	HashMap<ObjectType, Ref<Unit>> templateSpecializations;
 
 	String path;
 	String outputPath;
