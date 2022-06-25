@@ -1046,6 +1046,18 @@ PassResultFlags ResolveIdentifiersPass::Run(PrintFunction print, BuildContext& c
 
 	for (auto module : context.GetModules())
 	{
+		for (auto specialization : module->moduleMeta.templateSpecializations)
+		{
+			auto unit = specialization.second;
+
+			ResolveContext resolve(&context, unit->name, print, &unit->unitMeta.lexer);
+			resolve.unit = unit;
+			resolve.type = std::dynamic_pointer_cast<TypeDeclaration>(unit->declaredType);
+			resolve.SetPass(pass);
+
+			result = result | resolve.ResolveIdentifiers();
+		}
+
 		for (auto unit : module->units)
 		{
 			if (!unit->declaredType->IsType())
