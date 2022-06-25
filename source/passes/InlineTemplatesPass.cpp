@@ -320,7 +320,7 @@ bool InlineTemplatesPass::GenerateSpecializations(PrintFunction print, BuildCont
 		if (specialization)
 		{
 			gatherAllInformationPass->GatherInformation(context, module, specialization);
-			ResolveUnitIdentifiers(print, context, specialization);
+			ResolveUnitIdentifiers(print, context, specialization, ResolvePass::DATA_TYPES);
 
 			progress = true;
 			Ref<ClassDeclaration> specializedClass =

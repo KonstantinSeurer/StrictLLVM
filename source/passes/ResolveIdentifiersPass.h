@@ -81,7 +81,8 @@ public:
 	PassResultFlags ResolveIdentifiers();
 };
 
-PassResultFlags ResolveUnitIdentifiers(PrintFunction print, BuildContext& context, Ref<Unit> unit);
+PassResultFlags ResolveUnitIdentifiers(PrintFunction print, BuildContext& context, Ref<Unit> unit,
+                                       ResolvePass pass);
 
 class ResolveIdentifiersPass : public Pass
 {

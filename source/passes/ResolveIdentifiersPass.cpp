@@ -1024,7 +1024,8 @@ PassResultFlags ResolveContext::ResolveIdentifiers()
 	return result;
 }
 
-PassResultFlags ResolveUnitIdentifiers(PrintFunction print, BuildContext& context, Ref<Unit> unit)
+PassResultFlags ResolveUnitIdentifiers(PrintFunction print, BuildContext& context, Ref<Unit> unit,
+                                       ResolvePass pass)
 {
 	if (!unit->declaredType->IsType())
 	{
@@ -1035,16 +1036,8 @@ PassResultFlags ResolveUnitIdentifiers(PrintFunction print, BuildContext& contex
 	resolve.unit = unit;
 	resolve.type = std::dynamic_pointer_cast<TypeDeclaration>(unit->declaredType);
 
-	resolve.SetPass(ResolvePass::DATA_TYPES);
-	PassResultFlags result = resolve.ResolveIdentifiers();
-
-	resolve.SetPass(ResolvePass::EXPRESSION);
-	result = result | resolve.ResolveIdentifiers();
-
-	resolve.SetPass(ResolvePass::NEW);
-	result = result | resolve.ResolveIdentifiers();
-
-	return result;
+	resolve.SetPass(pass);
+	return resolve.ResolveIdentifiers();
 }
 
 PassResultFlags ResolveIdentifiersPass::Run(PrintFunction print, BuildContext& context)
