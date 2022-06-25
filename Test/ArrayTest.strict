@@ -6,6 +6,11 @@ public singleton ArrayTest
 
     public ArrayTest()
     {
-        Array<Int8> bytes;
+        Array<UInt8> bytes;
+        
+        for (UInt8 i = 0; i < 256; i++)
+        {
+            bytes.Add(i);
+        }
     }
 }
