@@ -6,6 +6,7 @@
 #include "passes/GatherInformationPass.h"
 #include "passes/InlineTemplatesPass.h"
 #include "passes/LinkModules.h"
+#include "passes/LowerImplicitCastsPass.h"
 #include "passes/LowerImpliedDeclarationFlagsPass.h"
 #include "passes/LowerOperatorsPass.h"
 #include "passes/LowerToIRPass.h"
@@ -68,6 +69,7 @@ BuildContext::BuildContext(const Array<String>& modulePath, const String& output
 	AddPass(Allocate<ResolveIdentifiersPass>(ResolvePass::EXPRESSION));
 	AddPass(Allocate<ResolveIdentifiersPass>(ResolvePass::NEW));
 	AddPass(Allocate<LowerOperatorsPass>());
+	AddPass(Allocate<LowerImplicitCastsPass>());
 	AddPass(Allocate<LowerToIRPass>());
 	AddPass(Allocate<LinkModulesPass>());
 	AddPass(Allocate<OutputModulesPass>());
