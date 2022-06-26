@@ -1024,8 +1024,7 @@ PassResultFlags ResolveContext::ResolveIdentifiers()
 	return result;
 }
 
-PassResultFlags ResolveUnitIdentifiers(PrintFunction print, BuildContext& context, Ref<Unit> unit,
-                                       ResolvePass pass)
+PassResultFlags ResolveUnitIdentifiers(PrintFunction print, BuildContext& context, Ref<Unit> unit)
 {
 	if (!unit->declaredType->IsType())
 	{
@@ -1036,7 +1035,17 @@ PassResultFlags ResolveUnitIdentifiers(PrintFunction print, BuildContext& contex
 	resolve.unit = unit;
 	resolve.type = std::dynamic_pointer_cast<TypeDeclaration>(unit->declaredType);
 
-	resolve.SetPass(pass);
+	resolve.SetPass(ResolvePass::DATA_TYPES);
+	PassResultFlags result = resolve.ResolveIdentifiers();
+	if (result != PassResultFlags::SUCCESS)
+		return result;
+
+	resolve.SetPass(ResolvePass::EXPRESSION);
+	result = resolve.ResolveIdentifiers();
+	if (result != PassResultFlags::SUCCESS)
+		return result;
+
+	resolve.SetPass(ResolvePass::NEW);
 	return resolve.ResolveIdentifiers();
 }
 
@@ -1048,17 +1057,7 @@ PassResultFlags ResolveIdentifiersPass::Run(PrintFunction print, BuildContext& c
 	{
 		for (auto unit : module->units)
 		{
-			if (!unit->declaredType->IsType())
-			{
-				continue;
-			}
-
-			ResolveContext resolve(&context, unit->name, print, &unit->unitMeta.lexer);
-			resolve.unit = unit;
-			resolve.type = std::dynamic_pointer_cast<TypeDeclaration>(unit->declaredType);
-			resolve.SetPass(pass);
-
-			result = result | resolve.ResolveIdentifiers();
+			ResolveUnitIdentifiers(print, context, unit);
 		}
 	}
 

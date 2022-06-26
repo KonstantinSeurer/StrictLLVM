@@ -81,16 +81,12 @@ public:
 	PassResultFlags ResolveIdentifiers();
 };
 
-PassResultFlags ResolveUnitIdentifiers(PrintFunction print, BuildContext& context, Ref<Unit> unit,
-                                       ResolvePass pass);
+PassResultFlags ResolveUnitIdentifiers(PrintFunction print, BuildContext& context, Ref<Unit> unit);
 
 class ResolveIdentifiersPass : public Pass
 {
-private:
-	ResolvePass pass;
-
 public:
-	ResolveIdentifiersPass(ResolvePass pass) : Pass("ResolveIdentifiersPass"), pass(pass)
+	ResolveIdentifiersPass() : Pass("ResolveIdentifiersPass")
 	{
 	}
 
