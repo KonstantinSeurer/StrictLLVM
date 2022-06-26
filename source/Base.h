@@ -25,6 +25,11 @@
 #define STRICT_UNREACHABLE
 #endif
 
+#define STRICT_UNIMPLEMENTED                                                                       \
+	std::cerr << "Hit unimplemented at " << __FILE__ << "::" << __FUNCTION__ << " line "           \
+			  << __LINE__ << std::endl;                                                            \
+	exit(1)
+
 using Int8 = char;
 using UInt8 = unsigned char;
 
