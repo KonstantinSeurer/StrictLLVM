@@ -34,16 +34,6 @@ PassResultFlags LinkModulesPass::Run(PrintFunction print, BuildContext& context)
 	{
 		llvm::Linker linker(*module->moduleMeta.module);
 
-		for (auto& specialization : module->moduleMeta.templateSpecializations)
-		{
-			if (linker.linkInModule(std::move(
-					std::dynamic_pointer_cast<ClassDeclaration>(specialization.second->declaredType)
-						->classDeclarationMeta.module)))
-			{
-				return PassResultFlags::CRITICAL_ERROR;
-			}
-		}
-
 		for (auto unit : module->units)
 		{
 			if (unit->declaredType->declarationType != UnitDeclarationType::CLASS)

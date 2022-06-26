@@ -214,11 +214,6 @@ PassResultFlags LowerImplicitCastsPass::Run(PrintFunction print, BuildContext& c
 
 	for (auto module : context.GetModules())
 	{
-		for (auto& specialization : module->moduleMeta.templateSpecializations)
-		{
-			LowerClass((ClassDeclaration*)specialization.second->declaredType.get());
-		}
-
 		for (auto unit : module->units)
 		{
 			if (unit->declaredType->declarationType != UnitDeclarationType::CLASS)

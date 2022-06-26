@@ -1486,17 +1486,6 @@ PassResultFlags LowerToIRPass::LowerModule(Ref<Module> module, BuildContext& bui
 		mainBuilder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(*context), 0));
 	}
 
-	for (auto& specialization : module->moduleMeta.templateSpecializations)
-	{
-		if (LowerClass(
-				module,
-				std::dynamic_pointer_cast<ClassDeclaration>(specialization.second->declaredType),
-				buildContext) != PassResultFlags::SUCCESS)
-		{
-			return PassResultFlags::CRITICAL_ERROR;
-		}
-	}
-
 	for (auto unit : module->units)
 	{
 		if (unit->declaredType->declarationType != UnitDeclarationType::CLASS)
@@ -1512,19 +1501,6 @@ PassResultFlags LowerToIRPass::LowerModule(Ref<Module> module, BuildContext& bui
 	}
 
 	HashSet<UnitDeclaration*> initializedUnits;
-
-	for (auto& specialization : module->moduleMeta.templateSpecializations)
-	{
-		auto classDeclaration =
-			std::dynamic_pointer_cast<ClassDeclaration>(specialization.second->declaredType);
-
-		if (!classDeclaration->isSingleton)
-		{
-			continue;
-		}
-
-		InitializeSingleton(entryModule, classDeclaration, entryBuilder, initializedUnits);
-	}
 
 	for (auto unit : module->units)
 	{
