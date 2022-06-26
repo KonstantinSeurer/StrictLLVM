@@ -308,7 +308,7 @@ void LowerToIRPass::LowerCallExpression(Ref<CallExpression> expression,
 	else
 	{
 		// TODO: Implement function pointers.
-		STRICT_UNREACHABLE;
+		STRICT_UNIMPLEMENTED;
 	}
 }
 
@@ -805,6 +805,18 @@ void LowerToIRPass::LowerOperatorExpression(Ref<OperatorExpression> expression,
 				std::dynamic_pointer_cast<PrimitiveType>(expression->b->dataType));
 		}
 	}
+	else if (expression->expressionMeta.dataType->IsPointer())
+	{
+		if (expression->operatorType == OperatorType::EXPLICIT_CAST)
+		{
+			STRICT_UNIMPLEMENTED;
+		}
+	}
+	else
+	{
+		// At this point, operators on object types should be lowered to call expressions.
+		STRICT_UNREACHABLE;
+	}
 }
 
 void LowerToIRPass::LowerTernaryExpression(Ref<TernaryExpression> expression,
@@ -1047,6 +1059,7 @@ void LowerToIRPass::LowerVariableDeclarationStatement(Ref<VariableDeclarationSta
 void LowerToIRPass::LowerWhileStatement(Ref<WhileStatement> statement,
                                         LowerFunctionToIRState* state)
 {
+	STRICT_UNIMPLEMENTED;
 }
 
 void LowerToIRPass::LowerReturnStatement(Ref<ReturnStatement> statement,
