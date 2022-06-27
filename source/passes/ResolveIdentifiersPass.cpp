@@ -199,38 +199,36 @@ static Ref<PrimitiveType> GetPrecedingPrimitiveType(Ref<PrimitiveType> a, Ref<Pr
 
 static Ref<DataType> ResolveOperatorDataType(Ref<OperatorExpression> expression)
 {
-	if (expression->a->expressionMeta.dataType->dataTypeType == DataTypeType::PRIMITIVE)
+	Ref<DataType> aType = expression->a->expressionMeta.dataType;
+	if (aType->dataTypeType == DataTypeType::PRIMITIVE)
 	{
 		if (!expression->b)
 		{
-			return expression->a->expressionMeta.dataType;
+			return aType;
 		}
 		if (expression->b->dataType)
 		{
 			return expression->b->dataType;
 		}
 
-		if (expression->b->expression->expressionMeta.dataType->dataTypeType ==
-		    DataTypeType::PRIMITIVE)
-		{
-			Ref<PrimitiveType> aType =
-				std::dynamic_pointer_cast<PrimitiveType>(expression->a->expressionMeta.dataType);
-			Ref<PrimitiveType> bType = std::dynamic_pointer_cast<PrimitiveType>(
-				expression->b->expression->expressionMeta.dataType);
+		Ref<DataType> bType = expression->b->expression->expressionMeta.dataType;
 
-			return GetPrecedingPrimitiveType(aType, bType);
+		if (bType->dataTypeType == DataTypeType::PRIMITIVE)
+		{
+			Ref<PrimitiveType> aPrimitive = std::dynamic_pointer_cast<PrimitiveType>(aType);
+			Ref<PrimitiveType> bPrimitive = std::dynamic_pointer_cast<PrimitiveType>(bType);
+
+			return GetPrecedingPrimitiveType(aPrimitive, bPrimitive);
 		}
 	}
-
-	if (expression->a->expressionMeta.dataType->IsPointer())
+	else if (aType->IsPointer())
 	{
-		Ref<PointerType> aType =
-			std::dynamic_pointer_cast<PointerType>(expression->a->expressionMeta.dataType);
+		Ref<PointerType> aPointer = std::dynamic_pointer_cast<PointerType>(aType);
 
 		if (expression->operatorType == OperatorType::DEREFERENCE ||
 		    expression->operatorType == OperatorType::ARRAY_ACCESS)
 		{
-			return aType->value;
+			return aPointer->value;
 		}
 	}
 
