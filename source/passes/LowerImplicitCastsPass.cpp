@@ -74,16 +74,18 @@ void LowerImplicitCastsPass::LowerExpression(MethodDeclaration* method,
 	case ExpressionType::OPERATOR: {
 		Ref<OperatorExpression> operatorExpression =
 			std::dynamic_pointer_cast<OperatorExpression>(expression);
-		if (operatorExpression->operatorType != OperatorType::ARRAY_ACCESS &&
-		    operatorExpression->operatorType != OperatorType::ACCESS)
+
+		Ref<DataType> expectedType = operatorExpression->expressionMeta.dataType;
+		if (operatorExpression->operatorType == OperatorType::ARRAY_ACCESS ||
+		    operatorExpression->operatorType == OperatorType::ACCESS)
 		{
-			LowerExpression(method, &operatorExpression->a,
-			                operatorExpression->expressionMeta.dataType);
-			if (operatorExpression->b && operatorExpression->b->expression)
-			{
-				LowerExpression(method, &operatorExpression->b->expression,
-				                operatorExpression->expressionMeta.dataType);
-			}
+			expectedType = nullptr;
+		}
+
+		LowerExpression(method, &operatorExpression->a, expectedType);
+		if (operatorExpression->b && operatorExpression->b->expression)
+		{
+			LowerExpression(method, &operatorExpression->b->expression, expectedType);
 		}
 		break;
 	}
