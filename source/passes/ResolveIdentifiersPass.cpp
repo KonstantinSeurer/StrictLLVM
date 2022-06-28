@@ -703,17 +703,10 @@ PassResultFlags ResolveContext::ResolveNewExpression(Ref<MethodDeclaration> meth
 		return result;
 	}
 
-	if (expression->allocationType == AllocationType::HEAP)
+	if (expression->allocationType == AllocationType::HEAP && !expression->dataType->IsPointer())
 	{
 		Ref<PointerType> pointer = Allocate<PointerType>();
-		if (expression->dataType->dataTypeType == DataTypeType::ARRAY)
-		{
-			pointer->dataTypeType = DataTypeType::ARRAY;
-		}
-		else
-		{
-			pointer->dataTypeType = DataTypeType::POINTER;
-		}
+		pointer->dataTypeType = DataTypeType::POINTER;
 		pointer->value = expression->dataType;
 		expression->expressionMeta.dataType = pointer;
 	}
