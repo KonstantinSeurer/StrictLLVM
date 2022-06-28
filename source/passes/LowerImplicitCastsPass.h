@@ -14,12 +14,11 @@ public:
 	virtual PassResultFlags Run(PrintFunction print, BuildContext& context);
 
 private:
-	void LowerExpression(MethodDeclaration* method, Ref<Expression>* pExpression,
-	                     Ref<DataType> expectedType);
+	void LowerExpression(Ref<Expression>* pExpression, Ref<DataType> expectedType);
 
-	void LowerStatement(MethodDeclaration* method, Statement* statement);
+	void LowerStatement(Statement* statement);
 
-	void LowerMethodDeclaration(MethodDeclaration* MethodDeclaration);
+	void LowerMethodDeclaration(MethodDeclaration* method);
 
 	void LowerMemberVariableDeclaration(MemberVariableDeclaration* variable);
 

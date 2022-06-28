@@ -1,8 +1,7 @@
 
 #include "LowerImplicitCastsPass.h"
 
-void LowerImplicitCastsPass::LowerExpression(MethodDeclaration* method,
-                                             Ref<Expression>* pExpression,
+void LowerImplicitCastsPass::LowerExpression(Ref<Expression>* pExpression,
                                              Ref<DataType> expectedType)
 {
 	Ref<Expression> expression = *pExpression;
@@ -33,12 +32,12 @@ void LowerImplicitCastsPass::LowerExpression(MethodDeclaration* method,
 	case ExpressionType::BRACKET: {
 		Ref<BracketExpression> bracketExpression =
 			std::dynamic_pointer_cast<BracketExpression>(expression);
-		LowerExpression(method, &bracketExpression->expression, nullptr);
+		LowerExpression(&bracketExpression->expression, nullptr);
 		break;
 	}
 	case ExpressionType::CALL: {
 		Ref<CallExpression> callExpression = std::dynamic_pointer_cast<CallExpression>(expression);
-		LowerExpression(method, &callExpression->method, nullptr);
+		LowerExpression(&callExpression->method, nullptr);
 		if (callExpression->callExpressionMeta.destination->variableType ==
 		    VariableDeclarationType::METHOD)
 		{
@@ -48,7 +47,7 @@ void LowerImplicitCastsPass::LowerExpression(MethodDeclaration* method,
 			for (UInt32 argumentIndex = 0; argumentIndex < callExpression->arguments.size();
 			     argumentIndex++)
 			{
-				LowerExpression(method, &callExpression->arguments[argumentIndex],
+				LowerExpression(&callExpression->arguments[argumentIndex],
 				                callMethod->parameters[argumentIndex]->dataType);
 			}
 		}
@@ -66,7 +65,7 @@ void LowerImplicitCastsPass::LowerExpression(MethodDeclaration* method,
 			     argumentIndex++)
 			{
 				LowerExpression(
-					method, &newExpression->arguments[argumentIndex],
+					&newExpression->arguments[argumentIndex],
 					newExpression->newExpressionMeta.destination->parameters[argumentIndex]
 						->dataType);
 			}
@@ -84,28 +83,27 @@ void LowerImplicitCastsPass::LowerExpression(MethodDeclaration* method,
 			expectedType = nullptr;
 		}
 
-		LowerExpression(method, &operatorExpression->a, expectedType);
+		LowerExpression(&operatorExpression->a, expectedType);
 		if (operatorExpression->b && operatorExpression->b->expression)
 		{
-			LowerExpression(method, &operatorExpression->b->expression, expectedType);
+			LowerExpression(&operatorExpression->b->expression, expectedType);
 		}
 		break;
 	}
 	case ExpressionType::TERNARY: {
 		Ref<TernaryExpression> ternaryExpression =
 			std::dynamic_pointer_cast<TernaryExpression>(expression);
-		LowerExpression(method, &ternaryExpression->condition,
+		LowerExpression(&ternaryExpression->condition, ternaryExpression->expressionMeta.dataType);
+		LowerExpression(&ternaryExpression->thenExpression,
 		                ternaryExpression->expressionMeta.dataType);
-		LowerExpression(method, &ternaryExpression->thenExpression,
-		                ternaryExpression->expressionMeta.dataType);
-		LowerExpression(method, &ternaryExpression->elseExpression,
+		LowerExpression(&ternaryExpression->elseExpression,
 		                ternaryExpression->expressionMeta.dataType);
 		break;
 	}
 	}
 }
 
-void LowerImplicitCastsPass::LowerStatement(MethodDeclaration* method, Statement* statement)
+void LowerImplicitCastsPass::LowerStatement(Statement* statement)
 {
 	switch (statement->statementType)
 	{
@@ -113,35 +111,35 @@ void LowerImplicitCastsPass::LowerStatement(MethodDeclaration* method, Statement
 		BlockStatement* blockStatement = (BlockStatement*)statement;
 		for (auto subStatement : blockStatement->statements)
 		{
-			LowerStatement(method, subStatement.get());
+			LowerStatement(subStatement.get());
 		}
 		break;
 	}
 	case StatementType::DELETE: {
 		DeleteStatement* deleteStatement = (DeleteStatement*)statement;
-		LowerExpression(method, &deleteStatement->expression, nullptr);
+		LowerExpression(&deleteStatement->expression, nullptr);
 		break;
 	}
 	case StatementType::EXPRESSION: {
 		ExpressionStatement* expressionStatement = (ExpressionStatement*)statement;
-		LowerExpression(method, &expressionStatement->expression, nullptr);
+		LowerExpression(&expressionStatement->expression, nullptr);
 		break;
 	}
 	case StatementType::FOR: {
 		ForStatement* forStatement = (ForStatement*)statement;
-		LowerStatement(method, forStatement->startStatement.get());
-		LowerExpression(method, &forStatement->condition, nullptr);
-		LowerExpression(method, &forStatement->incrementExpression, nullptr);
-		LowerStatement(method, forStatement->bodyStatement.get());
+		LowerStatement(forStatement->startStatement.get());
+		LowerExpression(&forStatement->condition, nullptr);
+		LowerExpression(&forStatement->incrementExpression, nullptr);
+		LowerStatement(forStatement->bodyStatement.get());
 		break;
 	}
 	case StatementType::IF: {
 		IfStatement* ifStatement = (IfStatement*)statement;
-		LowerExpression(method, &ifStatement->condition, nullptr);
-		LowerStatement(method, ifStatement->thenStatement.get());
+		LowerExpression(&ifStatement->condition, nullptr);
+		LowerStatement(ifStatement->thenStatement.get());
 		if (ifStatement->elseStatement)
 		{
-			LowerStatement(method, ifStatement->elseStatement.get());
+			LowerStatement(ifStatement->elseStatement.get());
 		}
 		break;
 	}
@@ -149,7 +147,7 @@ void LowerImplicitCastsPass::LowerStatement(MethodDeclaration* method, Statement
 		ReturnStatement* returnStatement = (ReturnStatement*)statement;
 		if (returnStatement->expression)
 		{
-			LowerExpression(method, &returnStatement->expression, nullptr);
+			LowerExpression(&returnStatement->expression, nullptr);
 		}
 		break;
 	}
@@ -158,15 +156,15 @@ void LowerImplicitCastsPass::LowerStatement(MethodDeclaration* method, Statement
 			(VariableDeclarationStatement*)statement;
 		if (variableDeclarationStatement->value)
 		{
-			LowerExpression(method, &variableDeclarationStatement->value,
+			LowerExpression(&variableDeclarationStatement->value,
 			                variableDeclarationStatement->declaration->dataType);
 		}
 		break;
 	}
 	case StatementType::WHILE: {
 		WhileStatement* whileStatement = (WhileStatement*)statement;
-		LowerExpression(method, &whileStatement->condition, nullptr);
-		LowerStatement(method, whileStatement->bodyStatement.get());
+		LowerExpression(&whileStatement->condition, nullptr);
+		LowerStatement(whileStatement->bodyStatement.get());
 		break;
 	}
 	}
@@ -176,7 +174,7 @@ void LowerImplicitCastsPass::LowerMethodDeclaration(MethodDeclaration* method)
 {
 	if (method->body)
 	{
-		LowerStatement(method, method->body.get());
+		LowerStatement(method->body.get());
 	}
 }
 
@@ -184,7 +182,7 @@ void LowerImplicitCastsPass::LowerMemberVariableDeclaration(MemberVariableDeclar
 {
 	if (variable->value)
 	{
-		LowerExpression(nullptr, &variable->value, variable->dataType);
+		LowerExpression(&variable->value, variable->dataType);
 	}
 
 	for (auto accessor : variable->accessors)
