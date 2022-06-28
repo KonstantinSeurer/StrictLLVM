@@ -10,6 +10,8 @@ void LowerImplicitCastsPass::LowerExpression(MethodDeclaration* method,
 	if (expectedType && expression->expressionMeta.dataType &&
 	    !TypeEquals(expression->expressionMeta.dataType.get(), expectedType.get()))
 	{
+		std::cout << expression->expressionMeta.dataType->ToString(0) << std::endl;
+		std::cout << expectedType->ToString(0) << std::endl;
 		assert(CanCast(expression->expressionMeta.dataType.get(),
 		               GetReferencedType(expectedType.get())));
 
@@ -156,7 +158,8 @@ void LowerImplicitCastsPass::LowerStatement(MethodDeclaration* method, Statement
 			(VariableDeclarationStatement*)statement;
 		if (variableDeclarationStatement->value)
 		{
-			LowerExpression(method, &variableDeclarationStatement->value, nullptr);
+			LowerExpression(method, &variableDeclarationStatement->value,
+			                variableDeclarationStatement->declaration->dataType);
 		}
 		break;
 	}
@@ -179,6 +182,11 @@ void LowerImplicitCastsPass::LowerMethodDeclaration(MethodDeclaration* method)
 
 void LowerImplicitCastsPass::LowerMemberVariableDeclaration(MemberVariableDeclaration* variable)
 {
+	if (variable->value)
+	{
+		LowerExpression(nullptr, &variable->value, variable->dataType);
+	}
+
 	for (auto accessor : variable->accessors)
 	{
 		LowerMethodDeclaration(accessor.get());
