@@ -809,7 +809,9 @@ void LowerToIRPass::LowerOperatorExpression(Ref<OperatorExpression> expression,
 	{
 		if (expression->operatorType == OperatorType::EXPLICIT_CAST)
 		{
-			STRICT_UNIMPLEMENTED;
+			// TODO: What about object types?
+			expression->expressionMeta.ir =
+				builder->CreatePointerCast(a, expression->expressionMeta.dataType->dataTypeMeta.ir);
 		}
 	}
 	else
