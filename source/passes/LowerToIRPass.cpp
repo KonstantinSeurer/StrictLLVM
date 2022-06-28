@@ -731,8 +731,19 @@ void LowerToIRPass::LowerOperatorExpression(Ref<OperatorExpression> expression,
 {
 	LowerExpression(expression->a, state);
 
+	bool reference = false;
+	if (expression->operatorType == OperatorType::EXPLICIT_CAST &&
+	    (expression->b->dataType->dataTypeType == DataTypeType::POINTER ||
+	     expression->b->dataType->dataTypeType == DataTypeType::REFERENCE))
+	{
+		Ref<PointerType> destinationType =
+			std::dynamic_pointer_cast<PointerType>(expression->b->dataType);
+		reference =
+			TypeEquals(destinationType->value.get(), expression->a->expressionMeta.dataType.get());
+	}
+
 	bool keepPointer = (expression->operatorType == OperatorType::ACCESS) ||
-	                   (expression->operatorType == OperatorType::ASSIGN);
+	                   (expression->operatorType == OperatorType::ASSIGN) || reference;
 
 	llvm::Value* a = keepPointer ? expression->a->expressionMeta.ir
 	                             : expression->a->expressionMeta.Load(*builder);
