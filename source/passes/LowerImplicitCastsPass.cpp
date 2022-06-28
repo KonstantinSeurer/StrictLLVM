@@ -9,8 +9,6 @@ void LowerImplicitCastsPass::LowerExpression(Ref<Expression>* pExpression,
 	if (expectedType && expression->expressionMeta.dataType &&
 	    !TypeEquals(expression->expressionMeta.dataType.get(), expectedType.get()))
 	{
-		std::cout << expression->expressionMeta.dataType->ToString(0) << std::endl;
-		std::cout << expectedType->ToString(0) << std::endl;
 		assert(CanCast(expression->expressionMeta.dataType.get(),
 		               GetReferencedType(expectedType.get())));
 
