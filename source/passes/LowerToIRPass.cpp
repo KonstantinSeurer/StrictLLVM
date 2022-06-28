@@ -1395,6 +1395,7 @@ PassResultFlags LowerToIRPass::LowerClass(Ref<Module> parentModule,
 #ifdef DEBUG
 	if (llvm::verifyModule(*module, &llvm::outs()))
 	{
+		std::cout << std::endl;
 		return PassResultFlags::CRITICAL_ERROR;
 	}
 #endif
