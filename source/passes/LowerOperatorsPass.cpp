@@ -113,20 +113,12 @@ void LowerOperatorsPass::LowerOperatorExpression(Ref<MethodDeclaration> method,
 		return;
 	}
 
-	bool lower = false;
-
-	if (expression->expressionMeta.dataType)
+	if (!expression->expressionMeta.dataType)
 	{
-		if (expression->expressionMeta.dataType->dataTypeType == DataTypeType::PRIMITIVE)
-		{
-			lower = true;
-		}
-		else
-		{
-		}
+		return;
 	}
 
-	if (lower)
+	if (expression->expressionMeta.dataType->dataTypeType == DataTypeType::PRIMITIVE)
 	{
 		if (IsMutatingUnaryOperator(expression->operatorType))
 		{
